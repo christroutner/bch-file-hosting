@@ -42,24 +42,22 @@ complete and merged at `dba049d435`. The `web-upload-quote-columns` spec
 cleanup (anchor the size-scenario setup columns) is complete and merged at
 `959cf421e5`. The `lighthouse-file-link` feature (Lighthouse link opens the
 file; image links open in a new tab) is complete and merged at `a0685a12e1`.
+The `ipfs-public-node` feature (public Amino DHT + CID provide) is complete and
+merged at `e2b9f571d1`.
 
 ## In progress
 
-- **`ipfs-public-node` — join the public IPFS network at startup (2026-10-09):**
-  the Helia node runs a private PSF DHT (`/psf/kad/1.0.0`) and never calls
-  `routing.provide`, so public pin services (Lighthouse) cannot discover hosted
-  CIDs. Configure a project-owned node factory that registers the public Amino
-  DHT (`aminoDHT`, `/ipfs/kad/1.0.0`), keeps the PSF DHT, bootstraps to the
-  public IPFS peers, and enables NAT traversal (`upnpNAT`, `dcutr`); have the
-  IPFS adapter call `routing.provide(cid)` so a local pin publishes the CID.
-  Spec `bch-file-hosting-api/specs/ipfs-public-node.feature`. Manual
-  verification: `delegated-ipfs.dev/routing/v1/providers/<cid>` returns our peer
-  and Lighthouse `file_info` returns 200 after a pin. Awaiting coder.
+- None.
 
 ## Up next (in order)
 
 - **Roadmap phase 8: x402-bch** — dynamic-price x402 middleware, `POST
   /x402/files`, and a facilitator deployment note; scope it with the user.
+- **`ipfs-public-node` manual verification (pending):** restart the API with the
+  merged code and `LIGHTHOUSE_GATEWAY=https://open-sheep-fwyxe.lighthouseweb3.xyz/ipfs/`,
+  then confirm `delegated-ipfs.dev/routing/v1/providers/<cid>` returns our peer
+  and Lighthouse `file_info` returns 200 after a pin. The offline suites cannot
+  prove real DHT reachability.
 - **Spec-quality follow-ups:** the CLI `upload_path` cells (file-upload,
   file-host) and the file-host non-JSON `api_txid` cells survive soft mutation
   because no assertion depends on them; either anchor them with a `Then` or
@@ -74,11 +72,34 @@ file; image links open in a new tab) is complete and merged at `a0685a12e1`.
 
 ## Needs a decision from the user
 
+- **`ipfs-public-node` provide failure:** a `provide` failure currently rejects
+  the local pin, and `pinFile` marks the file `pinFailed` (retried hourly) while
+  the payment completes. Decide whether `provide` should instead be
+  best-effort. Flagged by the `ipfs-public-node` architect.
 - None open. Q1 (expiry), Q2 (renewals), Q3 (OP_RETURN), and Q9 (late
   payments/refunds) are decided in the long-term plan's Decisions Log
   (D26–D29); none needs new Gherkin.
 
 ## Recently completed
+
+- **`ipfs-public-node` — join the public IPFS network and provide hosted CIDs
+  (2026-10-09):** the Helia node now runs a project-owned `PublicHeliaNode`
+  factory that registers the public Amino DHT (`aminoDHT`, `/ipfs/kad/1.0.0`)
+  and keeps the PSF DHT, adds public bootstrap peers, and enables NAT traversal
+  (`upnpNAT`, `dcutr`). The IPFS adapter's `pin` publishes the CID via
+  `helia.routing.provide(cid)`, so public pin services can discover hosted
+  files. Pure config lives in `src/adapters/ipfs/public-network.js`; both DHTs
+  run in server mode (`clientMode: false`) so provider records are served. Spec
+  `ipfs-public-node.feature` (three scenarios). Pipeline commits: specifier
+  `1a5463c`, coder `2ccc8e2`, refactorer `02eddc5`, architect `2d4493d`
+  (verification `git_sha`), docs `e2b9f57`, merged to `master` at `e2b9f571d1`
+  (fast-forward). `verify.sh api` pass 4/4 (unit 407, property 25, acceptance
+  all 6 suites, lint ok); language mutation 21/21 killed / 0 uncovered; soft
+  Gherkin 10/10 killed; DRY clean; CRAP <= 6.0. Independent post-merge
+  acceptance check: ipfs-public-node 6/6. Architect summary:
+  `docs/reviews/ipfs-public-node-summary.md`. Real-network verification is
+  manual (see Up next); a `provide` failure makes the pin fail (see the decision
+  above).
 
 - **`lighthouse-file-link` — link files on the Lighthouse gateway; open image
   links in a new tab (2026-10-09):** `PinningProvider.gatewayUrl(cid, filename)`

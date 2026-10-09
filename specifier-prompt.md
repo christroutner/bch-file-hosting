@@ -361,27 +361,31 @@ At the end of each session, update this file:
 - Note the current `master` HEAD commit.
 - State the next feature to work on.
 
-Latest session (2026-10-09): completed **`lighthouse-file-link`** across
-`bch-file-hosting-api` and `bch-file-hosting-web`. The Lighthouse gateway link
-now appends the URL-encoded filename (`PinningProvider.gatewayUrl(cid, filename)`,
-`buildLinks` passes it) so it opens the file, and the web paid result opens
-image gateway links in a new tab. Specs: `lighthouse-pinning.feature` scenario 3
-and `web-payment.feature` `Web Payment - 8`. Pipeline commits — specifier
-`79bbe45`, coder `acc1c3b`, refactorer `f6b9b2d`, architect `3560850`
-(verification `git_sha`, both components), docs `a0685a1`. Merged to `master`
-(fast-forward) at `a0685a12e1`. `verify.sh api` 4/4 (unit 393, property 22,
-acceptance all 5 suites, lint ok) and `verify.sh web` 4/4 (unit 64, property 58,
-acceptance all 4 suites, lint ok); language mutation 19/19 killed; independent
-post-merge checks lighthouse-pinning 6/6 and web-payment 15/15. Roadmap
-phases 3–7 remain complete. Prior cycles (Q1, P5.1-P5.3, P6.1-P6.6,
+Latest session (2026-10-09): completed **`ipfs-public-node`** in
+`bch-file-hosting-api`. The Helia node now runs a project-owned
+`PublicHeliaNode` factory that joins the public Amino DHT (`aminoDHT`,
+`/ipfs/kad/1.0.0`) while keeping the PSF DHT, adds public bootstrap peers, and
+enables NAT traversal (`upnpNAT`, `dcutr`); the IPFS adapter's `pin` publishes
+the CID via `helia.routing.provide(cid)`. Both DHTs run in server mode
+(`clientMode: false`) so provider records are served. Spec
+`ipfs-public-node.feature` (DHT services, NAT services, pin-provides-CID).
+Pipeline commits — specifier `1a5463c`, coder `2ccc8e2`, refactorer `02eddc5`,
+architect `2d4493d` (verification `git_sha`), docs `e2b9f57`. Merged to `master`
+(fast-forward) at `e2b9f571d1`. `verify.sh api` 4/4 (unit 407, property 25,
+acceptance all 6 suites, lint ok); language mutation 21/21 killed; soft Gherkin
+10/10 killed; independent post-merge check ipfs-public-node 6/6. Real-network
+verification is pending (restart the API, check public routing + Lighthouse).
+Roadmap phases 3–7 remain complete. Prior cycles (Q1, P5.1-P5.3, P6.1-P6.6,
 P7.1-P7.3, web-payment-poll-error, wallet-name-validation,
-web-upload-transport, web-upload-size, web-upload-quote-columns) are in the
-backlog. Open follow-ups: the CLI `upload_path`/`api_txid` columns, the
-`web-payment` scenario-8 `paid_cid`/`paid_name` survivors, the image-link `rel`
-hardening, and the mutation-inert mnemonic-hygiene scenarios.
+web-upload-transport, web-upload-size, web-upload-quote-columns,
+lighthouse-file-link) are in the backlog. Open follow-ups: the CLI
+`upload_path`/`api_txid` columns, the `web-payment` scenario-8
+`paid_cid`/`paid_name` survivors, the image-link `rel` hardening, the
+mutation-inert mnemonic-hygiene scenarios, and the `ipfs-public-node`
+provide-failure decision.
 
-Current `master` HEAD: `a0685a12e1` (Record lighthouse-file-link architect
-review and verification).
+Current `master` HEAD: `e2b9f571d1` (Record ipfs-public-node architect review and
+verification).
 
 Next action: scope **roadmap phase 8 (x402-bch)** with the user (dynamic-price
 x402 middleware, `POST /x402/files`, facilitator notes), or tackle the CLI

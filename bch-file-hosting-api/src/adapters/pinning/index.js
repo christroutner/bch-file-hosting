@@ -7,8 +7,11 @@
 */
 
 import LocalHeliaProvider from './local-helia.js'
+import LighthouseProvider from './lighthouse.js'
 
-const PROVIDER_FACTORIES = {}
+const PROVIDER_FACTORIES = {
+  lighthouse: ({ config }) => new LighthouseProvider({ config })
+}
 
 class PinningRegistry {
   constructor ({ ipfs, config, factories = PROVIDER_FACTORIES } = {}) {

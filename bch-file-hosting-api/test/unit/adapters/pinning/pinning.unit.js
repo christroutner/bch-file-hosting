@@ -121,9 +121,18 @@ describe('#pinning', () => {
       )
     })
 
+    it('should build the Lighthouse provider from the built-in factories', () => {
+      const config = { pinningProviders: ['lighthouse'], lighthouseApiKey: 'test-key' }
+
+      const uut = new PinningRegistry({ ipfs, config })
+
+      assert.deepEqual(uut.getProviders().map(p => p.name), ['local-helia', 'lighthouse'])
+      assert.equal(uut.getProvider('lighthouse').name, 'lighthouse')
+    })
+
     it('should say when no third-party providers are known', () => {
       assert.throws(
-        () => new PinningRegistry({ ipfs, config: { pinningProviders: ['lighthouse'] } }),
+        () => new PinningRegistry({ ipfs, config: { pinningProviders: ['lighthouse'] }, factories: {} }),
         /Known providers: none/
       )
     })

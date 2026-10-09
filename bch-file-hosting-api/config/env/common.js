@@ -77,6 +77,13 @@ export default {
   ]),
   pinningProviders: toList(process.env.PINNING_PROVIDERS, []),
 
+  // Lighthouse third-party pinning (enabled by naming 'lighthouse' in
+  // PINNING_PROVIDERS). The API key is required to pin; the gateway is a
+  // dedicated host because the public gateway is restricted to premium plans.
+  lighthouseApiKey: process.env.LIGHTHOUSE_API_KEY || '',
+  lighthouseApiUrl: process.env.LIGHTHOUSE_API_URL || 'https://api.lighthouse.storage',
+  lighthouseGateway: process.env.LIGHTHOUSE_GATEWAY || 'https://gateway.lighthouse.storage/ipfs/',
+
   // Access control
   adminApiKey: process.env.ADMIN_API_KEY || '',
   rateLimitPerMin: toNumber(process.env.RATE_LIMIT_PER_MIN, 30),

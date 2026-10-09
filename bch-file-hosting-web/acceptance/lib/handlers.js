@@ -203,6 +203,21 @@ function feedRecord ({ status, cid, filename = '', sizeBytes = 0, paidAt = '2026
   return { status, cid, filename, sizeBytes: Number(sizeBytes), paidAt, hostedUntil, paymentAddress, pins: [] }
 }
 
+// Parse a comma-separated scenario value into trimmed, non-empty items.
+function parseList (value) {
+  return String(value).split(',').map((s) => s.trim()).filter(Boolean)
+}
+
+// Assert the visible text of one class-named cell in a dashboard row, either
+// exactly or as a substring.
+function assertRowCell (world, cid, cellClass, expected, { contains = false } = {}) {
+  const actual = rowCellText(dashboardRow(world, cid), cellClass)
+  const matches = contains ? actual.includes(expected) : actual === expected
+  if (!matches) {
+    throw new Error(`Expected row ${cid} cell ${cellClass} to ${contains ? 'contain' : 'read'} ${expected}, got ${actual}.`)
+  }
+}
+
 // Apply an async page transition and invalidate the cached render.
 async function transition (world, action) {
   world.state = await action()
@@ -862,7 +877,7 @@ const handlers = [
     name: 'the dashboard lists the file names',
     pattern: /^the dashboard lists the file names (<[A-Za-z0-9_]+>)$/,
     run (m, example, world) {
-      const expected = resolveParam(m[1], example).split(',').map((s) => s.trim()).filter(Boolean)
+      const expected = parseList(resolveParam(m[1], example))
       const actual = ((world.state && world.state.files) || []).map((f) => f.filename)
       if (JSON.stringify(actual) !== JSON.stringify(expected)) {
         throw new Error(`Expected the dashboard to list ${expected.join(',')}, got ${actual.join(',')}.`)
@@ -880,7 +895,7 @@ const handlers = [
     name: 'the dashboard shows a table with the columns',
     pattern: /^the dashboard shows a table with the columns (.+)$/,
     run (m, example, world) {
-      const expected = resolveParam(m[1], example).split(',').map((s) => s.trim()).filter(Boolean)
+      const expected = parseList(resolveParam(m[1], example))
       const thead = /<thead>([\s\S]*?)<\/thead>/.exec(renderPage(world))
       if (!thead) throw new Error('The dashboard does not show a table header.')
       const headers = [...thead[1].matchAll(/<th[^>]*>([\s\S]*?)<\/th>/g)].map((cell) => visibleText(cell[1]).trim())
@@ -893,36 +908,21 @@ const handlers = [
     name: 'the status cell of a dashboard row',
     pattern: /^the status cell of row (\S+) reads (<[A-Za-z0-9_]+>)$/,
     run (m, example, world) {
-      const cid = resolveParam(m[1], example)
-      const expected = resolveParam(m[2], example)
-      const actual = rowCellText(dashboardRow(world, cid), 'dashboard-file-status')
-      if (actual !== expected) {
-        throw new Error(`Expected the status cell of row ${cid} to read ${expected}, got ${actual}.`)
-      }
+      assertRowCell(world, resolveParam(m[1], example), 'dashboard-file-status', resolveParam(m[2], example))
     }
   },
   {
     name: 'a dashboard row lists the pins',
     pattern: /^row (\S+) lists the pins (<[A-Za-z0-9_]+>)$/,
     run (m, example, world) {
-      const cid = resolveParam(m[1], example)
-      const expected = resolveParam(m[2], example)
-      const actual = rowCellText(dashboardRow(world, cid), 'dashboard-file-pins')
-      if (!actual.includes(expected)) {
-        throw new Error(`Expected row ${cid} to list the pins ${expected}, got ${actual}.`)
-      }
+      assertRowCell(world, resolveParam(m[1], example), 'dashboard-file-pins', resolveParam(m[2], example), { contains: true })
     }
   },
   {
     name: 'the CID cell of a dashboard row',
     pattern: /^the CID cell of row (\S+) holds (<[A-Za-z0-9_]+>)$/,
     run (m, example, world) {
-      const cid = resolveParam(m[1], example)
-      const expected = resolveParam(m[2], example)
-      const actual = rowCellText(dashboardRow(world, cid), 'dashboard-file-cid')
-      if (!actual.includes(expected)) {
-        throw new Error(`Expected the CID cell of row ${cid} to hold ${expected}, got ${actual}.`)
-      }
+      assertRowCell(world, resolveParam(m[1], example), 'dashboard-file-cid', resolveParam(m[2], example), { contains: true })
     }
   },
   {
@@ -951,36 +951,21 @@ const handlers = [
     name: 'the size cell of a dashboard row',
     pattern: /^the size cell of row (\S+) measures (.+)$/,
     run (m, example, world) {
-      const cid = resolveParam(m[1], example)
-      const expected = resolveParam(m[2], example)
-      const actual = rowCellText(dashboardRow(world, cid), 'dashboard-file-size')
-      if (actual !== expected) {
-        throw new Error(`Expected the size cell of row ${cid} to measure ${expected}, got ${actual}.`)
-      }
+      assertRowCell(world, resolveParam(m[1], example), 'dashboard-file-size', resolveParam(m[2], example))
     }
   },
   {
     name: 'a dashboard row shows the paid time',
     pattern: /^row (\S+) shows the paid time (.+)$/,
     run (m, example, world) {
-      const cid = resolveParam(m[1], example)
-      const expected = resolveParam(m[2], example)
-      const actual = rowCellText(dashboardRow(world, cid), 'dashboard-file-paid')
-      if (actual !== expected) {
-        throw new Error(`Expected row ${cid} to show the paid time ${expected}, got ${actual}.`)
-      }
+      assertRowCell(world, resolveParam(m[1], example), 'dashboard-file-paid', resolveParam(m[2], example))
     }
   },
   {
     name: 'a dashboard row shows the hosting end',
     pattern: /^row (\S+) shows the hosting end (.+)$/,
     run (m, example, world) {
-      const cid = resolveParam(m[1], example)
-      const expected = resolveParam(m[2], example)
-      const actual = rowCellText(dashboardRow(world, cid), 'dashboard-file-until')
-      if (actual !== expected) {
-        throw new Error(`Expected row ${cid} to show the hosting end ${expected}, got ${actual}.`)
-      }
+      assertRowCell(world, resolveParam(m[1], example), 'dashboard-file-until', resolveParam(m[2], example))
     }
   },
   {

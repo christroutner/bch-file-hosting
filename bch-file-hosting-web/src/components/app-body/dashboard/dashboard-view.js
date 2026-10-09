@@ -11,6 +11,7 @@
 
 const React = require('react')
 const { line, buildChildren, selectChildren, messageChildren } = require('../shared/status-view')
+const { copyToClipboard } = require('../../../services/clipboard')
 
 const EMPTY_MESSAGE = 'No files are hosted yet.'
 const COLUMNS = [
@@ -53,13 +54,6 @@ function truncateCid (cid) {
   const value = String(cid)
   if (value.length <= 16) return value
   return `${value.slice(0, 8)}...${value.slice(-8)}`
-}
-
-// Copy the full CID in the browser. Node's static render never calls this.
-function copyToClipboard (value) {
-  if (typeof navigator !== 'undefined' && navigator.clipboard) {
-    navigator.clipboard.writeText(value)
-  }
 }
 
 function copyControl (cid) {

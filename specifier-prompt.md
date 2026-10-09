@@ -347,14 +347,16 @@ Latest session (2026-10-09): completed the phase-6 CLI, ending with
 check-payment until visible. `docs/reviews/file-host-verification.json` reports
 `verify.sh cli` pass 4/4 (record `git_sha` `1f78ae2`, docs-only behind the tip)
 and the independent post-merge acceptance check passed all 7 suites, including
-the 13 file-host executions. The CLI PSF donation is an accepted feature. Open
-follow-ups: the unasserted `upload_path`/`api_txid` Gherkin columns and the
-mutation-inert mnemonic-hygiene scenarios. Prior cycles (Q1, P5.1-P5.3,
-P6.1-P6.5) are in the backlog.
+the 13 file-host executions. The CLI PSF donation is an accepted feature. Q1
+(expiry), Q2 (renewals), Q3 (OP_RETURN), and Q9 (late payments/refunds) are now
+decided (long-term plan D26–D29) and need no code or Gherkin. Open follow-ups:
+the unasserted `upload_path`/`api_txid` Gherkin columns and the mutation-inert
+mnemonic-hygiene scenarios. Prior cycles (Q1, P5.1-P5.3, P6.1-P6.5) are in the
+backlog.
 
 Current `master` HEAD: `8a93edf5f7` (Record file-host architect review and
 verification).
 
-Next action: roadmap phase 6 is complete; scope roadmap phase 7
-(`bch-file-hosting-web`) with the user, or address the open decisions (Q1, Q2,
-Q3, Q9) first.
+Next action: roadmap phase 6 is complete and the Q1/Q2/Q3/Q9 decisions are
+recorded; scope roadmap phase 7 (`bch-file-hosting-web`) with the user, or
+tackle the CLI spec-quality follow-ups.

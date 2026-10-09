@@ -51,13 +51,9 @@ at `f579aafd67`. P6.6 `file-host` is complete and merged at `8a93edf5f7`, so
 
 ## Needs a decision from the user
 
-These come from the long-term plan's open questions (section 14). Do not spec
-them until the user decides.
-
-- **Expiry policy (Q1):** what happens when a file's year of hosting ends.
-- **Renewals / multi-year (Q2).**
-- **OP_RETURN announcement format (Q3)** for the stubbed announcer.
-- **Late payments and refunds (Q9).**
+- None open. Q1 (expiry), Q2 (renewals), Q3 (OP_RETURN), and Q9 (late
+  payments/refunds) are decided in the long-term plan's Decisions Log
+  (D26–D29); none needs new Gherkin.
 
 ## Recently completed
 

@@ -71,6 +71,10 @@ code.
 | D23 | Repo layout | Monorepo like psf-memo, with Swarm Forge at the root. |
 | D24 | Swarm Forge source | Vendor psf-memo's adapted copy (verify.sh, monorepo.prompt, process improvements), same agent backend (pi + `deepseek-v4.1-flash:cloud`). |
 | D25 | Who builds the core port | A single agent session builds the core port (phase 3). The swarm takes over from phase 5 onward. |
+| D26 | Expiry policy (Q1) | Status quo. This repo takes no automatic expiry action: a paid file stays pinned by our node, and `hostedUntil` is informational (returned by `GET /files/:cid`, shown by `file-status`). The lifecycle `expired` transition does not fire here; whether new nodes re-pin after a year is controlled by the wider network's pin-claim code path, owned elsewhere. |
+| D27 | Renewals / multi-year (Q2) | Not supported in v1. No `years` input, no renew endpoint, and `alreadyHosted` keeps short-circuiting a re-upload. Renewals will use the future pin-claim code path. |
+| D28 | OP_RETURN announcement (Q3) | Keep the `NoopAnnouncer` stub: no on-chain transaction and no payload format yet. The interface and the `completePayment` call site stay reserved for a future broadcast. |
+| D29 | Late payments / refunds (Q9) | Funds that arrive after a quote expires or a file is deleted are swept to the treasury; there is no automated refund. Refunds are handled manually, case by case, outside the code. The post-deletion sweep is currently a manual/admin action (`retrySweeps` only covers `pending` invoices). |
 
 ---
 

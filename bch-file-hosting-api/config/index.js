@@ -3,7 +3,7 @@
   SVC_ENV (development, test, or production).
 */
 
-import 'dotenv/config'
+import './load-env.js'
 
 import common from './env/common.js'
 import development from './env/development.js'

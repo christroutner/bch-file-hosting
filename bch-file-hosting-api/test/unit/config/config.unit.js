@@ -3,11 +3,29 @@
 */
 
 import { assert } from 'chai'
+import sinon from 'sinon'
 
 import { selectConfig } from '../../../config/index.js'
 import { toNumber, toBool, toList } from '../../../config/env/common.js'
+import { loadEnv } from '../../../config/load-env.js'
 
 describe('#config', () => {
+  describe('#loadEnv', () => {
+    it('should not load .env in the test environment', () => {
+      const load = sinon.stub()
+
+      assert.isFalse(loadEnv({ SVC_ENV: 'test' }, load))
+      assert.isTrue(load.notCalled)
+    })
+
+    it('should load .env quietly in other environments', () => {
+      const load = sinon.stub()
+
+      assert.isTrue(loadEnv({ SVC_ENV: 'development' }, load))
+      assert.isTrue(load.calledOnceWith({ quiet: true }))
+    })
+  })
+
   describe('#selectConfig', () => {
     it('should load the development config by default', () => {
       const config = selectConfig()

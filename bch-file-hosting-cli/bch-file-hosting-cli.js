@@ -9,9 +9,11 @@ import { Command } from 'commander'
 
 // Local libraries
 import FileUpload from './src/commands/file-upload.js'
+import FileCheck from './src/commands/file-check.js'
 
 // Instantiate subcommands
 const fileUpload = new FileUpload()
+const fileCheck = new FileCheck()
 
 const program = new Command()
 
@@ -25,6 +27,14 @@ program.command('file-upload')
   .option('--json', 'print the result as a single JSON object')
   .action(async (flags) => {
     process.exitCode = await fileUpload.run(flags)
+  })
+
+program.command('file-check')
+  .description('Check a payment address and print its status (-a <address>, --json)')
+  .option('-a, --address <address>', 'payment address to check')
+  .option('--json', 'print the result as a single JSON object')
+  .action(async (flags) => {
+    process.exitCode = await fileCheck.run(flags)
   })
 
 program.parseAsync(process.argv)

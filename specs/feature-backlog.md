@@ -45,7 +45,16 @@ file; image links open in a new tab) is complete and merged at `a0685a12e1`.
 
 ## In progress
 
-- None.
+- **`ipfs-public-node` — join the public IPFS network at startup (2026-10-09):**
+  the Helia node runs a private PSF DHT (`/psf/kad/1.0.0`) and never calls
+  `routing.provide`, so public pin services (Lighthouse) cannot discover hosted
+  CIDs. Configure a project-owned node factory that registers the public Amino
+  DHT (`aminoDHT`, `/ipfs/kad/1.0.0`), keeps the PSF DHT, bootstraps to the
+  public IPFS peers, and enables NAT traversal (`upnpNAT`, `dcutr`); have the
+  IPFS adapter call `routing.provide(cid)` so a local pin publishes the CID.
+  Spec `bch-file-hosting-api/specs/ipfs-public-node.feature`. Manual
+  verification: `delegated-ipfs.dev/routing/v1/providers/<cid>` returns our peer
+  and Lighthouse `file_info` returns 200 after a pin. Awaiting coder.
 
 ## Up next (in order)
 

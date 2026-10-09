@@ -24,20 +24,25 @@ The core port (roadmap phase 3) is complete and verified on mainnet. SwarmForge
 was integrated in phase 4, and the pipeline smoke test (S0) completed the first
 full four-role cycle. Q1 set the language-quality baseline, P5.1 finished the
 pinning-provider study, P5.2 added the Lighthouse provider, and P5.3 added the
-pin-retry timer and admin file listing. Next is P6.1, the CLI skeleton.
+pin-retry timer and admin file listing. P6.1, the CLI skeleton, is now
+specified and handed off.
 
 ## In progress
 
-- None.
+- **P6.1 `cli-skeleton` — first CLI command (new component):** spec
+  `bch-file-hosting-cli/specs/file-upload.feature` written and handed to the
+  coder. Creates `bch-file-hosting-cli/` following
+  `/home/trout/work/llm/prompt/cli/README.md`, adds it to `verify.mjs`,
+  `monorepo.prompt`, `clean-builds.sh`, and `architect-startup.sh`, and
+  implements `file-upload -f <path>` printing the quote. Six scenarios: quote on
+  success, already-hosted links, missing `-f` usage error, API rejection,
+  missing local file, and `--json` output.
 
 ## Up next (in order)
 
-### P6.1. `cli-skeleton` — first CLI command (new component)
-
-- Create `bch-file-hosting-cli/` following `/home/trout/work/llm/prompt/cli/README.md`
-  and add it to `verify.mjs`, `monorepo.prompt`, `clean-builds.sh`, and
-  `architect-startup.sh`.
-- First command: `file-upload -f <path>` prints the quote.
+- Remaining phase-6 CLI commands (`file-pay`, `file-check`, `file-status`,
+  `file-host`, `wallet-*`); scope them with the user after `cli-skeleton`
+  merges.
 
 ## Needs a decision from the user
 

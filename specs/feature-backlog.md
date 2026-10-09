@@ -77,11 +77,6 @@ content-routing provide) is complete and merged at `4fe4d5b010`.
   true` and now covered by a flag test. Add a test that builds the public-network
   service set and asserts every `serviceDependencies` capability is provided, so
   the next added service cannot break startup silently.
-- **Hardening follow-up (`ipfs-reprovide`):** with best-effort provide, a file
-  whose local pin succeeds but whose provide fails is `pinned`, so the hourly
-  `retryPins` (which only re-pins `pinFailed`) never re-provides it. Add a
-  re-provide timer or a `provided` flag on the pin record. Flagged by the
-  `ipfs-provide-best-effort` architect.
 
 ## Needs a decision from the user
 
@@ -107,8 +102,9 @@ content-routing provide) is complete and merged at `4fe4d5b010`.
   (unit 410, property 26, acceptance all 6 suites, lint ok); language mutation
   22/22 killed / 0 uncovered; soft Gherkin 8/8 killed; DRY clean; CRAP <= 6.0.
   Independent post-merge acceptance check: ipfs-public-node 10/10. Architect
-  summary: `docs/reviews/ipfs-provide-best-effort-summary.md`. Follow-up: no
-  re-provide for a failed initial provide (`ipfs-reprovide`).
+  summary: `docs/reviews/ipfs-provide-best-effort-summary.md`. The flagged
+  re-provide gap (`ipfs-reprovide`) is closed: Helia's DHT `Reprovider`
+  re-announces stored provider entries (see gotcha #26).
 
 - **`ipfs-public-node` — join the public IPFS network and provide hosted CIDs
   (2026-10-09):** the Helia node now runs a project-owned `PublicHeliaNode`

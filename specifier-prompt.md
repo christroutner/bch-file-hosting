@@ -323,6 +323,13 @@ Specific to bch-file-hosting (found while building the core port):
     restoring it.** Harmless today because every other feature injects the fake
     `makeHostingApi`, but a future feature that uses the real adapter must set
     (and ideally restore) its own transport.
+26. **Helia's DHT re-provides locally-recorded provider entries.** `kad-dht`'s
+    `provide()` writes the provider entry to the datastore (`addProvider`)
+    *before* it runs the network query, and its `Reprovider` re-announces every
+    stored entry on the hourly interval (and after a restart, since the
+    datastore persists). So the best-effort `provide` on pin is safe: a failed
+    or aborted initial announce is retried by the DHT, not lost. No explicit
+    re-provide timer is needed (this closed the `ipfs-reprovide` follow-up).
 
 ---
 
@@ -383,8 +390,9 @@ wallet-name-validation, web-upload-transport, web-upload-size,
 web-upload-quote-columns, lighthouse-file-link, ipfs-public-node) are in the
 backlog. Open follow-ups: the CLI `upload_path`/`api_txid` columns, the
 `web-payment` scenario-8 `paid_cid`/`paid_name` survivors, the image-link `rel`
-hardening, the mutation-inert mnemonic-hygiene scenarios, the
-`ipfs-service-dependencies` regression test, and `ipfs-reprovide`.
+hardening, the mutation-inert mnemonic-hygiene scenarios, and the
+`ipfs-service-dependencies` regression test. (`ipfs-reprovide` is closed —
+Helia's DHT `Reprovider` re-announces stored provider entries; see gotcha #26.)
 
 Current `master` HEAD: `4fe4d5b010` (Record ipfs-provide-best-effort architect
 review and verification).

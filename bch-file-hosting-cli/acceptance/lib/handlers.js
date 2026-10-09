@@ -11,9 +11,15 @@
 // Global npm libraries
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // Local libraries
 import FileUpload from '../../src/commands/file-upload.js'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+// Resolve component-local temp files from this module, not the process cwd, so
+// acceptance and mutation runs write to the same place regardless of launch dir.
+const COMPONENT_ROOT = path.resolve(__dirname, '..', '..')
 
 const FIXTURE_BYTES = 'acceptance file fixture'
 
@@ -41,7 +47,7 @@ function expectedText (example, token) {
 }
 
 function createWorld () {
-  const tmpDir = path.join(process.cwd(), 'tmp', 'acceptance')
+  const tmpDir = path.join(COMPONENT_ROOT, 'tmp', 'acceptance')
   fs.mkdirSync(tmpDir, { recursive: true })
 
   const world = {
@@ -123,14 +129,14 @@ const handlers = [
   },
   {
     pattern: /^I run file-upload for the file (.+)$/,
-    async run (match, _example, world) {
-      await runUpload(world, match[1])
+    async run (match, example, world) {
+      await runUpload(world, expectedText(example, match[1]))
     }
   },
   {
     pattern: /^I run file-upload with JSON output for the file (.+)$/,
-    async run (match, _example, world) {
-      await runUpload(world, match[1], { json: true })
+    async run (match, example, world) {
+      await runUpload(world, expectedText(example, match[1]), { json: true })
     }
   },
   {
@@ -141,8 +147,9 @@ const handlers = [
   },
   {
     pattern: /^I try file-upload for the missing file (.+)$/,
-    async run (match, _example, world) {
-      const missing = path.join(world.tmpDir, path.basename(match[1]))
+    async run (match, example, world) {
+      const requested = expectedText(example, match[1])
+      const missing = path.join(world.tmpDir, path.basename(requested))
       if (fs.existsSync(missing)) fs.rmSync(missing)
       world.exitCode = await world.command.run({ file: missing })
     }

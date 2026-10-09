@@ -85,3 +85,7 @@ class FileUpload {
 
 export { UsageError }
 export default FileUpload
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T03:36:07.251Z","module_hash":"a2a156be18e4030a6b48f45bf02df09b0b326077b67efafe1992a435063200d4","functions":[{"id":"func/FileUpload.constructor","name":"FileUpload.constructor","line":21,"end_line":35,"hash":"66d72aaa94a261454c83b70c0d91816f7d53162c3a8d067cc0f293d6d8ec1fa2"},{"id":"func/FileUpload.validateFlags","name":"FileUpload.validateFlags","line":37,"end_line":43,"hash":"14cbac7224cdb917a6c5c721e1db989de1804292b5036081639d5c1abfb83d4a"},{"id":"func/FileUpload.readFile","name":"FileUpload.readFile","line":45,"end_line":51,"hash":"c752a4ecde826e960e0b9a99d9507e95fa3064792e5ad41366d7c7eeba92f6ac"},{"id":"func/FileUpload.run","name":"FileUpload.run","line":53,"end_line":68,"hash":"f347da615c56a8db427abb75ae26e0674a8492e86a647dbfe5a5cea8549ddbe5"},{"id":"func/FileUpload.report","name":"FileUpload.report","line":70,"end_line":83,"hash":"d1f4a169a7938d8d4b8a7877d45c964c79ed701095530f969c4c41b40b911de0"}]}
+// mutate4javascript-manifest-end

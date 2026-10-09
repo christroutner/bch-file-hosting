@@ -37,7 +37,12 @@ merged at `f2e3615e99`.
 
 ## In progress
 
-- None.
+- **`web-payment-poll-error` — check-payment failure handling (started
+  2026-10-09):** map a rejected `POST /files/check-payment` during polling to
+  the error state (show the API error message and stop polling) and add
+  `Web Payment - 7` to `bch-file-hosting-web/specs/web-payment.feature`. This
+  removes the unhandled rejection the P7.2 architect review flagged. Handed to
+  the coder as task `web-payment-poll-error`.
 
 ## Up next (in order)
 
@@ -46,8 +51,7 @@ merged at `f2e3615e99`.
   file-host) and the file-host non-JSON `api_txid` cells survive soft mutation
   because no assertion depends on them; either anchor them with a `Then` or
   prune the columns. The wallet mnemonic-hygiene scenarios remain
-  mutation-inert. Also decide the `web-payment` poll-error behavior (the
-  `waitForConfirmation` observation in the P7.2 entry) and add a scenario.
+  mutation-inert.
 
 ## Needs a decision from the user
 

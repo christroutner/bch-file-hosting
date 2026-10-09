@@ -3,7 +3,7 @@
 # {"version":1,"tested_at":"2026-10-09T15:21:01.229664072Z","feature_name":"Web Payment","feature_path":"/home/trout/work/psf/code/ipfs/bch-file-hosting/.worktrees/architect/bch-file-hosting-web/specs/web-payment.feature","background_hash":"2e2c4d647fb6d89439b386c85e1e172482bda212c398974385ba02fcd2dd3879","implementation_hash":"unknown","scenarios":[{"index":0,"name":"Web Payment - 1 the quote shows a QR code, price, and countdown","scenario_hash":"2a03f9c17cb3ed7f0c386b6642c845851de2b8c9dfa3b8343a11a17477fd4fc6","mutation_count":18,"result":{"Total":18,"Killed":18,"Survived":0,"Errors":0},"tested_at":"2026-10-09T15:21:01.229664072Z"},{"index":1,"name":"Web Payment - 2 Pay now sends the quote from the browser wallet","scenario_hash":"a4cbc97f5b1c461c6a3856e115b6fcfe2354f364b15aa4dd35f027fb24bea585","mutation_count":8,"result":{"Total":8,"Killed":8,"Survived":0,"Errors":0},"tested_at":"2026-10-09T15:21:01.229664072Z"},{"index":2,"name":"Web Payment - 3 a confirmed payment shows the hosting result","scenario_hash":"6fceef9f0cdde098e8a3896742ba1c82b090c3396ca213ef08fc4cad1e0d8cf4","mutation_count":16,"result":{"Total":16,"Killed":16,"Survived":0,"Errors":0},"tested_at":"2026-10-09T15:21:01.229664072Z"},{"index":4,"name":"Web Payment - 5 a wallet payment failure shows the error","scenario_hash":"cebc67d231f4fee12f466e11a3deddca17bf28b4fd6dc4481e5526c27fa33c30","mutation_count":4,"result":{"Total":4,"Killed":4,"Survived":0,"Errors":0},"tested_at":"2026-10-09T15:21:01.229664072Z"}]}
 # acceptance-mutation-manifest-end
 
-# Web Payment - 1, Web Payment - 2, Web Payment - 3, Web Payment - 4, Web Payment - 5, Web Payment - 6
+# Web Payment - 1, Web Payment - 2, Web Payment - 3, Web Payment - 4, Web Payment - 5, Web Payment - 6, Web Payment - 7
 
 Feature: Web Payment
 
@@ -79,3 +79,15 @@ Feature: Web Payment
     When the visitor pays the quote from the browser wallet
     And the visitor waits for the payment to be confirmed
     Then the page shows "Payment not confirmed."
+
+  Scenario Outline: Web Payment - 7 a check-payment failure shows the error
+    Given an open hosting quote
+    And the hosting API rejects the payment check with error <check_error>
+    When the visitor pays the quote from the browser wallet
+    And the visitor waits for the payment to be confirmed
+    Then the page shows "<shown_error>"
+
+    Examples:
+      | check_error             | shown_error             |
+      | Hosting API unavailable | Hosting API unavailable |
+      | Payment check failed    | Payment check failed    |

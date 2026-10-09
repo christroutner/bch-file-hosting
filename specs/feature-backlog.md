@@ -37,11 +37,16 @@ merged at `f2e3615e99`.
 
 ## In progress
 
-- None.
+- **P7.3 `web-file-status` — look up a file and show its status and pins
+  (started 2026-10-09):** add a `/status` view with a CID input and a link from
+  the payment result; it shows the CID, file name, size, status, hosting window
+  (`not paid` when unpaid), and each pin (provider + status), plus a blank-CID
+  prompt and the API error. Add `HostingApi.getStatus`, encoding the CID as one
+  path segment (gotcha #22) and unit-testing it (the acceptance fake stubs the
+  adapter). Spec `bch-file-hosting-web/specs/web-file-status.feature` (four
+  scenarios). Handed to the coder as task `web-file-status`.
 
 ## Up next (in order)
-
-- **P7.3 `web-file-status` — look up a CID and show its status and pins.**
 - **Spec-quality follow-ups:** the CLI `upload_path` cells (file-upload,
   file-host) and the file-host non-JSON `api_txid` cells survive soft mutation
   because no assertion depends on them; either anchor them with a `Then` or

@@ -110,3 +110,6 @@ them until the user decides.
   Commits `c53f614` through `266f55f`.
 - **SwarmForge integration, roadmap phase 4 (2026-10-08):** vendored from
   psf-memo; see `docs/process-improvements.md`.
+- **Acceptance pipeline proof (2026-10-08):** `bch-file-hosting-api/specs/pricing.feature`
+  plus `acceptance/` runner. `npm run test:acceptance` parses, generates, and
+  runs the worked pricing examples.

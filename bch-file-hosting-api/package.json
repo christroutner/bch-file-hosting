@@ -11,6 +11,7 @@
     "start": "node bin/server.js",
     "test": "SVC_ENV=test c8 mocha --recursive 'test/unit/**/*.unit.js'",
     "test:integration": "node test/integration/host-file.js",
+    "test:acceptance": "node acceptance/acceptance.js",
     "lint": "standard --env mocha --fix",
     "crap": "crap4javascript",
     "dry": "dry4javascript src",

@@ -274,6 +274,10 @@ Specific to bch-file-hosting (found while building the core port):
     IP, and the wallet adapter talks to the BCH backend. Unit tests mock both.
 17. **One server per data directory.** LevelDB locks `.leveldb/`; a second
     server (or the integration test) on the same directory fails to start.
+18. **DRY-checker synonym false positives.** `gherkin-ir-dry-checker` flags
+    steps that share tokens such as "USD price" or "invoice" even when they
+    mean different things. Use distinct nouns (quoted USD amount vs BCH worth,
+    quoted price vs minimum invoice).
 
 ---
 
@@ -313,7 +317,9 @@ At the end of each session, update this file:
 - State the next feature to work on.
 
 Latest session (2026-10-08): SwarmForge was vendored from psf-memo (roadmap
-phase 4). No feature has gone through the swarm yet.
+phase 4). The API acceptance pipeline is wired (`npm run test:acceptance`)
+and `bch-file-hosting-api/specs/pricing.feature` covers the long-term plan
+worked examples. No feature has gone through the swarm yet.
 
 Next action: **specify S0 `reject-empty-upload`** (see the backlog) as the
 pipeline smoke test, ask the user for approval, and hand it to the coder.

@@ -196,8 +196,9 @@ disabled or `/health` down. Errors are `{ success: false, error }`.
   `Scenario Outline:` with `Examples:`, scenarios named `Feature Name - N`, a
   `#` comment listing scenario names right before `Feature:`, and `<parameter>`
   placeholders for values that vary.
-- API feature files go in `bch-file-hosting-api/specs/*.feature`, and the API
-  acceptance runner is `npm run test:acceptance` in `bch-file-hosting-api/`.
+- Feature files live in `<component>/specs/*.feature`; each component's
+  acceptance runner is `npm run test:acceptance` in that component
+  (`bch-file-hosting-api/`, `bch-file-hosting-cli/`, `bch-file-hosting-web/`).
 
 ---
 
@@ -302,6 +303,14 @@ Specific to bch-file-hosting (found while building the core port):
     as `../admin/invoices?x=1` was normalized by the URL parser into a different
     endpoint. `HostingApi.getStatus` now wraps the CID in `encodeURIComponent`;
     do the same for any user value that becomes a URL path segment.
+23. **The web component is a CRA fork, not Vite.** `bch-file-hosting-web/` is
+    forked from `bch-wallet-web3-spa` (long-term plan D30) and keeps the wallet
+    app intact. Only the file-hosting services and presentational components
+    are in the tested surface; write testable view components with plain
+    `React.createElement` so `node --test` + `ReactDOMServer` can render them,
+    and keep the inherited wallet shell out of mutation/CRAP/DRY. `node_modules`
+    is gitignored, so run `npm ci` in `bch-file-hosting-web/` on `master` before
+    the post-merge acceptance check.
 
 ---
 
@@ -318,7 +327,7 @@ component defines (unit, property, acceptance, lint; missing scripts are
 recorded as skipped) and emits a machine-readable record:
 
 ```bash
-swarmforge/scripts/verify.sh api --record docs/reviews/<task>-verification.json --task <task>
+swarmforge/scripts/verify.sh <api|cli|web> --record docs/reviews/<task>-verification.json --task <task>
 ```
 
 After merging the architect branch, check `docs/reviews/<task>-verification.json`:
@@ -340,23 +349,24 @@ At the end of each session, update this file:
 - Note the current `master` HEAD commit.
 - State the next feature to work on.
 
-Latest session (2026-10-09): completed the phase-6 CLI, ending with
-**`file-host`** (P6.6) after `file-pay` (P6.5), `file-status` (P6.4), and the
-`wallet-name-validation` hardening earlier the same day. `file-host -f <path> -n
-<name> [--json]` uploads, pays the quote from the named wallet, and polls
-check-payment until visible. `docs/reviews/file-host-verification.json` reports
-`verify.sh cli` pass 4/4 (record `git_sha` `1f78ae2`, docs-only behind the tip)
-and the independent post-merge acceptance check passed all 7 suites, including
-the 13 file-host executions. The CLI PSF donation is an accepted feature. Q1
-(expiry), Q2 (renewals), Q3 (OP_RETURN), and Q9 (late payments/refunds) are now
-decided (long-term plan D26–D29) and need no code or Gherkin. Open follow-ups:
-the unasserted `upload_path`/`api_txid` Gherkin columns and the mutation-inert
-mnemonic-hygiene scenarios. Prior cycles (Q1, P5.1-P5.3, P6.1-P6.5) are in the
+Latest session (2026-10-09): started roadmap phase 7 by completing **P7.1
+`web-upload`**, the first `bch-file-hosting-web` feature. The component is a
+fork of `bch-wallet-web3-spa` with the wallet app kept intact (long-term plan
+D30); it added a file picker that `POST`s to `/files` and an `UploadQuoteView`
+showing the quote (file name, price in satoshis, payment address), the
+already-hosted download link, a no-file prompt, or the API error. Pipeline
+commits: specifier `98033a8`, coder `f3d850d`, refactorer `08e24ee`, architect
+`314fdc2`, docs `f2e3615`; merged to `master` at `f2e3615e99` (fast-forward).
+`docs/reviews/web-upload-verification.json` reports `verify.sh web` pass 4/4
+(record `git_sha` `314fdc2`, docs-only behind the tip) and the independent
+post-merge acceptance check passed 8/8 executions. Open follow-ups: the CLI
+`upload_path`/`api_txid` Gherkin columns and the mutation-inert
+mnemonic-hygiene scenarios. Prior cycles (Q1, P5.1-P5.3, P6.1-P6.6) are in the
 backlog.
 
-Current `master` HEAD: `8a93edf5f7` (Record file-host architect review and
+Current `master` HEAD: `f2e3615e99` (Record web-upload architect review and
 verification).
 
-Next action: roadmap phase 6 is complete and the Q1/Q2/Q3/Q9 decisions are
-recorded; scope roadmap phase 7 (`bch-file-hosting-web`) with the user, or
-tackle the CLI spec-quality follow-ups.
+Next action: specify **P7.2 `web-payment`** (payment-address QR + in-browser
+wallet "Pay now", quote-expiry countdown, poll `check-payment`, and the result
+page), then P7.3 `web-file-status`; or tackle the CLI spec-quality follow-ups.

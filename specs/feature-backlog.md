@@ -31,29 +31,23 @@ complete and merged to `master` at `d3e54d4cf2`. The `wallet-name-validation`
 follow-up hardening is complete and merged at `08c2cd88dc`. P6.4 `file-status`
 is complete and merged at `faabc07d8e`. P6.5 `file-pay` is complete and merged
 at `f579aafd67`. P6.6 `file-host` is complete and merged at `8a93edf5f7`, so
-**roadmap phase 6 (CLI) is complete**.
+**roadmap phase 6 (CLI) is complete**. P7.1 `web-upload` begins roadmap phase 7
+by forking `bch-wallet-web3-spa` into `bch-file-hosting-web`; it is complete and
+merged at `f2e3615e99`.
 
 ## In progress
 
-- **P7.1 `web-upload` — web skeleton and upload quote (started 2026-10-09):**
-  fork `bch-wallet-web3-spa` into `bch-file-hosting-web/` and add the first
-  file-hosting view: pick/drag a file, `POST /files`, then show the quote
-  (file name, price in satoshis, payment address), the already-hosted download
-  link, a no-file prompt, or the API error. Spec
-  `bch-file-hosting-web/specs/web-upload.feature` (four scenarios). Handed to
-  the coder as task `web-upload`.
+- None.
 
 ## Up next (in order)
 
-- **Roadmap phase 7 continued — `bch-file-hosting-web`** (fork of
-  `bch-wallet-web3-spa`: CRA 5, React 19, react-bootstrap, react-router,
-  `qrcode.react`, `minimal-slp-wallet`; see long-term plan D30). After P7.1:
-  **P7.2 `web-payment`** (quote QR code + expiry countdown, poll
-  `check-payment`, and offer "Pay now" from the in-browser wallet in addition
-  to the QR for a mobile wallet) and **P7.3 `web-file-status`** (look up a CID
-  and show status/pins). Onboarding needs a `verify.mjs` entry, a
-  `monorepo.prompt` row, and self-provisioning for any gitignored runtime
-  directories (gotcha #8).
+- **P7.2 `web-payment` — pay the quote and confirm (next):** extend the
+  `bch-file-hosting-web` quote view with the payment-address QR code and a
+  quote-expiry countdown, offer "Pay now" from the in-browser
+  `minimal-slp-wallet` in addition to the QR for a mobile wallet, poll
+  `POST /files/check-payment` (unpaid / expired / paid), and render the result
+  (CID, download URL, gateway links). Spec `bch-file-hosting-web/specs/`.
+- **P7.3 `web-file-status` — look up a CID and show its status and pins.**
 - **CLI spec-quality follow-ups:** the `upload_path` cells (file-upload,
   file-host) and the file-host non-JSON `api_txid` cells survive soft mutation
   because no assertion depends on them; either anchor them with a `Then` or
@@ -67,6 +61,26 @@ at `f579aafd67`. P6.6 `file-host` is complete and merged at `8a93edf5f7`, so
   (D26–D29); none needs new Gherkin.
 
 ## Recently completed
+
+- **P7.1 `web-upload` — web skeleton and upload quote (2026-10-09):** forked
+  `bch-wallet-web3-spa` into `bch-file-hosting-web/` (CRA 5, React 19,
+  react-bootstrap, react-router, `qrcode.react`, `minimal-slp-wallet`) with the
+  wallet app kept intact, and added the first file-hosting view: pick a file,
+  `POST /files`, then show the quote (file name, price in satoshis, payment
+  address), the already-hosted download link, a no-file prompt, or the API
+  error. Pure `FileUploadPage` state machine + injected `HostingApi` adapter +
+  presentational `UploadQuoteView`. Spec `web-upload.feature` (four scenarios).
+  Onboarded the component into `verify.mjs`, `monorepo.prompt`,
+  `clean-builds.sh`, and `architect-startup.sh`, with a `node --test` +
+  `ReactDOMServer` acceptance pipeline. Pipeline commits: specifier `98033a8`,
+  coder `f3d850d`, refactorer `08e24ee`, architect `314fdc2` (verification
+  `git_sha`), docs `f2e3615`, merged to `master` at `f2e3615e99`
+  (fast-forward). `verify.sh web` pass 4/4 (unit 15, property 17, acceptance
+  web-upload suite, lint ok); testable modules at 100% CRAP coverage; language
+  mutation 0 survived / 0 uncovered across the three feature modules; DRY clean
+  on the feature modules; soft Gherkin web-upload 32/32 killed. Independent
+  post-merge acceptance check: 8/8 executions passed. Architect summary:
+  `docs/reviews/web-upload-summary.md`.
 
 - **P6.6 `file-host` — upload, pay, and confirm in one step (2026-10-09):**
   `file-host -f <path> -n <name> [--json]` uploads the file, short-circuits on

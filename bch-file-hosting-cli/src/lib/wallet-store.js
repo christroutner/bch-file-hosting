@@ -47,8 +47,11 @@ class WalletStore {
   write (name, wallet) {
     this.fs.mkdirSync(this.dir, { recursive: true })
     this.fs.writeFileSync(this.filePath(name), JSON.stringify({ wallet }, null, 2))
-    return true
   }
 }
 
 export default WalletStore
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T04:09:18.981Z","module_hash":"e3dbe5a29081c378a5e58df9e9b4bd0d19281a1ae99c8b258796cf4be7ade0cf","functions":[{"id":"func/WalletStore.constructor","name":"WalletStore.constructor","line":18,"end_line":29,"hash":"a9f16744d112382351e8c2090ca45fe65a134294cbcca795edb7c145a554777f"},{"id":"func/WalletStore.filePath","name":"WalletStore.filePath","line":31,"end_line":33,"hash":"56695ad8f292466d353dcf02754f0ed308f1855edcc81cbca6e0df174d0ae9a1"},{"id":"func/WalletStore.has","name":"WalletStore.has","line":35,"end_line":37,"hash":"e511e037250569b1bdcdcd163cf3c84b33449a550ea8f2786399c2406224121f"},{"id":"func/WalletStore.read","name":"WalletStore.read","line":39,"end_line":45,"hash":"39e48027329e040eecc1c9c8dcf2136c31cac69ee4f26f7cc13e2b8a7c647b86"},{"id":"func/WalletStore.write","name":"WalletStore.write","line":47,"end_line":50,"hash":"4a97fbac8d006d7cea826bbe2872ead561e6991db241852b2ac7f76146211b88"}]}
+// mutate4javascript-manifest-end

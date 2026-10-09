@@ -9,16 +9,14 @@
 
 // Local libraries
 import config from '../../config/index.js'
-import HostingApi from './hosting-api.js'
 
 // A flag validation failure, which maps to exit code 2.
 class UsageError extends Error {}
 
 class Command {
-  constructor ({ config: cfg = config, hostingApi, output = console.log, errorOutput = console.error } = {}) {
+  constructor ({ config: cfg = config, output = console.log, errorOutput = console.error } = {}) {
     // Encapsulate dependencies so tests can replace them.
     this.config = cfg
-    this.hostingApi = hostingApi || new HostingApi({ config: cfg })
     this.output = output
     this.errorOutput = errorOutput
 
@@ -46,5 +44,5 @@ export { UsageError }
 export default Command
 
 // mutate4javascript-manifest-begin
-// {"version":1,"tested_at":"2026-10-09T03:53:19.324Z","module_hash":"400da2c75c7bb036c849d736ee856f253762fe0a56e334e6874c21609206d142","functions":[{"id":"func/Command.constructor","name":"Command.constructor","line":18,"end_line":27,"hash":"a4ed036373b0bc553acfc941ab902736e9eb1b43e6c4358bb1753c8b5d75e435"},{"id":"func/Command.run","name":"Command.run","line":29,"end_line":42,"hash":"cc4678d5060aa6d544413d8d8e5becc0de219962541f2fecf3564b6e66859935"}]}
+// {"version":1,"tested_at":"2026-10-09T04:11:15.215Z","module_hash":"a9d52bafdad8f01034b16106fae70ffe30d634c4127a785f7b8bc16f114ec4f6","functions":[{"id":"func/Command.constructor","name":"Command.constructor","line":17,"end_line":25,"hash":"c107afebc0eb130b4e9a5ab894728063f4258fdc56f1ea6e0bf3769d1c5f75f0"},{"id":"func/Command.run","name":"Command.run","line":27,"end_line":40,"hash":"cc4678d5060aa6d544413d8d8e5becc0de219962541f2fecf3564b6e66859935"}]}
 // mutate4javascript-manifest-end

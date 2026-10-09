@@ -61,6 +61,15 @@ describe('#wallet-service', () => {
       assert.equal(balance, 42)
     })
 
+    it('should accept a zero satoshi balance', async () => {
+      FakeBchWallet.balance = 0
+      const uut = new WalletService({ config, BchWallet: FakeBchWallet })
+
+      const balance = await uut.balanceSats({ mnemonic: 'test mnemonic', cashAddress: 'bitcoincash:qfake' })
+
+      assert.equal(balance, 0)
+    })
+
     it('should throw when the backend returns a non-integer balance', async () => {
       FakeBchWallet.balance = 'nonsense'
       const uut = new WalletService({ config, BchWallet: FakeBchWallet })

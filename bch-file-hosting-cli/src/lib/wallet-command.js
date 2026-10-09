@@ -36,3 +36,7 @@ class WalletCommand extends Command {
 
 export { UsageError }
 export default WalletCommand
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T04:07:58.640Z","module_hash":"e295ef80baabc83a279ee1d29e6ab29f241a8168ce452c5898c1f48c6f58ee27","functions":[{"id":"func/WalletCommand.constructor","name":"WalletCommand.constructor","line":15,"end_line":26,"hash":"e5636c6f2b850a3330130b261d8f03a5903735f971c15418bf141526c7d114fb"},{"id":"func/WalletCommand.validateFlags","name":"WalletCommand.validateFlags","line":28,"end_line":34,"hash":"312ce7dcf089364d39e40fc34f38448c8851bf69731cae9513bb9ca2d7654947"}]}
+// mutate4javascript-manifest-end

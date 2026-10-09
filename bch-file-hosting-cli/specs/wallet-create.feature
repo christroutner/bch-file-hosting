@@ -1,3 +1,7 @@
+# acceptance-mutation-manifest-begin
+# {"version":1,"tested_at":"2026-10-09T04:09:30.678672500Z","feature_name":"Wallet Create","feature_path":"/home/trout/work/psf/code/ipfs/bch-file-hosting/.worktrees/architect/bch-file-hosting-cli/specs/wallet-create.feature","background_hash":"0d286cc79e537b4d0e285296a1fdeb6624e635117aed4bc9b8bb5934815a86ea","implementation_hash":"unknown","scenarios":[{"index":0,"name":"Wallet Create - 1 creating a wallet stores it and prints its address","scenario_hash":"e87dcb52c8c0a4b9ab6448f8a4da1493ce9264c48543b124f6083d2dcefd64d2","mutation_count":8,"result":{"Total":8,"Killed":8,"Survived":0,"Errors":0},"tested_at":"2026-10-09T04:09:30.678672500Z"},{"index":2,"name":"Wallet Create - 3 an existing wallet name is rejected","scenario_hash":"f4c1793801a1531ef83266bfc14824d25da84b7fabdc77b02073d42bfd320dcc","mutation_count":4,"result":{"Total":4,"Killed":4,"Survived":0,"Errors":0},"tested_at":"2026-10-09T04:09:30.678672500Z"}]}
+# acceptance-mutation-manifest-end
+
 # Wallet Create - 1, Wallet Create - 2, Wallet Create - 3, Wallet Create - 4
 
 Feature: Wallet Create

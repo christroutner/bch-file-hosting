@@ -33,4 +33,20 @@ distinct from per-task verification results, which live in
 
 ## bch-file-hosting
 
-- (none yet)
+- **Fresh worktrees have no `tmp/aps` symlink, so APS checks fail under the
+  architect worktree.** `ensure-aps.sh` resolves the canonical APS checkout to
+  the *main* repo root (`<main>/tmp/aps`), but `architect-startup.sh` runs
+  `cd tmp/aps` relative to the current worktree. The vendored bch-file-hosting
+  worktrees (unlike psf-memo's) were created without the
+  `tmp/aps -> <main>/tmp/aps` symlink, so both `gherkin-parser` and
+  `gherkin-mutator` report `[FAIL]` even though the tools work. Fix once per
+  worktree at startup:
+
+  ```bash
+  mkdir -p tmp
+  ln -sfn "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/tmp/aps" tmp/aps
+  ```
+
+  A durable shared-script fix (specifier-owned) would resolve the common-dir
+  path in `ensure-aps.sh`/`architect-startup.sh` instead of assuming a
+  worktree-local `tmp/aps`.

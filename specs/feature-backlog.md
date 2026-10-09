@@ -23,19 +23,12 @@ pluggable third-party pinning services.
 The core port (roadmap phase 3) is complete and verified on mainnet. SwarmForge
 was integrated in phase 4, and the pipeline smoke test (S0) completed the first
 full four-role cycle. Q1 set the language-quality baseline, P5.1 finished the
-pinning-provider study, and P5.2 added the Lighthouse provider. P5.3 (pin
-retry) is in progress.
+pinning-provider study, P5.2 added the Lighthouse provider, and P5.3 added the
+pin-retry timer and admin file listing. Next is P6.1, the CLI skeleton.
 
 ## In progress
 
-### P5.3. `pin-retry` — retry failed pins (api)
-
-Specs: `bch-file-hosting-api/specs/pin-retry.feature` and
-`bch-file-hosting-api/specs/admin-file-listing.feature`. Status: specs
-committed and handed to the coder.
-
-- A timer retries pinning for files in `pinFailed` status.
-- `GET /admin/files?status=pinFailed` lists them (admin API key).
+- None.
 
 ## Up next (in order)
 
@@ -58,6 +51,21 @@ them until the user decides.
 
 ## Recently completed
 
+- **P5.3 `pin-retry` — retry failed pins and admin file listing (2026-10-09):**
+  `PaymentUseCases.retryPins()` re-pins `pinFailed` files (leaving `pinned` and
+  `staged` alone) with an hourly `retryPins` timer job; `AdminUseCases.listFiles`
+  and `GET /admin/files` list files by status behind the admin key. Shared
+  `RecordStore.listAll` and `assertKnownStatus` removed duplication. Specs
+  `specs/pin-retry.feature`, `specs/admin-file-listing.feature`. Pipeline
+  commits: coder `89bbdfa`, refactorer `3810813`, architect `c09c551`
+  (verification `git_sha`), merged to `master` at `d418a1145c` (fast-forward).
+  `verify.sh api` pass 4/4 (unit 391, property 18, acceptance all 5 suites,
+  lint ok); language mutation 0 survived; soft Gherkin admin-file-listing
+  10/10 killed, pin-retry 12/17 killed with 5 documented intrinsic survivors
+  (4 are a redundant constant `cid` example column the architect flagged for a
+  future spec prune; pruning it needs a matching handler change). Independent
+  acceptance check after merge: pin-retry 5/5 and admin-file-listing 5/5 (all 5
+  suites). Architect summary: `docs/reviews/pin-retry-summary.md`.
 - **P5.2 `lighthouse-provider` — first third-party pinning provider
   (2026-10-09):** `LighthouseProvider` pins by CID through an injected HTTP
   client and is registered under `lighthouse` when `PINNING_PROVIDERS=lighthouse`;

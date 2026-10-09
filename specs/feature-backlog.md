@@ -35,19 +35,12 @@ at `f579aafd67`. P6.6 `file-host` is complete and merged at `8a93edf5f7`, so
 `bch-wallet-web3-spa` into `bch-file-hosting-web`: P7.1 `web-upload` merged at
 `f2e3615e99`, P7.2 `web-payment` (plus the `web-payment-poll-error` hardening)
 and P7.3 `web-file-status` followed, so **roadmap phase 7 (web UI) is complete**
-as of `5ed6759239`.
+as of `5ed6759239`. The `web-upload-transport` hardening (browser `fetch`
+receiver in the web API adapter) is complete and merged at `279e8a77ba`.
 
 ## In progress
 
-- **`web-upload-transport` — send web uploads through the browser fetch
-  transport (2026-10-09):** reported bug — uploading a file on the `/host` page
-  shows `'fetch' called on an object that does not implement interface
-  Window.` `HostingApi` stores the bare global `fetch` and calls it as
-  `this.fetch(...)`, so the receiver is the adapter instance rather than
-  `window`; browsers reject the call before any request is sent. New spec
-  `bch-file-hosting-web/specs/web-upload-transport.feature` exercises the real
-  adapter over a browser-like global fetch (the existing acceptance handlers
-  fake the adapter, which masked the bug). Awaiting coder.
+- None.
 
 ## Up next (in order)
 
@@ -66,6 +59,24 @@ as of `5ed6759239`.
   (D26–D29); none needs new Gherkin.
 
 ## Recently completed
+
+- **`web-upload-transport` — send web uploads through the browser `fetch`
+  transport (2026-10-09):** fixed the reported `/host` upload failure
+  `'fetch' called on an object that does not implement interface Window.`
+  `HostingApi` stored the bare global `fetch` and called it as `this.fetch(...)`,
+  so the receiver was the adapter instance and browsers rejected the call before
+  any request. The adapter now binds the transport once in its constructor
+  (`(fetchImpl || fetch).bind(globalThis)`), covering `upload`, `checkPayment`,
+  and `getStatus`. Spec `web-upload-transport.feature` (one scenario, two
+  examples) drives the real adapter over a browser-like global fetch; the
+  refactorer's property test asserts the global receiver across all three
+  methods. Pipeline commits: specifier `d926571`, coder `4621cb7`, refactorer
+  `4fe1ce0`, architect `6fdbdf3` (verification `git_sha`), docs `279e8a7`,
+  merged to `master` at `279e8a77ba` (fast-forward). `verify.sh web` pass 4/4
+  (unit 57, property 55, acceptance all 4 suites, lint ok); language mutation of
+  `hosting-api.js` 4/4 killed; soft Gherkin 14/14 killed. Independent
+  post-merge acceptance check: 2/2. Architect summary:
+  `docs/reviews/web-upload-transport-summary.md`.
 
 - **P7.3 `web-file-status` — look up a file and show its status and pins
   (2026-10-09):** added a `/status` route and nav link with a CID input; it

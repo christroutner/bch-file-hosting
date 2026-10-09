@@ -311,6 +311,18 @@ Specific to bch-file-hosting (found while building the core port):
     and keep the inherited wallet shell out of mutation/CRAP/DRY. `node_modules`
     is gitignored, so run `npm ci` in `bch-file-hosting-web/` on `master` before
     the post-merge acceptance check.
+24. **A browser `fetch` must be called with the global receiver.** `HostingApi`
+    stored the bare global `fetch` and called it as `this.fetch(...)`, so the
+    receiver was the adapter instance; browsers threw `'fetch' called on an
+    object that does not implement interface Window.` before sending anything.
+    Bind the transport in the constructor
+    (`(fetchImpl || fetch).bind(globalThis)`) so `upload`, `checkPayment`, and
+    `getStatus` all inherit it. The unit test uses a receiver-sensitive fetch
+    and the property test asserts the global receiver across all three methods.
+25. **The web acceptance transport double sets `globalThis.fetch` without
+    restoring it.** Harmless today because every other feature injects the fake
+    `makeHostingApi`, but a future feature that uses the real adapter must set
+    (and ideally restore) its own transport.
 
 ---
 
@@ -349,29 +361,26 @@ At the end of each session, update this file:
 - Note the current `master` HEAD commit.
 - State the next feature to work on.
 
-Latest session (2026-10-09): completed **roadmap phase 7 (web UI)** in
-`bch-file-hosting-web` (a fork of `bch-wallet-web3-spa`, long-term plan D30),
-finishing **P7.1 `web-upload`**, **P7.2 `web-payment`**, the
-**`web-payment-poll-error`** hardening, and **P7.3 `web-file-status`**. The
-component now uploads and quotes, shows the payment QR and expiry countdown,
-pays from the loaded in-browser wallet via `BrowserWallet`, polls
-`check-payment` (paid/expired/pending/error), and looks up a CID's status and
-pins. Pipeline commits — P7.2: specifier `8d6f2b2`, coder `3012127`, refactorer
-`8df5d5b`, architect `83e4b5e`, docs `b00b6b7`; poll-error: specifier `cf2625b`,
-coder `2ab8753`, refactorer `e986d8b`, architect `9fb446c`, docs `431eb18`;
-P7.3: specifier `3a292f9`, coder `631d75c`, refactorer `cc38dce`, architect
-`8755c2f`, docs `5ed6759`. All merged to `master` (fast-forward); master is now
-at `5ed6759239`. Each verification record reports `verify.sh web` pass 4/4 with
-a docs-only tip past the record `git_sha`; independent post-merge acceptance
-checks passed web-file-status 6/6, web-payment 13/13, and web-upload 8/8. Note:
-the architect repeatedly flagged the `Web Payment - 3` fixture `filename`; it is
-a false alarm — the real `paidResult` includes `filename` and the controller
-returns it. Open follow-ups: the CLI `upload_path`/`api_txid` columns and
-mutation-inert mnemonic-hygiene scenarios. Prior cycles (Q1, P5.1-P5.3,
-P6.1-P6.6, P7.1-P7.3) are in the backlog.
+Latest session (2026-10-09): completed the **`web-upload-transport`**
+hardening in `bch-file-hosting-web`. A reported `/host` upload failure
+(`'fetch' called on an object that does not implement interface Window.`) came
+from `HostingApi` storing the bare global `fetch` and calling it as
+`this.fetch(...)`; the adapter now binds the transport once
+(`(fetchImpl || fetch).bind(globalThis)`). The new spec
+`web-upload-transport.feature` drives the real adapter over a browser-like
+global fetch. Pipeline commits — specifier `d926571`, coder `4621cb7`,
+refactorer `4fe1ce0`, architect `6fdbdf3` (verification `git_sha`), docs
+`279e8a7`. Merged to `master` (fast-forward) at `279e8a77ba`. `verify.sh web`
+pass 4/4 (unit 57, property 55, acceptance all 4 suites, lint ok); language
+mutation of `hosting-api.js` 4/4 killed; soft Gherkin 14/14 killed; independent
+post-merge acceptance check 2/2. Roadmap phases 3–7 remain complete. Prior
+cycles (Q1, P5.1-P5.3, P6.1-P6.6, P7.1-P7.3, web-payment-poll-error,
+wallet-name-validation) are in the backlog. Open follow-ups: the CLI
+`upload_path`/`api_txid` columns and the mutation-inert mnemonic-hygiene
+scenarios.
 
-Current `master` HEAD: `5ed6759239` (Record web-file-status architect review and
-verification).
+Current `master` HEAD: `279e8a77ba` (Record web-upload-transport architect review
+and verification).
 
 Next action: scope **roadmap phase 8 (x402-bch)** with the user (dynamic-price
 x402 middleware, `POST /x402/files`, facilitator notes), or tackle the CLI

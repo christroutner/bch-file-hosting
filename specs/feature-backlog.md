@@ -40,7 +40,13 @@ receiver in the web API adapter) is complete and merged at `279e8a77ba`.
 
 ## In progress
 
-- None.
+- **`web-upload-size` — show the uploaded and billed sizes on the web quote
+  (2026-10-09):** the `/host` quote view omits the file size. Add scenarios
+  `Web Upload - 5` (the billed size differs, e.g. a file below the 100 KB
+  minimum) and `Web Upload - 6` (the billed size equals the file size, so no
+  separate billed line) to `bch-file-hosting-web/specs/web-upload.feature`. The
+  API already returns `sizeBytes` and `billedBytes` in the quote; the web
+  `quoteState` currently drops both. Awaiting coder.
 
 ## Up next (in order)
 

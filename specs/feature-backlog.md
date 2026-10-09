@@ -25,18 +25,12 @@ was integrated in phase 4, and the pipeline smoke test (S0) completed the first
 full four-role cycle. Q1 set the language-quality baseline, P5.1 finished the
 pinning-provider study, P5.2 added the Lighthouse provider, and P5.3 added the
 pin-retry timer and admin file listing. P6.1, the CLI skeleton, is complete
-and merged to `master` at `cde36aef70`. P6.2 `file-check` is now specified and
-handed off.
+and merged to `master` at `cde36aef70`. P6.2 `file-check` is complete and
+merged to `master` at `55c3ddc714`.
 
 ## In progress
 
-- **P6.2 `file-check` — check a payment and print the result:** spec
-  `bch-file-hosting-cli/specs/file-check.feature` written and handed to the
-  coder. Adds `file-check -a <address> [--json]` calling
-  `POST /files/check-payment`: paid prints CID + download/gateway links, unpaid
-  prints received/required satoshis and the quote expiry, expired prints the
-  status; exit 0 for a successful query, 1 for an API error, 2 for a missing
-  `-a`. Six scenarios.
+- None.
 
 ## Up next (in order)
 
@@ -55,6 +49,22 @@ them until the user decides.
 
 ## Recently completed
 
+- **P6.2 `file-check` — check a payment and print the result (2026-10-09):**
+  `file-check -a <address> [--json]` calls `POST /files/check-payment` and
+  prints the paid result (CID + download + gateway links), the unpaid result
+  (received/required satoshis and the quote expiry), or the expired status;
+  exit 0 for a successful query, 1 for an API error, 2 for a missing `-a`. The
+  refactorer extracted a shared `Command` base (`src/lib/command.js`) and moved
+  `file-upload` onto it, removing duplicate constructors and run loops. Spec
+  `bch-file-hosting-cli/specs/file-check.feature` (six scenarios). Pipeline
+  commits: coder `0550367`, refactorer `fd6f057`, architect `af4739a`
+  (verification `git_sha`), docs `30d5326`, merged to `master` at `55c3ddc714`.
+  `verify.sh cli` pass 4/4 (unit 24, property 17, acceptance all 2 suites, lint
+  ok); language mutation 0 survived / 0 uncovered across four `src/` files; DRY
+  clean; CRAP <= 6.0; soft Gherkin file-check 42/42 killed (file-upload's 9
+  documented `upload_path` survivors unchanged). Independent acceptance check
+  after merge: file-check 11/11 and file-upload 11/11. Architect summary:
+  `docs/reviews/file-check-summary.md`.
 - **P6.1 `cli-skeleton` — first CLI command (2026-10-09):** new
   `bch-file-hosting-cli/` component (Commander, ESM) with `file-upload -f <path>
   [--json]`: reads a local file, POSTs multipart to `POST /files`, and prints

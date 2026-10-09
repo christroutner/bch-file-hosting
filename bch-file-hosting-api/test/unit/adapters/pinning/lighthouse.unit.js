@@ -145,6 +145,18 @@ describe('#lighthouse', () => {
     assert.deepEqual(result, { providerCid: CID, providerRef: null })
   })
 
+  it('should find the wrapping directory even when it is not the last add-response entry', async () => {
+    fetch.onFirstCall().resolves(new Response(
+      `{"Name":"","Hash":"${CID}"}\n{"Name":"photo.jpg","Hash":"bafyfile"}\n`,
+      { status: 200 }
+    ))
+    fetch.onSecondCall().resolves(headResponse(200, SIZE))
+
+    const result = await build().pin({ cid: CID, filename: 'photo.jpg', sizeBytes: SIZE, content: content() })
+
+    assert.deepEqual(result, { providerCid: CID, providerRef: null })
+  })
+
   it('should treat a missing reported CID as success after gateway verification', async () => {
     fetch.onFirstCall().resolves(new Response('', { status: 200 }))
     fetch.onSecondCall().resolves(headResponse(200, SIZE))
@@ -217,6 +229,12 @@ describe('#lighthouse', () => {
 
     assert.deepEqual(result, { providerCid: CID, providerRef: null })
     assert.equal(sleep.callCount, 1)
+  })
+
+  it('should resolve true once the gateway serves the file', async () => {
+    fetch.resolves(headResponse(200, SIZE))
+
+    assert.isTrue(await build().verify({ cid: CID, filename: 'photo.jpg', sizeBytes: SIZE }))
   })
 
   it('should fall back to the real sleep when none is injected', async () => {

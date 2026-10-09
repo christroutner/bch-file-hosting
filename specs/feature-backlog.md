@@ -26,16 +26,23 @@ full four-role cycle. Q1 set the language-quality baseline, P5.1 finished the
 pinning-provider study, P5.2 added the Lighthouse provider, and P5.3 added the
 pin-retry timer and admin file listing. P6.1, the CLI skeleton, is complete
 and merged to `master` at `cde36aef70`. P6.2 `file-check` is complete and
-merged to `master` at `55c3ddc714`.
+merged to `master` at `55c3ddc714`. P6.3 `wallet-create`/`wallet-balance` is now
+specified and handed off.
 
 ## In progress
 
-- None.
+- **P6.3 `wallet-create` / `wallet-balance` — minimal wallet for paying:**
+  specs `bch-file-hosting-cli/specs/wallet-create.feature` and
+  `wallet-balance.feature` written and handed to the coder. Adds
+  `wallet-create -n <name>` (stores a local wallet, prints its address, rejects
+  a duplicate name, never prints the mnemonic) and `wallet-balance -n <name>`
+  (prints the integer satoshi balance; an unknown wallet fails). Uses the
+  psf-bch-wallet v3 local gitignored wallet store; exit 0/1/2.
 
 ## Up next (in order)
 
-- Remaining phase-6 CLI commands (`file-pay`, `file-status`, `file-host`,
-  `wallet-*`); scope them with the user.
+- Remaining phase-6 CLI commands (`file-pay`, `file-status`, `file-host`);
+  scope them with the user.
 
 ## Needs a decision from the user
 

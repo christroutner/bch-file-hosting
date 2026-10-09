@@ -283,6 +283,13 @@ Specific to bch-file-hosting (found while building the core port):
     spec, or the `cid` column in pin-retry) cannot be killed. Make each column
     load-bearing or move a single fixed value into the `Background`; APS has no
     project mutation-filter hook.
+20. **Negative "never prints a secret" assertions are mutation-inert.** The
+    absence-only mnemonic-hygiene scenarios kill no mutants; pair them with a
+    positive assertion (for example the secret is stored under the example
+    name) or accept the documented intrinsic survivors.
+21. **Never join an unvalidated user string into a path.** The first wallet
+    commands accepted a name with a path separator or `..`, which escapes
+    `.wallets/`; constrain wallet names or document the accepted grammar.
 
 ---
 
@@ -321,17 +328,16 @@ At the end of each session, update this file:
 - Note the current `master` HEAD commit.
 - State the next feature to work on.
 
-Latest session (2026-10-09): specified **P6.3 `wallet-create`/`wallet-balance`**
-— the CLI's minimal paying wallet. Specs
-`bch-file-hosting-cli/specs/wallet-create.feature` and `wallet-balance.feature`
-(four scenarios each) were committed and handed off to the coder at
-`af8edf3300`. Uses the psf-bch-wallet v3 local gitignored wallet store; the
-mnemonic is never printed. Prior cycles (Q1, P5.1-P5.3, P6.1-P6.2) are recorded
-in the backlog.
+Latest session (2026-10-09): merged **P6.3 `wallet-create`/`wallet-balance`**
+into `master` at `d3e54d4cf2`. The CLI now has a local `minimal-slp-wallet`
+wallet store; `docs/reviews/wallet-create-verification.json` reports
+`verify.sh cli` pass 4/4 (record `git_sha` `3b6a799`, docs-only behind the tip)
+and the independent post-merge acceptance check passed all 4 suites (33/33).
+Two follow-ups recorded: unsafe wallet-name validation and the mutation-inert
+mnemonic-hygiene scenarios. Prior cycles (Q1, P5.1-P5.3, P6.1-P6.2) are in the
+backlog.
 
-Current `master` HEAD: `af8edf3300` (Specify wallet-create and wallet-balance
-behavior; this briefing update is the following docs-only commit).
+Current `master` HEAD: `d3e54d4cf2` (Merge wallet-create into master).
 
-Next action: when the architect's end-of-chain `git_handoff` arrives, merge
-`swarmforge-architect` into `master` and verify per §10, then mark P6.3 complete
-in `specs/feature-backlog.md`.
+Next action: ask the user which phase-6 CLI command to specify next
+(`file-pay`, `file-status`, `file-host`).

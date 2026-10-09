@@ -26,21 +26,18 @@ full four-role cycle. Q1 set the language-quality baseline, P5.1 finished the
 pinning-provider study, P5.2 added the Lighthouse provider, and P5.3 added the
 pin-retry timer and admin file listing. P6.1, the CLI skeleton, is complete
 and merged to `master` at `cde36aef70`. P6.2 `file-check` is complete and
-merged to `master` at `55c3ddc714`. P6.3 `wallet-create`/`wallet-balance` is now
-specified and handed off.
+merged to `master` at `55c3ddc714`. P6.3 `wallet-create`/`wallet-balance` is
+complete and merged to `master` at `d3e54d4cf2`.
 
 ## In progress
 
-- **P6.3 `wallet-create` / `wallet-balance` — minimal wallet for paying:**
-  specs `bch-file-hosting-cli/specs/wallet-create.feature` and
-  `wallet-balance.feature` written and handed to the coder. Adds
-  `wallet-create -n <name>` (stores a local wallet, prints its address, rejects
-  a duplicate name, never prints the mnemonic) and `wallet-balance -n <name>`
-  (prints the integer satoshi balance; an unknown wallet fails). Uses the
-  psf-bch-wallet v3 local gitignored wallet store; exit 0/1/2.
+- None.
 
 ## Up next (in order)
 
+- **Follow-up hardening: reject unsafe wallet names** (path separators or `..`)
+  in `wallet-create`/`wallet-balance`, with an invalid-name scenario; the
+  architect flagged the current store as a robustness/security gap.
 - Remaining phase-6 CLI commands (`file-pay`, `file-status`, `file-host`);
   scope them with the user.
 
@@ -56,6 +53,29 @@ them until the user decides.
 
 ## Recently completed
 
+- **P6.3 `wallet-create` / `wallet-balance` — minimal wallet for paying
+  (2026-10-09):** `wallet-create -n <name>` generates a `minimal-slp-wallet`
+  wallet, stores it under the gitignored `.wallets/`, prints its address,
+  rejects a duplicate name, and never prints the mnemonic;
+  `wallet-balance -n <name>` prints the integer satoshi balance and never prints
+  the mnemonic. New `WALLET_URL`/`WALLET_INTERFACE` config; the refactorer
+  extracted `WalletCommand` and split the HTTP adapter out of the generic
+  `Command` via `FileCommand`. Specs `wallet-create.feature`,
+  `wallet-balance.feature` (four scenarios each). Pipeline commits: coder
+  `7a73f25`, refactorer `edb8e59`, architect `3b6a799` (verification `git_sha`),
+  docs `cc79bb1`, merged to `master` at `d3e54d4cf2`. `verify.sh cli` pass 4/4
+  (unit 47, property 30, acceptance all 4 suites, lint ok); language mutation 0
+  survived / 0 uncovered across nine `src/` files; DRY clean; CRAP <= 6.0; soft
+  Gherkin wallet-create 12/18 killed and wallet-balance 16/20 killed (all 10
+  survivors are the two negative mnemonic-hygiene scenarios). Independent
+  acceptance check after merge: all 4 suites passed (33 executions). Architect
+  summary: `docs/reviews/wallet-create-summary.md`.
+  - Follow-up (security): wallet names are not constrained, so a name with a
+    path separator or `..` escapes `.wallets/`. Add an invalid-name scenario
+    and reject unsafe names.
+  - Follow-up (mutation): the mnemonic-hygiene scenarios are negative and
+    mutation-inert; add a positive store assertion or accept the documented
+    survivors.
 - **P6.2 `file-check` — check a payment and print the result (2026-10-09):**
   `file-check -a <address> [--json]` calls `POST /files/check-payment` and
   prints the paid result (CID + download + gateway links), the unpaid result

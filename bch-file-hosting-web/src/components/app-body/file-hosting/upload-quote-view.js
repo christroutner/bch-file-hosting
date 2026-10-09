@@ -7,8 +7,6 @@
   page and by the Node acceptance rendering, without a browser.
 */
 
-'use strict'
-
 const React = require('react')
 const { QRCodeSVG } = require('qrcode.react')
 const { buildChildren, selectChildren, messageChildren } = require('../shared/status-view')

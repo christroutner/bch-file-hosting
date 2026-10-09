@@ -19,8 +19,6 @@
   a browser.
 */
 
-'use strict'
-
 const { formatCountdown } = require('./quote-countdown')
 const { failureMessage } = require('./errors')
 

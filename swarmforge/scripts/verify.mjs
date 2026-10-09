@@ -54,6 +54,7 @@ const COMPONENTS = {
     commands: [
       ['unit', 'test'],
       ['property', 'test:property'],
+      ['build', 'build'],
       ['acceptance', 'test:acceptance'],
       ['lint', 'lint']
     ]

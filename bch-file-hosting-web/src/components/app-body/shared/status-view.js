@@ -7,8 +7,6 @@
   so the Node acceptance run can render the same views without a browser.
 */
 
-'use strict'
-
 const React = require('react')
 
 // A <p> line with a stable key and class name.

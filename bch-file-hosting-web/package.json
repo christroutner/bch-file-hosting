@@ -37,7 +37,10 @@
     "pub:ghp": "./deploy/publish-gh-pages.sh"
   },
   "eslintConfig": {
-    "extends": "react-app"
+    "extends": "react-app",
+    "env": {
+      "es2020": true
+    }
   },
   "browserslist": {
     "production": [

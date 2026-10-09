@@ -10,8 +10,6 @@
   acceptance run can render without a browser.
 */
 
-'use strict'
-
 const { failureMessage } = require('./errors')
 
 const DEFAULT_PAGE_SIZE = 20

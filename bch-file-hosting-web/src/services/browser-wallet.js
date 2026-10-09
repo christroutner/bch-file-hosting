@@ -7,8 +7,6 @@
   library directly and tests can use a fake.
 */
 
-'use strict'
-
 class BrowserWallet {
   constructor ({ wallet } = {}) {
     if (!wallet) throw new Error('BrowserWallet requires a wallet')

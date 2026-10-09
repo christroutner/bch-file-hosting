@@ -12,8 +12,6 @@
   acceptance run can render without a browser.
 */
 
-'use strict'
-
 const { failureMessage } = require('./errors')
 
 const NO_CID_MESSAGE = 'Enter a CID to look up.'

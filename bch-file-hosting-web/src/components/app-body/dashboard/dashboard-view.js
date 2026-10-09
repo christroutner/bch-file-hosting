@@ -7,8 +7,6 @@
   by the browser page and by the Node acceptance rendering, without a browser.
 */
 
-'use strict'
-
 const React = require('react')
 const { line, buildChildren, selectChildren, messageChildren } = require('../shared/status-view')
 

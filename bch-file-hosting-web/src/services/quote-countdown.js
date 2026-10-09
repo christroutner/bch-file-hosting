@@ -6,8 +6,6 @@
   deterministic so the page view and the acceptance run agree.
 */
 
-'use strict'
-
 const MINUTE_MS = 60 * 1000
 
 function plural (count, unit) {

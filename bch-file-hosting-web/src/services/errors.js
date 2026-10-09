@@ -6,8 +6,6 @@
   place so the page services map failures the same way.
 */
 
-'use strict'
-
 function failureMessage (err, fallback) {
   return err && err.message ? err.message : fallback
 }

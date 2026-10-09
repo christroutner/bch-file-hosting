@@ -8,8 +8,6 @@
   browser.
 */
 
-'use strict'
-
 const React = require('react')
 const { line, buildChildren, selectChildren, messageChildren } = require('../shared/status-view')
 

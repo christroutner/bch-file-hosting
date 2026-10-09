@@ -6,8 +6,6 @@
   tests can stub them.
 */
 
-'use strict'
-
 class HostingApiError extends Error {}
 
 function errorMessage (response, body) {

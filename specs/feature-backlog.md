@@ -25,16 +25,23 @@ was integrated in phase 4, and the pipeline smoke test (S0) completed the first
 full four-role cycle. Q1 set the language-quality baseline, P5.1 finished the
 pinning-provider study, P5.2 added the Lighthouse provider, and P5.3 added the
 pin-retry timer and admin file listing. P6.1, the CLI skeleton, is complete
-and merged to `master` at `cde36aef70`.
+and merged to `master` at `cde36aef70`. P6.2 `file-check` is now specified and
+handed off.
 
 ## In progress
 
-- None.
+- **P6.2 `file-check` — check a payment and print the result:** spec
+  `bch-file-hosting-cli/specs/file-check.feature` written and handed to the
+  coder. Adds `file-check -a <address> [--json]` calling
+  `POST /files/check-payment`: paid prints CID + download/gateway links, unpaid
+  prints received/required satoshis and the quote expiry, expired prints the
+  status; exit 0 for a successful query, 1 for an API error, 2 for a missing
+  `-a`. Six scenarios.
 
 ## Up next (in order)
 
-- Remaining phase-6 CLI commands (`file-pay`, `file-check`, `file-status`,
-  `file-host`, `wallet-*`); scope them with the user.
+- Remaining phase-6 CLI commands (`file-pay`, `file-status`, `file-host`,
+  `wallet-*`); scope them with the user.
 
 ## Needs a decision from the user
 

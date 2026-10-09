@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url'
 
 // Local libraries
 import FileUpload from '../../src/commands/file-upload.js'
+import FileCheck from '../../src/commands/file-check.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 // Resolve component-local temp files from this module, not the process cwd, so
@@ -55,27 +56,38 @@ function createWorld () {
     config: { apiUrl: 'http://localhost:5050' },
     apiResult: null,
     apiError: null,
+    receivedAddress: null,
     stdout: '',
     stderr: '',
     exitCode: null,
-    json: null
+    json: null,
+    command: null
   }
 
   world.hostingApi = {
     upload: async () => {
       if (world.apiError) throw new Error(world.apiError)
       return world.apiResult
+    },
+    checkPayment: async ({ paymentAddress } = {}) => {
+      world.receivedAddress = paymentAddress
+      if (world.apiError) throw new Error(world.apiError)
+      return world.apiResult
     }
   }
 
-  world.command = new FileUpload({
+  return world
+}
+
+// Instantiate the command under test with the world's fake API and captured
+// output, so every scenario drives production command code.
+function buildCommand (world, CommandClass) {
+  world.command = new CommandClass({
     config: world.config,
     hostingApi: world.hostingApi,
     output: (msg) => { world.stdout += `${msg}\n` },
     errorOutput: (msg) => { world.stderr += `${msg}\n` }
   })
-
-  return world
 }
 
 // Create (or reuse) a real fixture file for an upload path. The scenario's
@@ -93,7 +105,15 @@ async function runUpload (world, requestedPath, extra = {}) {
 const handlers = [
   {
     pattern: /^a file-upload command$/,
-    run () {}
+    run (_match, _example, world) {
+      buildCommand(world, FileUpload)
+    }
+  },
+  {
+    pattern: /^a file-check command$/,
+    run (_match, _example, world) {
+      buildCommand(world, FileCheck)
+    }
   },
   {
     pattern: /^the hosting API quotes <([A-Za-z0-9_]+)> satoshis at <([A-Za-z0-9_]+)>$/,
@@ -244,6 +264,165 @@ const handlers = [
       const expected = asInt(exampleValue(example, match[1]), match[1])
       if (world.json.priceSats !== expected) {
         throw new Error(`expected JSON price ${expected} satoshis, got ${world.json.priceSats}`)
+      }
+    }
+  },
+  {
+    pattern: /^the hosting API reports a paid invoice with CID <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.apiResult = {
+        success: true,
+        status: 'paid',
+        cid: exampleValue(example, match[1]),
+        gatewayUrls: []
+      }
+    }
+  },
+  {
+    pattern: /^the hosting API reports the download URL <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.apiResult.downloadUrl = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^the hosting API reports the gateway URL <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.apiResult.gatewayUrls = [exampleValue(example, match[1])]
+    }
+  },
+  {
+    pattern: /^the hosting API reports an unpaid invoice with <([A-Za-z0-9_]+)> received and <([A-Za-z0-9_]+)> required$/,
+    run (match, example, world) {
+      world.apiResult = {
+        success: true,
+        status: 'unpaid',
+        receivedSats: asInt(exampleValue(example, match[1]), match[1]),
+        requiredSats: asInt(exampleValue(example, match[2]), match[2])
+      }
+    }
+  },
+  {
+    pattern: /^the hosting API reports the quote expiry <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.apiResult.quoteExpiresAt = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^the hosting API reports an expired invoice$/,
+    run (_match, _example, world) {
+      world.apiResult = { success: true, status: 'expired' }
+    }
+  },
+  {
+    pattern: /^the hosting API rejects the check with error <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.apiError = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^I run file-check for the address (.+)$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({ address: expectedText(example, match[1]) })
+    }
+  },
+  {
+    pattern: /^I run file-check with JSON output for the address (.+)$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({ address: expectedText(example, match[1]), json: true })
+    }
+  },
+  {
+    pattern: /^I run file-check with no address$/,
+    async run (_match, _example, world) {
+      world.exitCode = await world.command.run({})
+    }
+  },
+  {
+    pattern: /^the hosting API received the address <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.receivedAddress !== expected) {
+        throw new Error(`expected the hosting API to receive ${expected}, got ${world.receivedAddress}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the CID <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (!world.stdout.includes(`CID: ${expected}`)) {
+        throw new Error(`stdout did not print the CID ${expected}: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the gateway URL <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (!world.stdout.includes(expected)) {
+        throw new Error(`stdout did not print the gateway URL ${expected}: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the received amount <([A-Za-z0-9_]+)> satoshis$/,
+    run (match, example, world) {
+      const expected = asInt(exampleValue(example, match[1]), match[1])
+      if (!world.stdout.includes(`Received: ${expected} satoshis`)) {
+        throw new Error(`stdout did not print the received amount ${expected} satoshis: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the required amount <([A-Za-z0-9_]+)> satoshis$/,
+    run (match, example, world) {
+      const expected = asInt(exampleValue(example, match[1]), match[1])
+      if (!world.stdout.includes(`Required: ${expected} satoshis`)) {
+        throw new Error(`stdout did not print the required amount ${expected} satoshis: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the quote expiry <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (!world.stdout.includes(`Quote expires: ${expected}`)) {
+        throw new Error(`stdout did not print the quote expiry ${expected}: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the expired status$/,
+    run (_match, _example, world) {
+      if (!world.stdout.includes('Status: expired')) {
+        throw new Error(`stdout did not print the expired status: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the JSON output has the status <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.json.status !== expected) {
+        throw new Error(`expected JSON status ${expected}, got ${world.json.status}`)
+      }
+    }
+  },
+  {
+    pattern: /^the JSON output has the CID <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.json.cid !== expected) {
+        throw new Error(`expected JSON CID ${expected}, got ${world.json.cid}`)
+      }
+    }
+  },
+  {
+    pattern: /^the JSON output has the download URL <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.json.downloadUrl !== expected) {
+        throw new Error(`expected JSON download URL ${expected}, got ${world.json.downloadUrl}`)
       }
     }
   }

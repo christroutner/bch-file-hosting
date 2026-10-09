@@ -41,6 +41,15 @@ async function uploadWith (fetch, { filename = 'file.bin', buffer = Buffer.from(
   }
 }
 
+async function checkWith (fetch, paymentAddress) {
+  const uut = new HostingApi({ config, fetch })
+  try {
+    return { result: await uut.checkPayment({ paymentAddress }), error: null }
+  } catch (err) {
+    return { result: null, error: err }
+  }
+}
+
 describe('#hosting-api.property.js', () => {
   it('should round-trip the filename and bytes and return the parsed body', () => {
     forAllAsync({
@@ -105,6 +114,49 @@ describe('#hosting-api.property.js', () => {
 
         assert.instanceOf(thrown, HostingApiError)
         assert.include(thrown.message, `HTTP ${status}`)
+      }
+    })
+  })
+
+  it('should round-trip the payment address and return the parsed body', () => {
+    forAllAsync({
+      seed: 4,
+      runs: 200,
+      generate: (random) => `bitcoincash:q${randomString(random, 20, 38)}`,
+      property: async (paymentAddress) => {
+        let captured
+        const fetch = async (url, options) => {
+          captured = { url, options }
+          return { ok: true, status: 200, json: async () => ({ success: true, status: 'paid', cid: 'bafy-paid' }) }
+        }
+
+        const { result, error } = await checkWith(fetch, paymentAddress)
+
+        assert.isNull(error)
+        assert.equal(result.cid, 'bafy-paid')
+        assert.equal(captured.url, `${config.apiUrl}/files/check-payment`)
+        assert.equal(captured.options.method, 'POST')
+        assert.equal(captured.options.headers['Content-Type'], 'application/json')
+        assert.deepEqual(JSON.parse(captured.options.body), { paymentAddress })
+      }
+    })
+  })
+
+  it('should surface the API error string for any non-ok check response', () => {
+    forAllAsync({
+      seed: 5,
+      runs: 200,
+      generate: (random) => ({
+        status: integerBetween(random, 400, 599),
+        error: randomString(random, 1, 40)
+      }),
+      property: async ({ status, error }) => {
+        const fetch = async () => ({ ok: false, status, json: async () => ({ success: false, error }) })
+
+        const { error: thrown } = await checkWith(fetch, 'bitcoincash:qcheck')
+
+        assert.instanceOf(thrown, HostingApiError)
+        assert.equal(thrown.message, error)
       }
     })
   })

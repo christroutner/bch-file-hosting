@@ -11,26 +11,19 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 // Local libraries
-import config from '../../config/index.js'
-import HostingApi from '../lib/hosting-api.js'
+import Command, { UsageError } from '../lib/command.js'
 
-// A flag validation failure, which maps to exit code 2.
-class UsageError extends Error {}
+class FileUpload extends Command {
+  constructor (deps) {
+    super(deps)
 
-class FileUpload {
-  constructor ({ config: cfg = config, hostingApi, output = console.log, errorOutput = console.error } = {}) {
-    // Encapsulate dependencies so tests can replace them.
-    this.config = cfg
-    this.hostingApi = hostingApi || new HostingApi({ config: cfg })
-    this.output = output
-    this.errorOutput = errorOutput
     this.fs = fs
     this.path = path
 
     // Bind 'this' object to all subfunctions.
-    this.run = this.run.bind(this)
     this.validateFlags = this.validateFlags.bind(this)
     this.readFile = this.readFile.bind(this)
+    this.execute = this.execute.bind(this)
     this.report = this.report.bind(this)
   }
 
@@ -50,21 +43,11 @@ class FileUpload {
     }
   }
 
-  async run (flags = {}) {
-    try {
-      this.validateFlags(flags)
+  async execute (flags = {}) {
+    const filename = this.path.basename(flags.file)
+    const buffer = this.readFile(flags.file)
 
-      const filename = this.path.basename(flags.file)
-      const buffer = this.readFile(flags.file)
-      const result = await this.hostingApi.upload({ filename, buffer })
-
-      this.report(result, flags)
-
-      return 0
-    } catch (err) {
-      this.errorOutput(err.message)
-      return err instanceof UsageError ? 2 : 1
-    }
+    return this.hostingApi.upload({ filename, buffer })
   }
 
   report (result, flags) {
@@ -87,5 +70,5 @@ export { UsageError }
 export default FileUpload
 
 // mutate4javascript-manifest-begin
-// {"version":1,"tested_at":"2026-10-09T03:36:07.251Z","module_hash":"a2a156be18e4030a6b48f45bf02df09b0b326077b67efafe1992a435063200d4","functions":[{"id":"func/FileUpload.constructor","name":"FileUpload.constructor","line":21,"end_line":35,"hash":"66d72aaa94a261454c83b70c0d91816f7d53162c3a8d067cc0f293d6d8ec1fa2"},{"id":"func/FileUpload.validateFlags","name":"FileUpload.validateFlags","line":37,"end_line":43,"hash":"14cbac7224cdb917a6c5c721e1db989de1804292b5036081639d5c1abfb83d4a"},{"id":"func/FileUpload.readFile","name":"FileUpload.readFile","line":45,"end_line":51,"hash":"c752a4ecde826e960e0b9a99d9507e95fa3064792e5ad41366d7c7eeba92f6ac"},{"id":"func/FileUpload.run","name":"FileUpload.run","line":53,"end_line":68,"hash":"f347da615c56a8db427abb75ae26e0674a8492e86a647dbfe5a5cea8549ddbe5"},{"id":"func/FileUpload.report","name":"FileUpload.report","line":70,"end_line":83,"hash":"d1f4a169a7938d8d4b8a7877d45c964c79ed701095530f969c4c41b40b911de0"}]}
+// {"version":1,"tested_at":"2026-10-09T03:53:22.193Z","module_hash":"a1be102b4688864cec79aca59f19689f3d122bd3fc5b78c57a61769d8fa52c5a","functions":[{"id":"func/FileUpload.constructor","name":"FileUpload.constructor","line":17,"end_line":28,"hash":"767e78150f35336ac3f80496f7e24e5ba5681db0e1379c8a541afe82ae6f5ca1"},{"id":"func/FileUpload.validateFlags","name":"FileUpload.validateFlags","line":30,"end_line":36,"hash":"14cbac7224cdb917a6c5c721e1db989de1804292b5036081639d5c1abfb83d4a"},{"id":"func/FileUpload.readFile","name":"FileUpload.readFile","line":38,"end_line":44,"hash":"c752a4ecde826e960e0b9a99d9507e95fa3064792e5ad41366d7c7eeba92f6ac"},{"id":"func/FileUpload.execute","name":"FileUpload.execute","line":46,"end_line":51,"hash":"2f80b172f7483c204e906852c059d53b2722d3c748e5056734749ab026e06223"},{"id":"func/FileUpload.report","name":"FileUpload.report","line":53,"end_line":66,"hash":"d1f4a169a7938d8d4b8a7877d45c964c79ed701095530f969c4c41b40b911de0"}]}
 // mutate4javascript-manifest-end

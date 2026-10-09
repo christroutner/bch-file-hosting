@@ -27,11 +27,10 @@ the pinning-provider study. Next is P5.2, the Lighthouse provider adapter.
 
 ## In progress
 
-- None.
-
-## Up next (in order)
-
 ### P5.2. `lighthouse-provider` — first third-party pinning provider (api)
+
+Spec: `bch-file-hosting-api/specs/lighthouse-pinning.feature`. Status: spec
+committed and handed to the coder.
 
 - `LighthouseProvider extends PinningProvider` in
   `src/adapters/pinning/lighthouse.js`, registered under `lighthouse` in
@@ -42,6 +41,9 @@ the pinning-provider study. Next is P5.2, the Lighthouse provider adapter.
 - If Lighthouse returns a different CID than ours, the pin is recorded as
   `failed` with a clear error (long-term plan Q11).
 - Unit tests stub the HTTP client; no real Lighthouse calls in tests.
+- See `dev-docs/pinning-providers.md` §3.1 for the API findings.
+
+## Up next (in order)
 
 ### P5.3. `pin-retry` — retry failed pins (api)
 

@@ -7,6 +7,10 @@
 */
 
 import { calculatePrice } from '../../src/use-cases/pricing.js'
+import FileUseCases from '../../src/use-cases/file-use-cases.js'
+
+const UPLOAD_FILENAME = 'upload.bin'
+const UPLOAD_ADDRESS = 'bitcoincash:qpuploadaddress000000000000000000000000000'
 
 function exampleValue (example, name) {
   if (!(name in example)) {
@@ -43,8 +47,47 @@ function createWorld () {
       minInvoiceSats: 2000
     },
     usdPerBch: null,
-    quote: null
+    quote: null,
+    rejection: null,
+    addressIssued: false
   }
+}
+
+// Build the real upload use-case with deterministic offline adapters, so the
+// acceptance run exercises the production validation path without a network or
+// filesystem. `addressIssued` records whether the use-case ever reached the
+// point of deriving a payment address for the upload.
+function createUploadUseCases (world) {
+  const adapters = {
+    config: {
+      publicUrl: 'http://localhost:5050',
+      publicGateways: [],
+      maxFileSizeBytes: 100000000,
+      usdPerMbYear: 0.01,
+      minBilledBytes: 100000,
+      minInvoiceSats: 2000,
+      quoteTtlHours: 24
+    },
+    wallet: {
+      getUsdPerBch: async () => 400,
+      getKeyPair: async (hdIndex) => {
+        world.addressIssued = true
+        return { cashAddress: UPLOAD_ADDRESS, hdIndex }
+      }
+    },
+    ipfs: { addFile: async () => 'bafy-upload-cid' },
+    localdb: {
+      invoices: { create: async () => {}, get: async () => null, list: async () => [] },
+      files: { put: async () => {}, get: async () => null },
+      meta: { nextHdIndex: async () => 1 }
+    },
+    pinning: { getProviders: () => [] },
+    logger: { info: () => {}, error: () => {} }
+  }
+  const useCases = new FileUseCases({ adapters })
+  // The acceptance run never writes a temp file; keep the cleanup a no-op.
+  useCases.unlink = async () => {}
+  return useCases
 }
 
 const handlers = [
@@ -106,6 +149,46 @@ const handlers = [
       const expected = asInt(exampleValue(example, match[1]), match[1])
       if (world.quote.priceSats !== expected) {
         throw new Error(`expected ${expected} sats, got ${world.quote.priceSats}`)
+      }
+    }
+  },
+  {
+    pattern: /^I upload a file of <([A-Za-z0-9_]+)> bytes$/,
+    async run (match, example, world) {
+      const sizeBytes = asInt(exampleValue(example, match[1]), match[1])
+      const useCases = createUploadUseCases(world)
+      try {
+        world.upload = await useCases.uploadAndQuote({
+          filePath: '/nonexistent/upload.bin',
+          filename: UPLOAD_FILENAME,
+          sizeBytes
+        })
+        world.rejection = null
+      } catch (err) {
+        world.rejection = { status: err.status, message: err.message }
+      }
+    }
+  },
+  {
+    pattern: /^the upload is rejected with status <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = asInt(exampleValue(example, match[1]), match[1])
+      if (!world.rejection) {
+        throw new Error('expected the upload to be rejected, but it succeeded')
+      }
+      if (world.rejection.status !== expected) {
+        throw new Error(`expected rejection status ${expected}, got ${world.rejection.status}`)
+      }
+    }
+  },
+  {
+    pattern: /^the rejection response contains no payment address$/,
+    run (_match, _example, world) {
+      if (world.rejection && 'paymentAddress' in world.rejection) {
+        throw new Error('rejection response unexpectedly contains a payment address')
+      }
+      if (world.addressIssued) {
+        throw new Error('a payment address was issued for a rejected upload')
       }
     }
   }

@@ -120,6 +120,23 @@ describe('#file-use-cases.js', () => {
       assert.isTrue(uut.unlink.calledOnceWith('/tmp/uploads/abc'))
     })
 
+    it('should reject a zero-byte upload with a 422 error, create no invoice, and still delete the temp file', async () => {
+      upload.sizeBytes = 0
+
+      try {
+        await uut.uploadAndQuote(upload)
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.equal(err.name, 'ValidationError')
+        assert.equal(err.status, 422)
+        assert.include(err.message, 'positive integer')
+      }
+      assert.isTrue(adapters.ipfs.addFile.notCalled)
+      assert.isTrue(adapters.wallet.getKeyPair.notCalled)
+      assert.deepEqual(await adapters.localdb.invoices.list(), [])
+      assert.isTrue(uut.unlink.calledOnceWith('/tmp/uploads/abc'))
+    })
+
     it('should delete the temp file when IPFS fails', async () => {
       adapters.ipfs.addFile.rejects(new Error('blockstore full'))
 

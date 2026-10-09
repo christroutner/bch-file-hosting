@@ -73,17 +73,24 @@ describe('#file-upload.js', () => {
       )
     })
 
+    it('should throw if sizeBytes is zero', () => {
+      assert.throws(
+        () => uut.validate({ filename: 'a.txt', sizeBytes: 0, maxFileSizeBytes }),
+        /'sizeBytes' must be a positive integer/
+      )
+    })
+
     it('should throw if sizeBytes is negative', () => {
       assert.throws(
         () => uut.validate({ filename: 'a.txt', sizeBytes: -1, maxFileSizeBytes }),
-        /'sizeBytes' must be a non-negative integer/
+        /'sizeBytes' must be a positive integer/
       )
     })
 
     it('should throw if sizeBytes is not an integer', () => {
       assert.throws(
         () => uut.validate({ filename: 'a.txt', sizeBytes: '10', maxFileSizeBytes }),
-        /'sizeBytes' must be a non-negative integer/
+        /'sizeBytes' must be a positive integer/
       )
     })
 

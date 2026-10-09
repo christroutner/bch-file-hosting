@@ -22,31 +22,12 @@ pluggable third-party pinning services.
 
 The core port (roadmap phase 3) is complete and verified on mainnet. SwarmForge
 was integrated in phase 4, and the pipeline smoke test (S0) completed the first
-full four-role cycle. Next is the quality baseline (Q1), then third-party
-pinning (phase 5).
+full four-role cycle. Q1 set the language-quality baseline. Next is
+third-party pinning (phase 5), starting with the P5.1 provider study.
 
 ## In progress
 
-### Q1. `api-quality-baseline` — quality hardening (api; refactorer/architect)
-
-Spec: `dev-docs/api-quality-baseline.md`. Status: spec draft, awaiting user
-approval to hand off to the refactorer.
-
-Measured when SwarmForge was vendored (2026-10-08); `FileUpload.validate`
-dropped 12 -> 2 in S0. Unit coverage is 100%.
-
-- **CRAP > 6:** `Invoice.validate` 12, `CleanupUseCases.deleteUnpaid` 7,
-  `FileUseCases.uploadAndQuote` 7, `PaymentUseCases.checkPaymentUnlocked` 7.
-  Re-measure before refactoring.
-- **DRY (`npm run dry`):** `FileStore.update` / `InvoiceStore.update`; the
-  admin/files controller response pattern; the `FileUseCases` /
-  `PaymentUseCases` constructor setup.
-- **Mutation:** no baseline yet. Run `mutate4javascript` on `src/` and kill or
-  document survivors.
-- **Property tests:** none yet. Add a `test:property` script (picked up
-  automatically by `verify.sh api`), starting with `calculatePrice` and
-  `Invoice.isPaymentSufficient`.
-- **Behavior must not change.**
+- None.
 
 ## Up next (in order)
 
@@ -96,6 +77,21 @@ them until the user decides.
 
 ## Recently completed
 
+- **Q1 `api-quality-baseline` — quality baseline (2026-10-09):** full
+  refactorer -> architect quality pass over `bch-file-hosting-api/`, behavior
+  unchanged. Spec `dev-docs/api-quality-baseline.md`. Refactorer `e768509`:
+  CRAP ≤ 6.0 everywhere, DRY clean, a new seeded property suite for
+  `calculatePrice` and `Invoice.isPaymentSufficient` (9 passing), and shared
+  `RecordStore`, `UseCase`, and `sendSuccess` helpers. Architect `7e99d55dbe`:
+  language mutation across `src/` 151 killed / **0 survived / 0 uncovered**;
+  the two remaining `bin/server.js` mutants are documented
+  environmentally-unsuitable entry-shell survivors excluded by design.
+  `verify.sh api` pass 4/4 (unit 355, property 9, acceptance all 2 suites, lint
+  ok). Merged to `master` at `e960d1af82` (fast-forward; verification record
+  `docs/reviews/api-quality-baseline-verification.json` names `7e99d55dbe`,
+  and the branch tip adds only docs, so it is valid). Independent check after
+  merge: acceptance 2/2 suites and property 9/9. Architect summary:
+  `docs/reviews/api-quality-baseline-summary.md`.
 - **S0 `reject-empty-upload` — pipeline smoke test (2026-10-09):** the first
   full four-role cycle (specifier -> coder -> refactorer -> architect).
   `FileUpload.validate` now requires a strictly positive `sizeBytes`, so

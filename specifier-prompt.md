@@ -361,22 +361,26 @@ At the end of each session, update this file:
 - Note the current `master` HEAD commit.
 - State the next feature to work on.
 
-Latest session (2026-10-09): completed **`web-upload-quote-columns`**, the
-spec-only follow-up to `web-upload-size`. Scenarios `Web Upload - 5` and `Web
-Upload - 6` now assert the file name, price, and payment address as well as the
-sizes, so their `api_sats`, `api_address`, and `upload_name` setup columns are
-load-bearing. Pipeline commits — specifier `d380348`, architect `bbe1a02`
-(verification `git_sha`), docs `959cf42`. Merged to `master` (fast-forward) at
-`959cf421e5`. `verify.sh web` pass 4/4 (unit 62, property 57, acceptance all 4
-suites, lint ok); soft Gherkin 38/38 killed, 0 survived; independent post-merge
-acceptance check 12/12. The `/host` quote shows the file and billed sizes.
-Roadmap phases 3–7 remain complete. Prior cycles (Q1, P5.1-P5.3, P6.1-P6.6,
+Latest session (2026-10-09): completed **`lighthouse-file-link`** across
+`bch-file-hosting-api` and `bch-file-hosting-web`. The Lighthouse gateway link
+now appends the URL-encoded filename (`PinningProvider.gatewayUrl(cid, filename)`,
+`buildLinks` passes it) so it opens the file, and the web paid result opens
+image gateway links in a new tab. Specs: `lighthouse-pinning.feature` scenario 3
+and `web-payment.feature` `Web Payment - 8`. Pipeline commits — specifier
+`79bbe45`, coder `acc1c3b`, refactorer `f6b9b2d`, architect `3560850`
+(verification `git_sha`, both components), docs `a0685a1`. Merged to `master`
+(fast-forward) at `a0685a12e1`. `verify.sh api` 4/4 (unit 393, property 22,
+acceptance all 5 suites, lint ok) and `verify.sh web` 4/4 (unit 64, property 58,
+acceptance all 4 suites, lint ok); language mutation 19/19 killed; independent
+post-merge checks lighthouse-pinning 6/6 and web-payment 15/15. Roadmap
+phases 3–7 remain complete. Prior cycles (Q1, P5.1-P5.3, P6.1-P6.6,
 P7.1-P7.3, web-payment-poll-error, wallet-name-validation,
-web-upload-transport, web-upload-size) are in the backlog. Open follow-ups: the
-CLI `upload_path`/`api_txid` columns and the mutation-inert mnemonic-hygiene
-scenarios.
+web-upload-transport, web-upload-size, web-upload-quote-columns) are in the
+backlog. Open follow-ups: the CLI `upload_path`/`api_txid` columns, the
+`web-payment` scenario-8 `paid_cid`/`paid_name` survivors, the image-link `rel`
+hardening, and the mutation-inert mnemonic-hygiene scenarios.
 
-Current `master` HEAD: `959cf421e5` (Record web-upload-quote-columns architect
+Current `master` HEAD: `a0685a12e1` (Record lighthouse-file-link architect
 review and verification).
 
 Next action: scope **roadmap phase 8 (x402-bch)** with the user (dynamic-price

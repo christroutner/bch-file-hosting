@@ -40,17 +40,12 @@ receiver in the web API adapter) is complete and merged at `279e8a77ba`. The
 `web-upload-size` hardening (file and billed sizes on the web quote) is
 complete and merged at `dba049d435`. The `web-upload-quote-columns` spec
 cleanup (anchor the size-scenario setup columns) is complete and merged at
-`959cf421e5`.
+`959cf421e5`. The `lighthouse-file-link` feature (Lighthouse link opens the
+file; image links open in a new tab) is complete and merged at `a0685a12e1`.
 
 ## In progress
 
-- **`lighthouse-file-link` — the Lighthouse link opens the file; image links
-  open in a new tab (2026-10-09):** the Lighthouse gateway URL points at the
-  wrapping-directory CID, so it does not open the file. `lighthouse-pinning.feature`
-  scenario 3 now requires `<gateway>/<cid>/<encoded filename>`. On the web,
-  `web-payment.feature` gained `Web Payment - 8`, requiring image gateway links
-  to open with `target="_blank"` and non-image links to keep the default.
-  Touches `bch-file-hosting-api` and `bch-file-hosting-web`. Awaiting coder.
+- None.
 
 ## Up next (in order)
 
@@ -59,8 +54,14 @@ cleanup (anchor the size-scenario setup columns) is complete and merged at
 - **Spec-quality follow-ups:** the CLI `upload_path` cells (file-upload,
   file-host) and the file-host non-JSON `api_txid` cells survive soft mutation
   because no assertion depends on them; either anchor them with a `Then` or
-  prune the columns. The wallet mnemonic-hygiene scenarios remain
-  mutation-inert.
+  prune the columns. The same applies to `web-payment.feature` scenario 8
+  (`paid_cid` and `paid_name`; 4 survivors) — add `Then the page shows the CID`
+  / `the paid file name` assertions and their `shown_*` columns. The wallet
+  mnemonic-hygiene scenarios remain mutation-inert.
+- **Hardening follow-up (`web-image-link-rel`):** the image gateway link sets
+  `target="_blank"` without `rel`; every other `_blank` anchor in
+  `bch-file-hosting-web` uses `rel="noreferrer"`. Add `rel="noreferrer"` (with
+  a unit assertion). Flagged by the `lighthouse-file-link` architect.
 
 ## Needs a decision from the user
 
@@ -69,6 +70,26 @@ cleanup (anchor the size-scenario setup columns) is complete and merged at
   (D26–D29); none needs new Gherkin.
 
 ## Recently completed
+
+- **`lighthouse-file-link` — link files on the Lighthouse gateway; open image
+  links in a new tab (2026-10-09):** `PinningProvider.gatewayUrl(cid, filename)`
+  now receives the filename; `LighthouseProvider` appends the URL-encoded name
+  so the gateway link opens the file instead of the wrapping directory, and
+  `buildLinks` passes the raw name through. On the web paid result, gateway
+  links for image file names open with `target="_blank"` (non-images keep the
+  default). Specs `lighthouse-pinning.feature` (scenario 3) and
+  `web-payment.feature` (`Web Payment - 8`). Pipeline commits: specifier
+  `79bbe45`, coder `acc1c3b`, refactorer `f6b9b2d`, architect `3560850`
+  (verification `git_sha` for both components), docs `a0685a1`, merged to
+  `master` at `a0685a12e1` (fast-forward). `verify.sh api` pass 4/4 (unit 393,
+  property 22, acceptance all 5 suites, lint ok) and `verify.sh web` pass 4/4
+  (unit 64, property 58, acceptance all 4 suites, lint ok); language mutation
+  19/19 killed / 0 uncovered across the changed modules; DRY clean; CRAP <= 6.0.
+  Independent post-merge acceptance checks: lighthouse-pinning 6/6 and
+  web-payment 15/15. Architect summary:
+  `docs/reviews/lighthouse-file-link-summary.md`. Follow-ups: the `rel`
+  hardening and the `web-payment` scenario-8 `paid_cid`/`paid_name` survivors
+  (both tracked below).
 
 - **`web-upload-quote-columns` — make the size-scenario setup columns
   load-bearing (2026-10-09):** spec-only follow-up to `web-upload-size`.

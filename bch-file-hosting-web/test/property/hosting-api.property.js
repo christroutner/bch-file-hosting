@@ -339,3 +339,35 @@ test('property: a non-ok getStatus response without a usable error falls back to
     }
   })
 })
+
+test('property: every transport call invokes fetch with the global receiver', async () => {
+  // A browser's native fetch rejects any receiver other than the global
+  // object. Whatever fetch the caller injects, the adapter must call it with
+  // the global receiver, never with the adapter instance itself.
+  await forAllAsync({
+    seed: 12,
+    runs: 200,
+    generate: (random) => ({
+      apiUrl: randomApiUrl(random),
+      paymentAddress: `bitcoincash:q${randomString(random, 10, 40, URL_ALPHABET)}`,
+      cid: randomString(random, 1, 30, URL_ALPHABET)
+    }),
+    property: async ({ apiUrl, paymentAddress, cid }) => {
+      const receivers = []
+      function receiverSensitiveFetch () {
+        receivers.push(this)
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ success: true }) })
+      }
+      const api = makeApi({ apiUrl, fetch: receiverSensitiveFetch })
+
+      await api.upload({ name: 'file.bin' })
+      await api.checkPayment({ paymentAddress })
+      await api.getStatus({ cid })
+
+      assert.equal(receivers.length, 3)
+      for (const receiver of receivers) {
+        assert.equal(receiver, globalThis)
+      }
+    }
+  })
+})

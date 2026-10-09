@@ -7,7 +7,7 @@ This project is a monorepo. Components:
 | Component | Path | Status | Responsibility |
 |-----------|------|--------|----------------|
 | bch-file-hosting-api | `bch-file-hosting-api/` | active | Express 5 REST API: upload, BCH invoices, payment checks, IPFS pinning, downloads |
-| bch-file-hosting-cli | `bch-file-hosting-cli/` | planned (phase 6) | Commander CLI for the hosting workflow |
+| bch-file-hosting-cli | `bch-file-hosting-cli/` | active | Commander CLI: upload a file and print the hosting quote |
 | bch-file-hosting-web | `bch-file-hosting-web/` | planned (phase 7) | Vite + React + react-bootstrap web UI |
 
 Do not create the planned components until a task asks for them. When one is
@@ -37,6 +37,11 @@ Each component has its own dependencies, scripts, and tests:
 cd bch-file-hosting-api
 npm test
 npm run lint
+
+# bch-file-hosting-cli
+cd bch-file-hosting-cli
+npm test
+npm run lint
 ```
 
 Prefer the canonical runner, which runs every verification command the
@@ -58,7 +63,8 @@ BCH on mainnet and is run only by a human.
 - Cross-component backlog: `specs/feature-backlog.md`
 - Standing specifier briefing: `specifier-prompt.md`
 - API feature files: `bch-file-hosting-api/specs/*.feature`
-- CLI and web feature files (future): `<component>/specs/*.feature`
+- CLI feature files: `bch-file-hosting-cli/specs/*.feature`
+- Web feature files (future): `bch-file-hosting-web/specs/*.feature`
 
 A single user-facing feature often requires specs or implementation changes in
 more than one component. Call out all affected components in the task

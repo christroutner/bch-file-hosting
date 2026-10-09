@@ -81,7 +81,7 @@ else
 fi
 
 echo "== Runner adapters =="
-for c in bch-file-hosting-api; do
+for c in bch-file-hosting-api bch-file-hosting-cli; do
   [ -f "$c/acceptance/lib/runner-worker.js" ] \
     && ok "$c runner-worker" || bad "$c runner-worker"
 done
@@ -92,7 +92,8 @@ echo "== Bloated build dirs (slow mutation copies) =="
 # worker copy alone can be many GB and mutation runs appear to hang. Flag any
 # dir over the threshold so it can be cleaned before a mutation run.
 BLOAT_KB=102400  # 100 MB
-for d in bch-file-hosting-api/tmp/acceptance bch-file-hosting-api/target/mutation-workers; do
+for d in bch-file-hosting-api/tmp/acceptance bch-file-hosting-api/target/mutation-workers \
+         bch-file-hosting-cli/build/acceptance bch-file-hosting-cli/target/mutation-workers; do
   if [ -d "$d" ]; then
     size_kb=$(du -sk "$d" 2>/dev/null | awk '{print $1}')
     if [ -n "$size_kb" ] && [ "$size_kb" -gt "$BLOAT_KB" ]; then

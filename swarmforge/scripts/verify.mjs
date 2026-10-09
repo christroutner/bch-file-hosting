@@ -39,6 +39,15 @@ const COMPONENTS = {
       ['acceptance', 'test:acceptance'],
       ['lint', 'lint']
     ]
+  },
+  cli: {
+    dir: 'bch-file-hosting-cli',
+    commands: [
+      ['unit', 'test'],
+      ['property', 'test:property'],
+      ['acceptance', 'test:acceptance'],
+      ['lint', 'lint']
+    ]
   }
 }
 

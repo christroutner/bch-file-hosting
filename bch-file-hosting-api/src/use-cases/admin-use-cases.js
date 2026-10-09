@@ -8,6 +8,13 @@ import { INVOICE_STATUS, SWEEP_STATUS } from '../entities/invoice.js'
 import UseCase from './use-case.js'
 import { NotFoundError, ValidationError } from './errors.js'
 
+// Reject a filter value that is not one of the allowed statuses.
+function assertKnownStatus (value, statuses, label) {
+  if (value && !Object.values(statuses).includes(value)) {
+    throw new ValidationError(`Unknown ${label} '${value}'`)
+  }
+}
+
 class AdminUseCases extends UseCase {
   constructor ({ adapters } = {}) {
     super({ adapters, name: 'AdminUseCases' })
@@ -18,19 +25,13 @@ class AdminUseCases extends UseCase {
   }
 
   async listInvoices ({ status, sweepStatus } = {}) {
-    if (status && !Object.values(INVOICE_STATUS).includes(status)) {
-      throw new ValidationError(`Unknown invoice status '${status}'`)
-    }
-    if (sweepStatus && !Object.values(SWEEP_STATUS).includes(sweepStatus)) {
-      throw new ValidationError(`Unknown sweep status '${sweepStatus}'`)
-    }
+    assertKnownStatus(status, INVOICE_STATUS, 'invoice status')
+    assertKnownStatus(sweepStatus, SWEEP_STATUS, 'sweep status')
     return this.adapters.localdb.invoices.list({ status, sweepStatus })
   }
 
   async listFiles ({ status } = {}) {
-    if (status && !Object.values(FILE_STATUS).includes(status)) {
-      throw new ValidationError(`Unknown file status '${status}'`)
-    }
+    assertKnownStatus(status, FILE_STATUS, 'file status')
     return this.adapters.localdb.files.list({ status })
   }
 

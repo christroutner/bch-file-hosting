@@ -349,29 +349,30 @@ At the end of each session, update this file:
 - Note the current `master` HEAD commit.
 - State the next feature to work on.
 
-Latest session (2026-10-09): completed roadmap phase 7 features **P7.1
-`web-upload`**, **P7.2 `web-payment`**, and the **`web-payment-poll-error`**
-hardening in `bch-file-hosting-web` (a fork of `bch-wallet-web3-spa`, long-term
-plan D30). P7.2 added the quote QR code and expiry countdown, "Pay now" from the
-loaded in-browser wallet via `BrowserWallet`, `checkPayment` polling with an
-injected sleep, and the paid/expired/pending/error result states. The hardening
-maps a rejected poll to the error state and stops polling. Pipeline commits:
-P7.2 specifier `8d6f2b2`, coder `3012127`, refactorer `8df5d5b`, architect
-`83e4b5e`, docs `b00b6b7`; poll-error specifier `cf2625b`, coder `2ab8753`,
-refactorer `e986d8b`, architect `9fb446c`, docs `431eb18`. Both merged to
-`master` (fast-forward); master is now at `431eb180d3`.
-`docs/reviews/web-payment-verification.json` and
-`docs/reviews/web-payment-poll-error-verification.json` both report `verify.sh
-web` pass 4/4 with a docs-only tip past the record `git_sha`; independent
-post-merge acceptance checks passed web-payment 13/13 and web-upload 8/8. Note:
-the architect twice flagged the `Web Payment - 3` fixture `filename`; it is a
-false alarm — the real `paidResult` includes `filename` and the controller
+Latest session (2026-10-09): completed **roadmap phase 7 (web UI)** in
+`bch-file-hosting-web` (a fork of `bch-wallet-web3-spa`, long-term plan D30),
+finishing **P7.1 `web-upload`**, **P7.2 `web-payment`**, the
+**`web-payment-poll-error`** hardening, and **P7.3 `web-file-status`**. The
+component now uploads and quotes, shows the payment QR and expiry countdown,
+pays from the loaded in-browser wallet via `BrowserWallet`, polls
+`check-payment` (paid/expired/pending/error), and looks up a CID's status and
+pins. Pipeline commits — P7.2: specifier `8d6f2b2`, coder `3012127`, refactorer
+`8df5d5b`, architect `83e4b5e`, docs `b00b6b7`; poll-error: specifier `cf2625b`,
+coder `2ab8753`, refactorer `e986d8b`, architect `9fb446c`, docs `431eb18`;
+P7.3: specifier `3a292f9`, coder `631d75c`, refactorer `cc38dce`, architect
+`8755c2f`, docs `5ed6759`. All merged to `master` (fast-forward); master is now
+at `5ed6759239`. Each verification record reports `verify.sh web` pass 4/4 with
+a docs-only tip past the record `git_sha`; independent post-merge acceptance
+checks passed web-file-status 6/6, web-payment 13/13, and web-upload 8/8. Note:
+the architect repeatedly flagged the `Web Payment - 3` fixture `filename`; it is
+a false alarm — the real `paidResult` includes `filename` and the controller
 returns it. Open follow-ups: the CLI `upload_path`/`api_txid` columns and
 mutation-inert mnemonic-hygiene scenarios. Prior cycles (Q1, P5.1-P5.3,
-P6.1-P6.6, P7.1, P7.2) are in the backlog.
+P6.1-P6.6, P7.1-P7.3) are in the backlog.
 
-Current `master` HEAD: `431eb180d3` (Record web-payment-poll-error architect
-review and verification).
+Current `master` HEAD: `5ed6759239` (Record web-file-status architect review and
+verification).
 
-Next action: specify **P7.3 `web-file-status`** (look up a CID and show its
-status and pins); or tackle the CLI spec-quality follow-ups.
+Next action: scope **roadmap phase 8 (x402-bch)** with the user (dynamic-price
+x402 middleware, `POST /x402/files`, facilitator notes), or tackle the CLI
+spec-quality follow-ups.

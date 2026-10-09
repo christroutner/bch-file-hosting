@@ -31,22 +31,20 @@ complete and merged to `master` at `d3e54d4cf2`. The `wallet-name-validation`
 follow-up hardening is complete and merged at `08c2cd88dc`. P6.4 `file-status`
 is complete and merged at `faabc07d8e`. P6.5 `file-pay` is complete and merged
 at `f579aafd67`. P6.6 `file-host` is complete and merged at `8a93edf5f7`, so
-**roadmap phase 6 (CLI) is complete**. P7.1 `web-upload` begins roadmap phase 7
-by forking `bch-wallet-web3-spa` into `bch-file-hosting-web`; it is complete and
-merged at `f2e3615e99`.
+**roadmap phase 6 (CLI) is complete**. Roadmap phase 7 forked
+`bch-wallet-web3-spa` into `bch-file-hosting-web`: P7.1 `web-upload` merged at
+`f2e3615e99`, P7.2 `web-payment` (plus the `web-payment-poll-error` hardening)
+and P7.3 `web-file-status` followed, so **roadmap phase 7 (web UI) is complete**
+as of `5ed6759239`.
 
 ## In progress
 
-- **P7.3 `web-file-status` — look up a file and show its status and pins
-  (started 2026-10-09):** add a `/status` view with a CID input and a link from
-  the payment result; it shows the CID, file name, size, status, hosting window
-  (`not paid` when unpaid), and each pin (provider + status), plus a blank-CID
-  prompt and the API error. Add `HostingApi.getStatus`, encoding the CID as one
-  path segment (gotcha #22) and unit-testing it (the acceptance fake stubs the
-  adapter). Spec `bch-file-hosting-web/specs/web-file-status.feature` (four
-  scenarios). Handed to the coder as task `web-file-status`.
+- None.
 
 ## Up next (in order)
+
+- **Roadmap phase 8: x402-bch** — dynamic-price x402 middleware, `POST
+  /x402/files`, and a facilitator deployment note; scope it with the user.
 - **Spec-quality follow-ups:** the CLI `upload_path` cells (file-upload,
   file-host) and the file-host non-JSON `api_txid` cells survive soft mutation
   because no assertion depends on them; either anchor them with a `Then` or
@@ -60,6 +58,24 @@ merged at `f2e3615e99`.
   (D26–D29); none needs new Gherkin.
 
 ## Recently completed
+
+- **P7.3 `web-file-status` — look up a file and show its status and pins
+  (2026-10-09):** added a `/status` route and nav link with a CID input; it
+  shows the file name, size, hosting status, hosting window (`not paid` for
+  staged files), and each pin, or the blank-CID prompt / API error. The paid
+  result links to it. `HostingApi.getStatus` percent-encodes the CID as one
+  path segment (gotcha #22). The refactorer extracted the shared
+  `status-view.js` view helpers and `errors.js` `failureMessage`. Spec
+  `web-file-status.feature` (four scenarios). Pipeline commits: specifier
+  `3a292f9`, coder `631d75c`, refactorer `cc38dce`, architect `8755c2f`
+  (verification `git_sha`), docs `5ed6759`, merged to `master` at `5ed6759239`
+  (fast-forward). `verify.sh web` pass 4/4 (unit 56, property 54, acceptance 3
+  suites, lint ok); language mutation 0 survived across the seven touched
+  modules; scoped DRY clean; independent post-merge acceptance check
+  web-file-status 6/6, web-payment 13/13, web-upload 8/8. Architect summary:
+  `docs/reviews/web-file-status-summary.md`. This completes roadmap phase 7.
+  - The architect again repeated the `Web Payment - 3` `filename` observation;
+    it remains a false alarm (the real `paidResult` includes `filename`).
 
 - **`web-payment-poll-error` — check-payment failure handling (2026-10-09):**
   a rejected `POST /files/check-payment` during confirmation polling now renders

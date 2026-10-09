@@ -44,7 +44,12 @@ cleanup (anchor the size-scenario setup columns) is complete and merged at
 file; image links open in a new tab) is complete and merged at `a0685a12e1`.
 The `ipfs-public-node` feature (public Amino DHT + CID provide) is complete and
 merged at `e2b9f571d1`. The `ipfs-provide-best-effort` fix (best-effort
-content-routing provide) is complete and merged at `4fe4d5b010`.
+content-routing provide) is complete and merged at `4fe4d5b010`. A real-network
+test then showed hosted files are still not retrievable: the provide never
+completes (180 s kad-dht timeout) so the CID is never announced, and Lighthouse's
+asynchronous pin-by-CID never fetches the bytes. The fix is to upload the file
+bytes to Lighthouse's IPFS-compatible endpoint (`lighthouse-upload-verify`), in
+the background, plus a web dashboard to watch progress (`web-dashboard`).
 
 ## In progress
 
@@ -52,6 +57,29 @@ content-routing provide) is complete and merged at `4fe4d5b010`.
 
 ## Up next (in order)
 
+- **`lighthouse-upload-verify` (API, top priority):** `POST
+  /api/lighthouse/pin` is asynchronous and must *fetch* the CID from the
+  network, but our node never announces it (the provide times out at the
+  kad-dht 180 s limit; `delegated-ipfs.dev/routing/v1/providers/<cid>` shows no
+  providers). Replace pin-by-CID with an upload of the file bytes to Lighthouse's
+  IPFS-compatible endpoint
+  `upload.lighthouse.storage/api/v0/add?wrap-with-directory=true&cid-version=1&raw-leaves=true&pin=true`,
+  which reproduces our exact Helia CID (verified byte-for-byte at 1.5 KB and 3 MB
+  multi-chunk). Upload + verify + local pin run in the **background**; the file
+  status becomes `pinning` immediately and settles at `pinned` only when
+  Lighthouse is verified retrievable. Decisions: the verified Lighthouse copy is
+  the success criterion; the local pin is recorded separately and retried via
+  `retryPins` if it fails. Verification is a cheap gateway `HEAD` (`200` +
+  `content-length == sizeBytes`) against `LIGHTHOUSE_GATEWAY`, with retries for
+  propagation. Stream the bytes from Helia at pin time (`ipfs.cat({cid,
+  filename})`), because the staging file is deleted after the quote.
+- **`web-dashboard` (web UI):** a dashboard view that lists the visitor's
+  uploads with live pin/verification progress, so a user can upload a file, then
+  watch the background process settle. Depends on `lighthouse-upload-verify` for
+  the `pinning` status and per-provider sub-status. No accounts exist yet, so the
+  web records uploaded CIDs client-side (`localStorage`) and polls
+  `GET /files/:cid` for each — a server-side list keyed by wallet is the
+  alternative if cross-device is wanted.
 - **Roadmap phase 8: x402-bch** — dynamic-price x402 middleware, `POST
   /x402/files`, and a facilitator deployment note; scope it with the user.
 - **`ipfs-public-node` manual verification (pending):** restart the API with the
@@ -84,7 +112,9 @@ content-routing provide) is complete and merged at `4fe4d5b010`.
   payments/refunds) are decided in the long-term plan's Decisions Log
   (D26–D29); none needs new Gherkin. The `ipfs-public-node` provide-failure
   question is decided and implemented: `provide` is best-effort
-  (`ipfs-provide-best-effort`, merged).
+  (`ipfs-provide-best-effort`, merged). For `lighthouse-upload-verify` the user
+  decided: the verified Lighthouse copy is the success criterion (not the local
+  pin), and the upload+verify runs in the background.
 
 ## Recently completed
 

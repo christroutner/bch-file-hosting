@@ -316,15 +316,16 @@ At the end of each session, update this file:
 - Note the current `master` HEAD commit.
 - State the next feature to work on.
 
-Latest session (2026-10-09): S0 `reject-empty-upload` completed the first full
-specifier -> coder -> refactorer -> architect cycle and was merged to `master`
-at `1cc2bcaf51`. `FileUpload.validate` now rejects a zero-byte upload with HTTP
-422 before any IPFS add, invoice, or address; `docs/reviews/reject-empty-upload-verification.json`
-records a passing verify run and `FileUpload.validate` CRAP dropped 12 -> 2.
+Latest session (2026-10-09): specified **P6.1 `cli-skeleton`** — the first CLI
+command and the new `bch-file-hosting-cli/` component. Spec
+`bch-file-hosting-cli/specs/file-upload.feature` has six scenarios (quote on
+success, already-hosted links, missing `-f` usage error, API rejection, missing
+local file, `--json` output), was committed and handed off to the coder at
+`c005915802`. Prior cycles (Q1, P5.1-P5.3) are recorded in the backlog.
 
-Current `master` HEAD: `1cc2bcaf51` (Record reject-empty-upload architect review
-and verification).
+Current `master` HEAD: `c005915802` (Specify cli-skeleton file-upload behavior;
+this briefing update is the following docs-only commit).
 
-Next action: **specify Q1 `api-quality-baseline`** (see the backlog) — quality
-hardening only, behavior unchanged — then ask the user for approval and hand it
-to the coder.
+Next action: when the architect's end-of-chain `git_handoff` arrives, merge
+`swarmforge-architect` into `master` and verify per §10, then mark P6.1 complete
+in `specs/feature-backlog.md`.

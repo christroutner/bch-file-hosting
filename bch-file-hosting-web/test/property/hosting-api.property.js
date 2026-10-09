@@ -371,3 +371,125 @@ test('property: every transport call invokes fetch with the global receiver', as
     }
   })
 })
+
+test('property: getFeed GETs /files with no query when neither limit nor cursor is given', async () => {
+  await forAllAsync({
+    seed: 13,
+    runs: 200,
+    generate: (random) => ({
+      apiUrl: randomApiUrl(random),
+      body: { success: true, files: [], nextCursor: null }
+    }),
+    property: async ({ apiUrl, body }) => {
+      const calls = []
+      const fetch = async (url, options) => {
+        calls.push({ url, options })
+        return { ok: true, status: 200, json: async () => body }
+      }
+      const api = makeApi({ apiUrl, fetch })
+
+      const result = await api.getFeed()
+
+      assert.equal(calls.length, 1)
+      assert.equal(calls[0].url, `${apiUrl}/files`)
+      assert.equal(calls[0].options.method, 'GET')
+      assert.deepEqual(result, body)
+    }
+  })
+})
+
+test('property: getFeed sends the limit and opaque cursor as query parameters', async () => {
+  await forAllAsync({
+    seed: 14,
+    runs: 300,
+    generate: (random) => ({
+      apiUrl: randomApiUrl(random),
+      limit: integerBetween(random, 1, 100),
+      cursor: randomString(random, 1, 40, URL_ALPHABET),
+      body: { success: true, files: [], nextCursor: null }
+    }),
+    property: async ({ apiUrl, limit, cursor, body }) => {
+      const calls = []
+      const fetch = async (url, options) => {
+        calls.push({ url, options })
+        return { ok: true, status: 200, json: async () => body }
+      }
+      const api = makeApi({ apiUrl, fetch })
+
+      await api.getFeed({ limit, cursor })
+
+      const url = new URL(calls[0].url)
+      assert.equal(url.pathname, '/files')
+      assert.equal(url.searchParams.get('limit'), String(limit))
+      assert.equal(url.searchParams.get('cursor'), cursor)
+      assert.equal(calls[0].options.method, 'GET')
+    }
+  })
+})
+
+test('property: a non-ok getFeed response rejects with the server error string', async () => {
+  await forAllAsync({
+    seed: 15,
+    runs: 200,
+    generate: (random) => ({
+      status: integerBetween(random, 400, 599),
+      error: randomString(random, 1, 60, NAME_ALPHABET)
+    }),
+    property: async ({ status, error }) => {
+      const api = makeApi({
+        apiUrl: 'http://localhost:5050',
+        fetch: async () => ({ ok: false, status, json: async () => ({ success: false, error }) })
+      })
+
+      const { error: thrown } = await capture(api.getFeed({ limit: 1 }))
+
+      assert.ok(thrown instanceof HostingApiError)
+      assert.equal(thrown.message, error)
+    }
+  })
+})
+
+test('property: a non-ok getFeed response without a usable error falls back to the HTTP status', async () => {
+  const unusableBodies = [null, {}, { error: '' }, { error: 0 }, { error: false }]
+
+  await forAllAsync({
+    seed: 16,
+    runs: 200,
+    generate: (random) => ({
+      status: integerBetween(random, 400, 599),
+      body: unusableBodies[integerBetween(random, 0, unusableBodies.length - 1)]
+    }),
+    property: async ({ status, body }) => {
+      const api = makeApi({
+        apiUrl: 'http://localhost:5050',
+        fetch: async () => ({ ok: false, status, json: async () => body })
+      })
+
+      const { error: thrown } = await capture(api.getFeed({ limit: 1 }))
+
+      assert.ok(thrown instanceof HostingApiError)
+      assert.ok(thrown.message.includes(`HTTP ${status}`))
+    }
+  })
+})
+
+test('property: getFeed invokes fetch with the global receiver', async () => {
+  await forAllAsync({
+    seed: 17,
+    runs: 200,
+    generate: (random) => ({ apiUrl: randomApiUrl(random), limit: integerBetween(random, 1, 100) }),
+    property: async ({ apiUrl, limit }) => {
+      const receivers = []
+      function receiverSensitiveFetch () {
+        receivers.push(this)
+        return Promise.resolve({ ok: true, status: 200, json: async () => ({ success: true }) })
+      }
+      const api = makeApi({ apiUrl, fetch: receiverSensitiveFetch })
+
+      await api.getFeed({ limit })
+
+      assert.equal(receivers.length, 1)
+      assert.equal(receivers[0], globalThis)
+    }
+  })
+})

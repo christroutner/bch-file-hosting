@@ -25,17 +25,28 @@ export function parsePageLimit (raw) {
   return limit
 }
 
+// A cursor that the caller did not supply at all.
+function isMissingCursor (raw) {
+  return raw === undefined || raw === null || raw === ''
+}
+
+// Decode an opaque cursor token into the paid time and CID of the last item
+// on the previous page, rejecting anything that is not exactly that.
+function decodeCursor (raw) {
+  const payload = JSON.parse(Buffer.from(String(raw), 'base64url').toString('utf8'))
+  if (!payload || typeof payload.paidAt !== 'string' || typeof payload.cid !== 'string') {
+    throw new Error(CURSOR_ERROR)
+  }
+  return { paidAt: payload.paidAt, cid: payload.cid }
+}
+
 // The cursor is an opaque token; callers must pass back exactly what the feed
 // returned. It carries the paid time and CID of the last item on the page.
 export function parseCursor (raw) {
-  if (raw === undefined || raw === null || raw === '') return null
+  if (isMissingCursor(raw)) return null
 
   try {
-    const payload = JSON.parse(Buffer.from(String(raw), 'base64url').toString('utf8'))
-    if (!payload || typeof payload.paidAt !== 'string' || typeof payload.cid !== 'string') {
-      throw new Error(CURSOR_ERROR)
-    }
-    return { paidAt: payload.paidAt, cid: payload.cid }
+    return decodeCursor(raw)
   } catch (err) {
     throw new Error(CURSOR_ERROR)
   }
@@ -45,12 +56,13 @@ export function encodeCursor ({ paidAt, cid }) {
   return Buffer.from(JSON.stringify({ paidAt, cid }), 'utf8').toString('base64url')
 }
 
-// Newest paid first, with the CID as a stable tie-breaker.
+// Newest paid first, with the CID as a stable tie-breaker. Byte order is a
+// deterministic total order for CIDs across platforms (unlike locale-aware
+// string comparison) and agrees with the code-unit order isAfterCursor uses.
 function byPaidNewestFirst (a, b) {
   const paidDiff = Date.parse(b.paidAt) - Date.parse(a.paidAt)
   if (paidDiff !== 0) return paidDiff
-  if (a.cid === b.cid) return 0
-  return a.cid < b.cid ? -1 : 1
+  return Buffer.compare(Buffer.from(a.cid), Buffer.from(b.cid))
 }
 
 // True when `file` sorts strictly after the cursor position: an older paid

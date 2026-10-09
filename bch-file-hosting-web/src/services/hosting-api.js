@@ -23,6 +23,21 @@ async function readJson (response) {
   }
 }
 
+// True when a feed option was actually supplied. The API applies its own
+// default for a missing limit or cursor, so those are left out of the query.
+function hasValue (value) {
+  return value !== undefined && value !== null && value !== ''
+}
+
+// Query string for the feed page. The cursor is opaque and passed through as
+// the caller supplied it.
+function buildFeedQuery ({ limit, cursor } = {}) {
+  const params = new URLSearchParams()
+  if (hasValue(limit)) params.set('limit', String(limit))
+  if (hasValue(cursor)) params.set('cursor', String(cursor))
+  return params.toString()
+}
+
 class HostingApi {
   constructor ({ config, fetch: fetchImpl, FormData: FormDataImpl } = {}) {
     this.config = config
@@ -38,15 +53,11 @@ class HostingApi {
     this.getFeed = this.getFeed.bind(this)
   }
 
-  // Upload a browser File to POST /files and return the parsed quote response.
-  async upload (file) {
-    const form = new this.FormData()
-    form.append('file', file, file.name)
-
-    const response = await this.fetch(`${this.config.apiUrl}/files`, {
-      method: 'POST',
-      body: form
-    })
+  // Send one API request and return its parsed JSON body, throwing the server's
+  // error message on a non-2xx response. Shared by every endpoint so the error
+  // contract lives in one place.
+  async request (path, options) {
+    const response = await this.fetch(`${this.config.apiUrl}${path}`, options)
     const body = await readJson(response)
 
     if (!response.ok) {
@@ -56,21 +67,22 @@ class HostingApi {
     return body
   }
 
+  // Upload a browser File to POST /files and return the parsed quote response.
+  async upload (file) {
+    const form = new this.FormData()
+    form.append('file', file, file.name)
+
+    return this.request('/files', { method: 'POST', body: form })
+  }
+
   // Ask whether an invoice has been paid at POST /files/check-payment. The
   // response status is 'unpaid', 'expired', or 'paid'.
   async checkPayment ({ paymentAddress } = {}) {
-    const response = await this.fetch(`${this.config.apiUrl}/files/check-payment`, {
+    return this.request('/files/check-payment', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ paymentAddress })
     })
-    const body = await readJson(response)
-
-    if (!response.ok) {
-      throw new HostingApiError(errorMessage(response, body))
-    }
-
-    return body
   }
 
   // Look up a file record at GET /files/:cid. The CID is a single path
@@ -78,36 +90,15 @@ class HostingApi {
   // `../admin/invoices` would be normalized by the URL parser and change the
   // requested endpoint.
   async getStatus ({ cid } = {}) {
-    const response = await this.fetch(`${this.config.apiUrl}/files/${encodeURIComponent(cid)}`, {
-      method: 'GET'
-    })
-    const body = await readJson(response)
-
-    if (!response.ok) {
-      throw new HostingApiError(errorMessage(response, body))
-    }
-
-    return body
+    return this.request(`/files/${encodeURIComponent(cid)}`, { method: 'GET' })
   }
 
   // List the public feed at GET /files. The page is limited and paginated by
   // the opaque cursor returned with the previous page.
   async getFeed ({ limit, cursor } = {}) {
-    const params = new URLSearchParams()
-    if (limit !== undefined && limit !== null) params.set('limit', String(limit))
-    if (cursor !== undefined && cursor !== null && cursor !== '') params.set('cursor', String(cursor))
-    const query = params.toString()
+    const query = buildFeedQuery({ limit, cursor })
 
-    const response = await this.fetch(`${this.config.apiUrl}/files${query ? `?${query}` : ''}`, {
-      method: 'GET'
-    })
-    const body = await readJson(response)
-
-    if (!response.ok) {
-      throw new HostingApiError(errorMessage(response, body))
-    }
-
-    return body
+    return this.request(`/files${query ? `?${query}` : ''}`, { method: 'GET' })
   }
 }
 

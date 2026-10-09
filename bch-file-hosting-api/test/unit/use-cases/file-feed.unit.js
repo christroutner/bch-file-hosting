@@ -83,6 +83,20 @@ describe('#file-feed.js', () => {
 
       assert.throws(() => parseCursor(bad), CURSOR_ERROR)
     })
+
+    it('should reject a token whose payload is not an object', () => {
+      const bad = Buffer.from(JSON.stringify(null), 'utf8').toString('base64url')
+
+      assert.throws(() => parseCursor(bad), CURSOR_ERROR)
+    })
+
+    it('should reject a token whose paid time or CID is not a string', () => {
+      const badPaidAt = Buffer.from(JSON.stringify({ paidAt: 123, cid: 'bafy-a' }), 'utf8').toString('base64url')
+      const badCid = Buffer.from(JSON.stringify({ paidAt: '2026-01-02T00:00:00.000Z', cid: 7 }), 'utf8').toString('base64url')
+
+      assert.throws(() => parseCursor(badPaidAt), CURSOR_ERROR)
+      assert.throws(() => parseCursor(badCid), CURSOR_ERROR)
+    })
   })
 
   describe('#toFeedFile', () => {
@@ -165,6 +179,14 @@ describe('#file-feed.js', () => {
       ], { limit: 10 })
 
       assert.deepEqual(result.files.map(f => f.cid), ['bafy-a', 'bafy-b'])
+    })
+
+    it('should treat files with the same paid time and CID as equal', () => {
+      const same = file({ cid: 'bafy-same', paidAt: '2026-01-02T00:00:00.000Z' })
+
+      const result = paginateFeed([same, { ...same }], { limit: 10 })
+
+      assert.deepEqual(result.files.map(f => f.cid), ['bafy-same', 'bafy-same'])
     })
 
     it('should return an empty page when the cursor is past the end', () => {

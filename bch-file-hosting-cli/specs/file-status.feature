@@ -1,3 +1,8 @@
+# mutation-stamp: sha256=0eeabcbeb4cd5b1470f6c71ac540961efdab897fa80453d6d9575ef89fe5f23c
+# acceptance-mutation-manifest-begin
+# {"version":1,"tested_at":"2026-10-09T13:33:09.262614284Z","feature_name":"File Status","feature_path":"/home/trout/work/psf/code/ipfs/bch-file-hosting/.worktrees/architect/bch-file-hosting-cli/specs/file-status.feature","background_hash":"4532bdc66f992abe5930c0376ccd499521812e4d776e08133cfb0879359263f6","implementation_hash":"unknown","scenarios":[{"index":0,"name":"File Status - 1 a found file prints its details and pins","scenario_hash":"924cc12444c772c8666ea905bc5fb52f38e7e34362b2b2b792dfced964020d11","mutation_count":32,"result":{"Total":32,"Killed":32,"Survived":0,"Errors":0},"tested_at":"2026-10-09T13:33:09.262614284Z"},{"index":1,"name":"File Status - 2 a staged file prints its details and no hosting window","scenario_hash":"443dd5410b5d8945401eb1c0d5715e1706f533e681f430d266d47c42005b9319","mutation_count":9,"result":{"Total":9,"Killed":9,"Survived":0,"Errors":0},"tested_at":"2026-10-09T13:33:09.262614284Z"},{"index":3,"name":"File Status - 4 an API error is reported and the command fails","scenario_hash":"7dc27044e31d6155cfeb0167a6ce79cd97545fbfcef9b980af35699650d22dd5","mutation_count":4,"result":{"Total":4,"Killed":4,"Survived":0,"Errors":0},"tested_at":"2026-10-09T13:33:09.262614284Z"},{"index":4,"name":"File Status - 5 JSON output prints one JSON object","scenario_hash":"a2f56fbde24232a5fb35833235208de3a6a48eed2cb5668ee88be2c4e7d72da6","mutation_count":8,"result":{"Total":8,"Killed":8,"Survived":0,"Errors":0},"tested_at":"2026-10-09T13:33:09.262614284Z"}]}
+# acceptance-mutation-manifest-end
+
 # File Status - 1, File Status - 2, File Status - 3, File Status - 4, File Status - 5
 
 Feature: File Status

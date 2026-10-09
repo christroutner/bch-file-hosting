@@ -64,9 +64,11 @@ class HostingApi {
     return body
   }
 
-  // Look up a file record at GET /files/:cid.
+  // Look up a file record at GET /files/:cid. The CID is a path segment, so
+  // encode it: an unencoded value such as `../admin/invoices` would be
+  // normalized by the URL parser and change the requested endpoint.
   async getStatus ({ cid } = {}) {
-    const response = await this.fetch(`${this.config.apiUrl}/files/${cid}`, {
+    const response = await this.fetch(`${this.config.apiUrl}/files/${encodeURIComponent(cid)}`, {
       method: 'GET'
     })
     const body = await readJson(response)
@@ -83,5 +85,5 @@ export { HostingApiError }
 export default HostingApi
 
 // mutate4javascript-manifest-begin
-// {"version":1,"tested_at":"2026-10-09T03:53:26.678Z","module_hash":"959786c7f344b2ce9e8d2b901fbf36d5c514a028c94ef0d58c576feed0f27ee5","functions":[{"id":"func/errorMessage","name":"errorMessage","line":10,"end_line":13,"hash":"1a03b20dbd9e537b1480a4b5856abf09b044b220004fa6431837196c3f5f85c1"},{"id":"func/readJson","name":"readJson","line":15,"end_line":21,"hash":"1605144a2f8c4765cd3f8274c4f04f88196a1a5da92594a9bd59b4fe47866cc6"},{"id":"func/HostingApi.constructor","name":"HostingApi.constructor","line":24,"end_line":30,"hash":"5dd3ee5521013e1baa603bc6dfd5586383d77f477f3a40b10627b76445ebeacb"},{"id":"func/HostingApi.upload","name":"HostingApi.upload","line":33,"end_line":48,"hash":"d416c2d9baefbae6116d1bb609debc42124f964afd1631d6d8f973687cce169d"},{"id":"func/HostingApi.checkPayment","name":"HostingApi.checkPayment","line":51,"end_line":64,"hash":"cebcbf9fdc63ec05eeceb4d158f6b073c81241dbd56788cb0da85ea4e36f9319"}]}
+// {"version":1,"tested_at":"2026-10-09T13:32:44.833Z","module_hash":"781bdc3ceec114772c9cbbaf70ef11f87a9af5314d83ac78aca18cc53561bcb8","functions":[{"id":"func/errorMessage","name":"errorMessage","line":10,"end_line":13,"hash":"1a03b20dbd9e537b1480a4b5856abf09b044b220004fa6431837196c3f5f85c1"},{"id":"func/readJson","name":"readJson","line":15,"end_line":21,"hash":"1605144a2f8c4765cd3f8274c4f04f88196a1a5da92594a9bd59b4fe47866cc6"},{"id":"func/HostingApi.constructor","name":"HostingApi.constructor","line":24,"end_line":31,"hash":"704cd7fdd640bff491b808759882d08f4fdc32707a21e264063619da6ce60174"},{"id":"func/HostingApi.upload","name":"HostingApi.upload","line":34,"end_line":49,"hash":"d416c2d9baefbae6116d1bb609debc42124f964afd1631d6d8f973687cce169d"},{"id":"func/HostingApi.checkPayment","name":"HostingApi.checkPayment","line":52,"end_line":65,"hash":"cebcbf9fdc63ec05eeceb4d158f6b073c81241dbd56788cb0da85ea4e36f9319"},{"id":"func/HostingApi.getStatus","name":"HostingApi.getStatus","line":70,"end_line":81,"hash":"eef2352585a61a1e0d2e6c027848b5c73d0f21738b080171afdcf0ecf4716893"}]}
 // mutate4javascript-manifest-end

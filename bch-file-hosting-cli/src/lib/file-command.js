@@ -28,5 +28,5 @@ export { UsageError }
 export default FileCommand
 
 // mutate4javascript-manifest-begin
-// {"version":1,"tested_at":"2026-10-09T04:11:17.675Z","module_hash":"ae3c567b2db01696656007e48c570bc93d3ea1a897c9ee597bb1becd668d7597","functions":[{"id":"func/FileCommand.constructor","name":"FileCommand.constructor","line":14,"end_line":19,"hash":"5bf7c3eaacfa11ffbb241023aa2f142391c7c8f876f014d33748c9e170e2b531"}]}
+// {"version":1,"tested_at":"2026-10-09T13:32:48.508Z","module_hash":"240cf4f9abd47893db6ec7a5c6dadac122846daed099addba62dac710603ee85","functions":[{"id":"func/FileCommand.constructor","name":"FileCommand.constructor","line":14,"end_line":24,"hash":"450de67ca7d0f753d7d7b6ebe956a8c667d5b2575775506358c91f0cb8af9ab3"}]}
 // mutate4javascript-manifest-end

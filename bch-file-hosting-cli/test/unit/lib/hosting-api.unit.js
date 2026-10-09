@@ -140,6 +140,20 @@ describe('#hosting-api', () => {
       assert.equal(options.method, 'GET')
     })
 
+    it('encodes the CID so it cannot change the request path', async () => {
+      const fetch = sandbox.stub().resolves({
+        ok: true,
+        status: 200,
+        json: async () => ({ success: true, cid: 'bafy-unknown', status: 'unknown' })
+      })
+      const uut = new HostingApi({ config, fetch })
+
+      await uut.getStatus({ cid: '../admin/invoices?x=1' })
+
+      const [url] = fetch.firstCall.args
+      assert.equal(url, 'http://localhost:5050/files/..%2Fadmin%2Finvoices%3Fx%3D1')
+    })
+
     it('throws the API error message when the response is not ok', async () => {
       const fetch = sandbox.stub().resolves({
         ok: false,

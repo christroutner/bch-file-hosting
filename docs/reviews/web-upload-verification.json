@@ -2,35 +2,36 @@
   "schema_version": 1,
   "task": "web-upload",
   "component": "bch-file-hosting-web",
-  "git_sha": "98033a8f99f3fe8e27ce6eb66906dd9500f2ecab",
-  "branch": "swarmforge-coder",
-  "timestamp": "2026-10-09T14:40:17.467Z",
+  "git_sha": "314fdc240a5ce32adaa89f5590b535b0db1f2343",
+  "branch": "swarmforge-architect",
+  "timestamp": "2026-10-09T14:47:01.823Z",
   "commands": [
     {
       "name": "unit",
       "command": "npm test",
       "exit": 0,
-      "duration_ms": 147,
-      "summary": "14 pass / 0 fail"
+      "duration_ms": 155,
+      "summary": "15 pass / 0 fail"
     },
     {
       "name": "property",
       "command": "npm run test:property",
-      "skipped": true,
-      "summary": "skipped: no \"test:property\" npm script"
+      "exit": 0,
+      "duration_ms": 196,
+      "summary": "17 pass / 0 fail"
     },
     {
       "name": "acceptance",
       "command": "npm run test:acceptance",
       "exit": 0,
-      "duration_ms": 181,
+      "duration_ms": 151,
       "summary": "all 1 acceptance suites passed"
     },
     {
       "name": "lint",
       "command": "npm run lint",
       "exit": 0,
-      "duration_ms": 433,
+      "duration_ms": 457,
       "summary": "ok"
     }
   ],

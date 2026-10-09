@@ -8,12 +8,8 @@
 
 // Local libraries
 import Command, { UsageError } from './command.js'
-import WalletStore from './wallet-store.js'
+import WalletStore, { isValidWalletName } from './wallet-store.js'
 import WalletService from './wallet-service.js'
-
-// Wallet names become `<name>.json` files in the local store, so restrict them
-// to characters that cannot escape the store directory.
-const WALLET_NAME_PATTERN = /^[A-Za-z0-9_-]+$/
 
 class WalletCommand extends Command {
   constructor (deps = {}) {
@@ -34,7 +30,7 @@ class WalletCommand extends Command {
       throw new UsageError('You must specify a wallet name with the -n flag.')
     }
 
-    if (!WALLET_NAME_PATTERN.test(flags.name)) {
+    if (!isValidWalletName(flags.name)) {
       throw new UsageError(
         `Invalid wallet name "${flags.name}". Use only letters, digits, hyphens, and underscores.`
       )
@@ -48,5 +44,5 @@ export { UsageError }
 export default WalletCommand
 
 // mutate4javascript-manifest-begin
-// {"version":1,"tested_at":"2026-10-09T04:07:58.640Z","module_hash":"e295ef80baabc83a279ee1d29e6ab29f241a8168ce452c5898c1f48c6f58ee27","functions":[{"id":"func/WalletCommand.constructor","name":"WalletCommand.constructor","line":15,"end_line":26,"hash":"e5636c6f2b850a3330130b261d8f03a5903735f971c15418bf141526c7d114fb"},{"id":"func/WalletCommand.validateFlags","name":"WalletCommand.validateFlags","line":28,"end_line":34,"hash":"312ce7dcf089364d39e40fc34f38448c8851bf69731cae9513bb9ca2d7654947"}]}
+// {"version":1,"tested_at":"2026-10-09T13:22:03.915Z","module_hash":"1f78842cfce122a7890a65806dcc905c5e6b6b085940da33542b645d2c8af319","functions":[{"id":"func/WalletCommand.constructor","name":"WalletCommand.constructor","line":15,"end_line":26,"hash":"e5636c6f2b850a3330130b261d8f03a5903735f971c15418bf141526c7d114fb"},{"id":"func/WalletCommand.validateFlags","name":"WalletCommand.validateFlags","line":28,"end_line":40,"hash":"878276df80b56d80a2eeffce3bd6bf0d4e3a8c42bb642e1c61566d73b3ff5c8a"}]}
 // mutate4javascript-manifest-end

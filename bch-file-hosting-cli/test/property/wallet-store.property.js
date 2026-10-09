@@ -79,4 +79,17 @@ describe('#wallet-store.property.js', () => {
       }
     })
   })
+
+  it('should reject any name outside the safe grammar', () => {
+    forAll({
+      seed: 4,
+      runs: 300,
+      generate: (random) => randomString(random, 1, 12, '/\\..:$*?"<>| '),
+      property: (name) => {
+        const uut = store()
+
+        assert.throws(() => uut.filePath(name), /Invalid wallet name/)
+      }
+    })
+  })
 })

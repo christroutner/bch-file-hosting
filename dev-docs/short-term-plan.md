@@ -99,6 +99,7 @@ bch-file-hosting-api/
 | `IPFS_DIR` | `./.ipfsdata` | Helia blockstore + seed |
 | `IPFS_TCP_PORT`, `IPFS_WS_PORT` | `4001`, `4003` | libp2p ports |
 | `ENABLE_CIRCUIT_RELAY` | `false` | helia-coord relay mode |
+| `DISABLE_IPFS_COORD` | `false` | Skip joining the PSF network via helia-coord (offline development) |
 | `COORD_NAME` | `bch-file-hosting` | helia-coord announce name |
 | `PUBLIC_GATEWAYS` | `https://ipfs.io/ipfs/,https://dweb.link/ipfs/` | Gateway URL prefixes (D16) |
 | `PINNING_PROVIDERS` | `` (empty) | Third-party providers; Lighthouse added in phase 5 |

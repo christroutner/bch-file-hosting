@@ -15,6 +15,15 @@
   },
   "author": "Chris Troutner <chris.troutner@gmail.com>",
   "license": "MIT",
+  "overrides": {
+    "@multiformats/multiaddr-to-uri": "10.1.2",
+    "@multiformats/multiaddr-matcher": "1.6.0",
+    "@libp2p/utils": "6.7.1",
+    "helia": {
+      "libp2p": "2.7.2",
+      "@libp2p/upnp-nat": "3.0.0"
+    }
+  },
   "c8": {
     "include": [
       "src/**",
@@ -26,8 +35,10 @@
   },
   "dependencies": {
     "dotenv": "18.0.6",
+    "helia-coord": "2.0.3",
     "level": "10.0.0",
     "minimal-slp-wallet": "7.1.5",
+    "multiformats": "13.4.2",
     "winston": "3.19.0",
     "winston-daily-rotate-file": "5.0.0"
   },

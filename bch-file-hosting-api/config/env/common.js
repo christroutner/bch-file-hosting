@@ -69,6 +69,7 @@ export default {
   ipfsTcpPort: toNumber(process.env.IPFS_TCP_PORT, 4001),
   ipfsWsPort: toNumber(process.env.IPFS_WS_PORT, 4003),
   enableCircuitRelay: toBool(process.env.ENABLE_CIRCUIT_RELAY, false),
+  enableIpfsCoord: !toBool(process.env.DISABLE_IPFS_COORD, false),
   coordName: process.env.COORD_NAME || 'bch-file-hosting',
   publicGateways: toList(process.env.PUBLIC_GATEWAYS, [
     'https://ipfs.io/ipfs/',

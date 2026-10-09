@@ -289,7 +289,10 @@ Specific to bch-file-hosting (found while building the core port):
     name) or accept the documented intrinsic survivors.
 21. **Never join an unvalidated user string into a path.** The first wallet
     commands accepted a name with a path separator or `..`, which escapes
-    `.wallets/`; constrain wallet names or document the accepted grammar.
+    `.wallets/`; constrain wallet names or document the accepted grammar. The
+    `wallet-name-validation` hardening put the grammar in `WalletStore`
+    (`isValidWalletName`) and enforces it at `filePath` as well as in the
+    command layer.
 
 ---
 
@@ -328,16 +331,19 @@ At the end of each session, update this file:
 - Note the current `master` HEAD commit.
 - State the next feature to work on.
 
-Latest session (2026-10-09): merged **P6.3 `wallet-create`/`wallet-balance`**
-into `master` at `d3e54d4cf2`. The CLI now has a local `minimal-slp-wallet`
-wallet store; `docs/reviews/wallet-create-verification.json` reports
-`verify.sh cli` pass 4/4 (record `git_sha` `3b6a799`, docs-only behind the tip)
-and the independent post-merge acceptance check passed all 4 suites (33/33).
-Two follow-ups recorded: unsafe wallet-name validation and the mutation-inert
-mnemonic-hygiene scenarios. Prior cycles (Q1, P5.1-P5.3, P6.1-P6.2) are in the
-backlog.
+Latest session (2026-10-09): completed the follow-up hardening
+**`wallet-name-validation`** and merged it into `master` at `08c2cd88dc`.
+`WalletCommand.validateFlags` rejects names outside `[A-Za-z0-9_-]+` with exit
+code 2, and `WalletStore.filePath` enforces the same grammar as defense in
+depth. `docs/reviews/wallet-name-validation-verification.json` reports
+`verify.sh cli` pass 4/4 (record `git_sha` `4cc6844`, docs-only behind the tip)
+and the independent post-merge acceptance check passed all 4 suites, including
+the 12 new scenario-5 executions. The mutation-inert mnemonic-hygiene scenarios
+(scenario 4 in both wallet specs) remain a follow-up. Prior cycles (Q1,
+P5.1-P5.3, P6.1-P6.3) are in the backlog.
 
-Current `master` HEAD: `d3e54d4cf2` (Merge wallet-create into master).
+Current `master` HEAD: `08c2cd88dc` (Record wallet-name-validation architect
+review and verification).
 
 Next action: ask the user which phase-6 CLI command to specify next
 (`file-pay`, `file-status`, `file-host`).

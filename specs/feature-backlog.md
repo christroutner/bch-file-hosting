@@ -27,7 +27,8 @@ pinning-provider study, P5.2 added the Lighthouse provider, and P5.3 added the
 pin-retry timer and admin file listing. P6.1, the CLI skeleton, is complete
 and merged to `master` at `cde36aef70`. P6.2 `file-check` is complete and
 merged to `master` at `55c3ddc714`. P6.3 `wallet-create`/`wallet-balance` is
-complete and merged to `master` at `d3e54d4cf2`.
+complete and merged to `master` at `d3e54d4cf2`. The `wallet-name-validation`
+follow-up hardening is complete and merged at `08c2cd88dc`.
 
 ## In progress
 
@@ -35,9 +36,6 @@ complete and merged to `master` at `d3e54d4cf2`.
 
 ## Up next (in order)
 
-- **Follow-up hardening: reject unsafe wallet names** (path separators or `..`)
-  in `wallet-create`/`wallet-balance`, with an invalid-name scenario; the
-  architect flagged the current store as a robustness/security gap.
 - Remaining phase-6 CLI commands (`file-pay`, `file-status`, `file-host`);
   scope them with the user.
 
@@ -52,6 +50,28 @@ them until the user decides.
 - **Late payments and refunds (Q9).**
 
 ## Recently completed
+
+- **Follow-up hardening `wallet-name-validation` — reject unsafe wallet names
+  (2026-10-09):** both local wallet commands now reject a name outside
+  `[A-Za-z0-9_-]+` with a usage error (exit 2) and the message
+  `Invalid wallet name "<name>". Use only letters, digits, hyphens, and
+  underscores.`, before reading or writing the store. The grammar lives in
+  `WalletStore` (`WALLET_NAME_PATTERN`, exported `isValidWalletName`) and is
+  enforced at the `filePath` boundary as defense in depth; the shared
+  `WalletCommand.validateFlags` maps it to the user-facing `UsageError`. The
+  refactorer extracted shared property generators and added
+  `wallet-command.property.js`; the architect added the store-boundary guard.
+  Specs `wallet-create.feature`/`wallet-balance.feature` gained scenario 5 (six
+  invalid names each). Pipeline commits: specifier `014d8e75`, coder `618d69f`,
+  refactorer `612e4fc`, architect `4cc6844` (verification `git_sha`), docs
+  `08c2cd8`, merged to `master` at `08c2cd88dc` (fast-forward). `verify.sh cli`
+  pass 4/4 (unit 59, property 33, acceptance all 4 suites, lint ok); unit
+  coverage 100%; language mutation 0 survived / 0 uncovered across
+  `wallet-store.js` and `wallet-command.js`; DRY clean; CRAP <= 6.0; soft
+  Gherkin scenario 5 killed 12/12 in each file (all 10 survivors remain the two
+  documented mnemonic-hygiene scenario 4 cells). Independent acceptance check
+  after merge: all 4 suites passed, including the 12 new scenario-5 executions.
+  Architect summary: `docs/reviews/wallet-name-validation-summary.md`.
 
 - **P6.3 `wallet-create` / `wallet-balance` — minimal wallet for paying
   (2026-10-09):** `wallet-create -n <name>` generates a `minimal-slp-wallet`
@@ -70,9 +90,6 @@ them until the user decides.
   survivors are the two negative mnemonic-hygiene scenarios). Independent
   acceptance check after merge: all 4 suites passed (33 executions). Architect
   summary: `docs/reviews/wallet-create-summary.md`.
-  - Follow-up (security): wallet names are not constrained, so a name with a
-    path separator or `..` escapes `.wallets/`. Add an invalid-name scenario
-    and reject unsafe names.
   - Follow-up (mutation): the mnemonic-hygiene scenarios are negative and
     mutation-inert; add a positive store assertion or accept the documented
     survivors.

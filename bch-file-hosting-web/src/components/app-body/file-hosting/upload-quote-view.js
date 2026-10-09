@@ -11,6 +11,7 @@
 
 const React = require('react')
 const { QRCodeSVG } = require('qrcode.react')
+const { buildChildren, selectChildren, messageChildren } = require('../shared/status-view')
 
 function linkLine (key, className, label, url) {
   return React.createElement(
@@ -74,14 +75,10 @@ function paidChildren (state) {
   return children
 }
 
-function messageChildren (key, className) {
-  return (state) => [React.createElement('p', { key, className }, state.message)]
-}
-
 // Display status to children builder. A null prototype keeps an unexpected
 // status string (for example "constructor") from resolving to an
 // Object.prototype member instead of the empty default.
-const STATUS_CHILDREN = Object.assign(Object.create(null), {
+const STATUS_CHILDREN = buildChildren({
   quote: quoteChildren,
   hosted: hostedChildren,
   paid: paidChildren,
@@ -91,13 +88,8 @@ const STATUS_CHILDREN = Object.assign(Object.create(null), {
   pending: messageChildren('pending', 'file-upload-pending')
 })
 
-function statusChildren (state) {
-  const build = STATUS_CHILDREN[state.status]
-  return build ? build(state) : []
-}
-
 function UploadQuoteView ({ state = { status: 'idle' } } = {}) {
-  const children = statusChildren(state)
+  const children = selectChildren(STATUS_CHILDREN, state)
 
   if (state.filename) {
     children.unshift(

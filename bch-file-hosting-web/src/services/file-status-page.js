@@ -14,6 +14,8 @@
 
 'use strict'
 
+const { failureMessage } = require('./errors')
+
 const NO_CID_MESSAGE = 'Enter a CID to look up.'
 const GENERIC_ERROR_MESSAGE = 'Status lookup failed'
 const NOT_PAID_LABEL = 'not paid'
@@ -57,8 +59,7 @@ class FileStatusPage {
       const file = await this.hostingApi.getStatus({ cid: trimmed })
       this.state = foundState(file)
     } catch (err) {
-      const message = err && err.message ? err.message : GENERIC_ERROR_MESSAGE
-      this.state = { status: 'error', message }
+      this.state = { status: 'error', message: failureMessage(err, GENERIC_ERROR_MESSAGE) }
     }
 
     return this.state

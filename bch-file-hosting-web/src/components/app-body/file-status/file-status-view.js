@@ -11,10 +11,7 @@
 'use strict'
 
 const React = require('react')
-
-function line (key, className, text) {
-  return React.createElement('p', { key, className }, text)
-}
+const { line, buildChildren, selectChildren, messageChildren } = require('../shared/status-view')
 
 function pinLines (pins) {
   const lines = []
@@ -35,26 +32,17 @@ function foundChildren (state) {
   ]
 }
 
-function messageChildren (key, className) {
-  return (state) => [line(key, className, state.message)]
-}
-
 // Display status to children builder. A null prototype keeps an unexpected
 // status string (for example "constructor") from resolving to an
 // Object.prototype member instead of the empty default.
-const STATUS_CHILDREN = Object.assign(Object.create(null), {
+const STATUS_CHILDREN = buildChildren({
   found: foundChildren,
   'no-cid': messageChildren('prompt', 'file-status-prompt'),
   error: messageChildren('error', 'file-status-error')
 })
 
-function statusChildren (state) {
-  const build = STATUS_CHILDREN[state.status]
-  return build ? build(state) : []
-}
-
 function FileStatusView ({ state = { status: 'idle' } } = {}) {
-  return React.createElement('div', { className: 'file-status-result' }, ...statusChildren(state))
+  return React.createElement('div', { className: 'file-status-result' }, ...selectChildren(STATUS_CHILDREN, state))
 }
 
 module.exports = FileStatusView

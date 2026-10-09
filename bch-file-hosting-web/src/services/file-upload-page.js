@@ -22,6 +22,7 @@
 'use strict'
 
 const { formatCountdown } = require('./quote-countdown')
+const { failureMessage } = require('./errors')
 
 const NO_FILE_MESSAGE = 'Choose a file to upload.'
 const GENERIC_ERROR_MESSAGE = 'Upload failed'
@@ -75,8 +76,7 @@ function resultState (response, filename, now) {
 }
 
 function errorState (err, filename) {
-  const message = err && err.message ? err.message : GENERIC_ERROR_MESSAGE
-  return { status: 'error', filename, message }
+  return { status: 'error', filename, message: failureMessage(err, GENERIC_ERROR_MESSAGE) }
 }
 
 // A wallet payment must yield a non-empty transaction id; anything else is a

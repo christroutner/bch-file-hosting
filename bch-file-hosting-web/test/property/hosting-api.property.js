@@ -256,3 +256,86 @@ test('property: a non-ok check response without a usable error falls back to the
     }
   })
 })
+
+// Characters that could escape or reshape the /files/:cid path if left
+// unencoded, plus a space and a dot for traversal-shaped values.
+const RAW_CID_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789/?#%. '
+
+test('property: getStatus GETs /files/<encoded cid> as a single path segment', async () => {
+  await forAllAsync({
+    seed: 9,
+    runs: 300,
+    generate: (random) => ({
+      apiUrl: randomApiUrl(random),
+      cid: randomString(random, 1, 30, RAW_CID_ALPHABET),
+      body: { success: true, cid: 'bafy', status: 'pinned', pins: [] }
+    }),
+    property: async ({ apiUrl, cid, body }) => {
+      const calls = []
+      const fetch = async (url, options) => {
+        calls.push({ url, options })
+        return { ok: true, status: 200, json: async () => body }
+      }
+      const api = makeApi({ apiUrl, fetch })
+
+      const result = await api.getStatus({ cid })
+
+      const prefix = `${apiUrl}/files/`
+      const segment = calls[0].url.slice(prefix.length)
+      assert.equal(calls.length, 1)
+      assert.ok(calls[0].url.startsWith(prefix))
+      assert.equal(segment, encodeURIComponent(cid))
+      assert.ok(!segment.includes('/'))
+      assert.ok(!segment.includes('?'))
+      assert.ok(!segment.includes('#'))
+      assert.equal(calls[0].options.method, 'GET')
+      assert.deepEqual(result, body)
+    }
+  })
+})
+
+test('property: a non-ok getStatus response rejects with the server error string', async () => {
+  await forAllAsync({
+    seed: 10,
+    runs: 200,
+    generate: (random) => ({
+      status: integerBetween(random, 400, 599),
+      error: randomString(random, 1, 60, NAME_ALPHABET)
+    }),
+    property: async ({ status, error }) => {
+      const api = makeApi({
+        apiUrl: 'http://localhost:5050',
+        fetch: async () => ({ ok: false, status, json: async () => ({ success: false, error }) })
+      })
+
+      const { error: thrown } = await capture(api.getStatus({ cid: 'bafy' }))
+
+      assert.ok(thrown instanceof HostingApiError)
+      assert.equal(thrown.message, error)
+    }
+  })
+})
+
+test('property: a non-ok getStatus response without a usable error falls back to the HTTP status', async () => {
+  const unusableBodies = [null, {}, { error: '' }, { error: 0 }, { error: false }]
+
+  await forAllAsync({
+    seed: 11,
+    runs: 200,
+    generate: (random) => ({
+      status: integerBetween(random, 400, 599),
+      body: unusableBodies[integerBetween(random, 0, unusableBodies.length - 1)]
+    }),
+    property: async ({ status, body }) => {
+      const api = makeApi({
+        apiUrl: 'http://localhost:5050',
+        fetch: async () => ({ ok: false, status, json: async () => body })
+      })
+
+      const { error: thrown } = await capture(api.getStatus({ cid: 'bafy' }))
+
+      assert.ok(thrown instanceof HostingApiError)
+      assert.ok(thrown.message.includes(`HTTP ${status}`))
+    }
+  })
+})

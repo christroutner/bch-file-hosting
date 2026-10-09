@@ -80,9 +80,14 @@ export default {
   // Lighthouse third-party pinning (enabled by naming 'lighthouse' in
   // PINNING_PROVIDERS). The API key is required to pin; the gateway is a
   // dedicated host because the public gateway is restricted to premium plans.
+  // The file bytes are uploaded to the IPFS-compatible endpoint, then the
+  // gateway is polled with HEAD until the upload is retrievable.
   lighthouseApiKey: process.env.LIGHTHOUSE_API_KEY || '',
   lighthouseApiUrl: process.env.LIGHTHOUSE_API_URL || 'https://api.lighthouse.storage',
+  lighthouseUploadUrl: process.env.LIGHTHOUSE_UPLOAD_URL || 'https://upload.lighthouse.storage',
   lighthouseGateway: process.env.LIGHTHOUSE_GATEWAY || 'https://gateway.lighthouse.storage/ipfs/',
+  lighthouseVerifyAttempts: toNumber(process.env.LIGHTHOUSE_VERIFY_ATTEMPTS, 3),
+  lighthouseVerifyDelayMs: toNumber(process.env.LIGHTHOUSE_VERIFY_DELAY_MS, 2000),
 
   // Access control
   adminApiKey: process.env.ADMIN_API_KEY || '',

@@ -185,12 +185,50 @@ describe('#payment-use-cases.js', () => {
       adapters.pinning.providers.push(lighthouse)
 
       const result = await check()
+      await uut.whenBackgroundIdle()
 
       const file = await adapters.localdb.files.get(TEST_CID)
       assert.equal(file.status, FILE_STATUS.PINNED)
       assert.deepEqual(file.pins.map(p => [p.provider, p.status]), [['local-helia', 'pinned'], ['lighthouse', 'pinned']])
       assert.isTrue(lighthouse.pin.calledWith({ cid: TEST_CID, filename: 'photo.jpg', sizeBytes: 20000 }))
       assert.include(result.gatewayUrls, `https://gateway.lighthouse.storage/ipfs/${TEST_CID}`)
+    })
+
+    it('should keep the file pinned when an authoritative provider succeeds and a best-effort one fails', async () => {
+      adapters.wallet.getBalanceSats.resolves(2000)
+      const lighthouse = makeProvider(sandbox, 'lighthouse', null, { authoritative: true })
+      adapters.pinning.providers.push(lighthouse)
+      adapters.pinning.providers[0].pin.rejects(new Error('disk full'))
+
+      await check()
+      await uut.whenBackgroundIdle()
+
+      const file = await adapters.localdb.files.get(TEST_CID)
+      assert.equal(file.status, FILE_STATUS.PINNED)
+      assert.equal(file.pins.find(p => p.provider === 'local-helia').status, 'failed')
+      assert.equal(file.pins.find(p => p.provider === 'lighthouse').status, 'pinned')
+    })
+
+    it('should stream the file bytes to an upload provider', async () => {
+      adapters.wallet.getBalanceSats.resolves(2000)
+      const lighthouse = makeProvider(sandbox, 'lighthouse', null, { uploadBytes: true, authoritative: true })
+      adapters.pinning.providers.push(lighthouse)
+
+      await check()
+      await uut.whenBackgroundIdle()
+
+      assert.isTrue(adapters.ipfs.cat.calledOnceWith({ cid: TEST_CID, filename: 'photo.jpg' }))
+      assert.equal(lighthouse.pin.firstCall.args[0].content, 'content-stream')
+    })
+
+    it('should return paid with the file pinning before the background pin finishes', async () => {
+      adapters.wallet.getBalanceSats.resolves(2000)
+      adapters.pinning.providers[0].pin.returns(new Promise(() => {}))
+
+      const result = await check()
+
+      assert.equal(result.status, 'paid')
+      assert.equal((await adapters.localdb.files.get(TEST_CID)).status, FILE_STATUS.PINNING)
     })
 
     it('should sweep the payment to the treasury', async () => {
@@ -208,6 +246,7 @@ describe('#payment-use-cases.js', () => {
       adapters.wallet.getBalanceSats.resolves(2000)
 
       await check()
+      await uut.whenBackgroundIdle()
 
       assert.isTrue(adapters.announcer.announce.calledOnce)
       assert.equal(adapters.announcer.announce.firstCall.args[0].cid, TEST_CID)
@@ -224,7 +263,9 @@ describe('#payment-use-cases.js', () => {
       adapters.wallet.getBalanceSats.resolves(2000)
 
       const first = await check()
+      await uut.whenBackgroundIdle()
       const second = await check()
+      await uut.whenBackgroundIdle()
 
       assert.deepEqual(second, first)
       assert.isTrue(adapters.wallet.sweep.calledOnce)
@@ -235,6 +276,7 @@ describe('#payment-use-cases.js', () => {
       adapters.wallet.getBalanceSats.resolves(2000)
 
       const [a, b] = await Promise.all([check(), check()])
+      await uut.whenBackgroundIdle()
 
       assert.equal(a.status, 'paid')
       assert.equal(b.status, 'paid')
@@ -259,6 +301,7 @@ describe('#payment-use-cases.js', () => {
       adapters.pinning.providers.push(lighthouse)
 
       const result = await check()
+      await uut.whenBackgroundIdle()
 
       assert.equal(result.status, 'paid')
       const file = await adapters.localdb.files.get(TEST_CID)
@@ -271,9 +314,11 @@ describe('#payment-use-cases.js', () => {
       adapters.pinning.providers[0].pin.onFirstCall().rejects(new Error('busy'))
 
       await check()
+      await uut.whenBackgroundIdle()
       assert.equal((await adapters.localdb.files.get(TEST_CID)).status, FILE_STATUS.PIN_FAILED)
 
       await check()
+      await uut.whenBackgroundIdle()
       assert.equal((await adapters.localdb.files.get(TEST_CID)).status, FILE_STATUS.PINNED)
       assert.isTrue(adapters.wallet.sweep.calledOnce)
     })
@@ -283,6 +328,7 @@ describe('#payment-use-cases.js', () => {
       adapters.announcer.announce.rejects(new Error('no funds for OP_RETURN'))
 
       const result = await check()
+      await uut.whenBackgroundIdle()
 
       assert.equal(result.status, 'paid')
       assert.isTrue(adapters.logger.error.calledWithMatch(/Announcing .* failed/))
@@ -293,6 +339,7 @@ describe('#payment-use-cases.js', () => {
       adapters.pinning.providers[0].pin.resolves({ providerCid: TEST_CID, providerRef: 'req-123' })
 
       await check()
+      await uut.whenBackgroundIdle()
 
       const file = await adapters.localdb.files.get(TEST_CID)
       assert.equal(file.pins[0].providerRef, 'req-123')

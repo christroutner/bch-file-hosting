@@ -38,7 +38,7 @@ function build (files, providerPin) {
   const adapters = {
     config: {},
     localdb: { files: makeFilesStore(files) },
-    pinning: { getProviders: () => [{ name: 'test-provider', pin: providerPin }] },
+    pinning: { getProviders: () => [{ name: 'test-provider', capabilities: { uploadBytes: false, authoritative: false }, pin: providerPin }] },
     logger: { info () {}, error () {} }
   }
   return { payments: new PaymentUseCases({ adapters }), adapters }

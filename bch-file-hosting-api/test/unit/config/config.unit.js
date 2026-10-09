@@ -75,7 +75,10 @@ describe('#config', () => {
       assert.isFalse(config.trustProxy)
       assert.equal(config.lighthouseApiKey, '')
       assert.equal(config.lighthouseApiUrl, 'https://api.lighthouse.storage')
+      assert.equal(config.lighthouseUploadUrl, 'https://upload.lighthouse.storage')
       assert.equal(config.lighthouseGateway, 'https://gateway.lighthouse.storage/ipfs/')
+      assert.equal(config.lighthouseVerifyAttempts, 3)
+      assert.equal(config.lighthouseVerifyDelayMs, 2000)
     })
   })
 

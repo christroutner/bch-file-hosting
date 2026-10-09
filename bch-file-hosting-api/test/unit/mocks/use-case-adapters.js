@@ -40,9 +40,10 @@ export function makeConfig (overrides = {}) {
   }
 }
 
-export function makeProvider (sandbox, name, gateway = null) {
+export function makeProvider (sandbox, name, gateway = null, capabilities = {}) {
   return {
     name,
+    capabilities: { pinByCid: true, uploadBytes: false, unpin: true, authoritative: false, ...capabilities },
     pin: sandbox.stub().resolves({ providerCid: TEST_CID, providerRef: null }),
     gatewayUrl: (cid) => (gateway ? `${gateway}${cid}` : null)
   }

@@ -18,6 +18,7 @@ import TimerControllers from '../../src/controllers/timer-controllers.js'
 
 const UPLOAD_FILENAME = 'upload.bin'
 const UPLOAD_ADDRESS = 'bitcoincash:qpuploadaddress000000000000000000000000000'
+const PAID_ADDRESS = 'bitcoincash:qppaidaddress000000000000000000000000000000'
 
 function exampleValue (example, name) {
   if (!(name in example)) {
@@ -78,6 +79,31 @@ function makeFakeIpfsNode ({ provideError, provideNeverSettles } = {}) {
   }
 }
 
+// The IPFS '/api/v0/add' response for the file, reporting the CID Lighthouse
+// should have produced (the wrapping directory is the entry with no name).
+function lighthouseAddResponse (world) {
+  const lh = world.lighthouse
+  const cid = lh.uploadCid === null ? world.file.cid : lh.uploadCid
+  const body = `{"Name":"${world.file.filename}","Hash":"bafyfile","Size":"1024"}\n{"Name":"","Hash":"${cid}","Size":"1096"}\n`
+  return new Response(body, { status: 200 })
+}
+
+function lighthouseUploadResponse (world) {
+  const lh = world.lighthouse
+  if (lh.uploadHeld) {
+    return new Promise(resolve => { lh.release = () => resolve(lighthouseAddResponse(world)) })
+  }
+  if (lh.uploadStatus !== 200) return jsonResponse({ error: 'Lighthouse upload error' }, lh.uploadStatus)
+  return lighthouseAddResponse(world)
+}
+
+function lighthouseHeadResponse (world) {
+  if (world.lighthouse.gatewayRetrievable) {
+    return new Response(null, { status: 200, headers: { 'content-length': String(world.file.sizeBytes) } })
+  }
+  return new Response(null, { status: 404 })
+}
+
 function createWorld () {
   const world = {
     cfg: {
@@ -89,28 +115,50 @@ function createWorld () {
     quote: null,
     rejection: null,
     addressIssued: false,
-    // Lighthouse pinning state. `lighthouseFetch` is the injected HTTP client;
-    // each scenario queues the responses the fake API should return.
+    // The pinning config and the injected Lighthouse HTTP client. Scenarios set
+    // `world.lighthouse` to script the upload and gateway behavior.
     pinningConfig: {
       pinningProviders: [],
       lighthouseApiKey: 'test-lighthouse-key',
       lighthouseApiUrl: 'https://api.lighthouse.storage',
-      lighthouseGateway: 'https://gateway.lighthouse.storage/ipfs/'
+      lighthouseUploadUrl: 'https://upload.lighthouse.storage',
+      lighthouseGateway: 'https://gateway.lighthouse.storage/ipfs/',
+      lighthouseVerifyAttempts: 3,
+      lighthouseVerifyDelayMs: 0,
+      publicUrl: 'http://localhost:5050',
+      publicGateways: [],
+      hostingTermDays: 365,
+      underpayToleranceSats: 100
     },
-    ipfs: { pin: async () => true, unpin: async () => true, isPinned: async () => true },
-    lighthouseResponses: [],
+    ipfs: {
+      pin: async () => true,
+      unpin: async () => true,
+      isPinned: async () => true,
+      cat: () => new Blob([new Uint8Array(1024)])
+    },
+    lighthouse: {
+      uploadCid: null,
+      uploadStatus: 200,
+      uploadHeld: false,
+      gatewayRetrievable: true,
+      release: null
+    },
     lighthouseRequests: [],
     file: null,
     files: [],
     adminFiles: null,
     adminError: null,
-    retryResult: null
+    retryResult: null,
+    paymentResult: null,
+    payments: null,
+    invoice: null,
+    wallet: null
   }
-  world.lighthouseFetch = async (url, options) => {
+  world.lighthouseFetch = async (url, options = {}) => {
     world.lighthouseRequests.push({ url, options })
-    const next = world.lighthouseResponses.shift()
-    if (!next) throw new Error('No Lighthouse response configured')
-    return next()
+    if (options.method === 'HEAD') return lighthouseHeadResponse(world)
+    if (url.includes('/api/v0/add')) return lighthouseUploadResponse(world)
+    throw new Error(`Unexpected Lighthouse request: ${options.method || 'GET'} ${url}`)
   }
   return world
 }
@@ -159,7 +207,7 @@ function buildLighthouseRegistry (world) {
     ipfs: world.ipfs,
     config: world.pinningConfig,
     factories: {
-      lighthouse: ({ config }) => new LighthouseProvider({ config, fetch: world.lighthouseFetch })
+      lighthouse: ({ config }) => new LighthouseProvider({ config, fetch: world.lighthouseFetch, sleep: async () => {} })
     }
   })
 }
@@ -169,7 +217,41 @@ function buildPinUseCases (world, files) {
     adapters: {
       config: world.pinningConfig,
       localdb: { files },
+      ipfs: world.ipfs,
       pinning: buildLighthouseRegistry(world),
+      logger: { info: () => {}, error: () => {} }
+    }
+  })
+}
+
+// A one-file store plus invoice store and wallet, so the background-pinning
+// scenarios can run the real check-payment, pin, and retry use-case offline.
+function buildPaymentUseCases (world) {
+  const files = {
+    get: async () => world.file,
+    put: async (file) => { world.file = file; return file },
+    update: async (cid, changes) => {
+      world.file = { ...world.file, ...changes, cid }
+      return world.file
+    },
+    list: async ({ status } = {}) => (!world.file ? [] : (!status || world.file.status === status) ? [world.file] : [])
+  }
+  const invoices = {
+    get: async () => world.invoice,
+    update: async (address, changes) => {
+      world.invoice = { ...world.invoice, ...changes }
+      return world.invoice
+    },
+    removeCreatedIndex: async () => {}
+  }
+  return new PaymentUseCases({
+    adapters: {
+      config: world.pinningConfig,
+      localdb: { files, invoices, meta: { nextHdIndex: async () => 1 } },
+      wallet: world.wallet,
+      ipfs: world.ipfs,
+      pinning: buildLighthouseRegistry(world),
+      announcer: { announce: async () => {} },
       logger: { info: () => {}, error: () => {} }
     }
   })
@@ -332,17 +414,41 @@ const handlers = [
     }
   },
   {
-    pattern: /^the Lighthouse API reports CID <([A-Za-z0-9_]+)>$/,
-    run (match, example, world) {
-      const cid = exampleValue(example, match[1])
-      world.lighthouseResponses = [() => jsonResponse({ data: { cid } })]
+    pattern: /^the Lighthouse gateway reports the file is retrievable$/,
+    run (_match, _example, world) {
+      world.lighthouse.gatewayRetrievable = true
     }
   },
   {
-    pattern: /^the Lighthouse API returns HTTP <([A-Za-z0-9_]+)>$/,
+    pattern: /^the Lighthouse gateway reports the file is missing$/,
+    run (_match, _example, world) {
+      world.lighthouse.gatewayRetrievable = false
+    }
+  },
+  {
+    pattern: /^the Lighthouse upload is held$/,
+    run (_match, _example, world) {
+      world.lighthouse.uploadHeld = true
+    }
+  },
+  {
+    pattern: /^the Lighthouse upload reports CID <([A-Za-z0-9_]+)>$/,
     run (match, example, world) {
-      const status = asInt(exampleValue(example, match[1]), match[1])
-      world.lighthouseResponses = [() => jsonResponse({ error: 'Lighthouse error' }, status)]
+      world.lighthouse.uploadCid = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^the Lighthouse upload reports the file CID$/,
+    run (_match, _example, world) {
+      world.lighthouse.uploadCid = null
+    }
+  },
+  {
+    pattern: /^the Lighthouse upload returns HTTP (.+)$/,
+    run (match, example, world) {
+      const raw = match[1]
+      const value = /^<[A-Za-z0-9_]+>$/.test(raw) ? exampleValue(example, raw.slice(1, -1)) : raw
+      world.lighthouse.uploadStatus = asInt(value, 'http_status')
     }
   },
   {
@@ -411,12 +517,6 @@ const handlers = [
     }
   },
   {
-    pattern: /^the Lighthouse API pins by CID$/,
-    run (_match, _example, world) {
-      world.lighthouseResponses = [() => jsonResponse({ data: { cid: world.file.cid } })]
-    }
-  },
-  {
     pattern: /^I retry failed pins$/,
     async run (_match, _example, world) {
       const useCases = buildPinUseCases(world, inMemoryFileStore(world))
@@ -436,9 +536,96 @@ const handlers = [
     pattern: /^the Lighthouse provider was asked to pin <([A-Za-z0-9_]+)> times$/,
     run (match, example, world) {
       const expected = asInt(exampleValue(example, match[1]), match[1])
-      const attempts = world.lighthouseRequests.filter(r => r.url.endsWith('/api/lighthouse/pin')).length
+      const attempts = world.lighthouseRequests.filter(r => r.url.includes('/api/v0/add')).length
       if (attempts !== expected) {
         throw new Error(`expected ${expected} Lighthouse pin attempts, got ${attempts}`)
+      }
+    }
+  },
+  {
+    pattern: /^a paid file with CID ([A-Za-z0-9]+) and filename ([^ ]+)$/,
+    run (match, _example, world) {
+      world.file = {
+        cid: match[1],
+        filename: match[2],
+        sizeBytes: 1024,
+        status: 'staged',
+        paymentAddress: PAID_ADDRESS,
+        pins: [],
+        paidAt: null,
+        hostedUntil: null
+      }
+      world.invoice = {
+        paymentAddress: PAID_ADDRESS,
+        status: 'awaitingPayment',
+        priceSats: 2000,
+        hdIndex: 1,
+        cid: match[1],
+        filename: match[2],
+        sizeBytes: 1024,
+        quoteExpiresAt: '2099-01-01T00:00:00.000Z'
+      }
+      world.wallet = { getBalanceSats: async () => 2000, sweep: async () => 'sweep-txid' }
+    }
+  },
+  {
+    pattern: /^the local IPFS pin succeeds$/,
+    run (_match, _example, world) {
+      world.ipfs.pin = async () => true
+    }
+  },
+  {
+    pattern: /^the local IPFS pin fails$/,
+    run (_match, _example, world) {
+      world.ipfs.pin = async () => { throw new Error('local pin failed') }
+    }
+  },
+  {
+    pattern: /^a pinned file with a failed local pin$/,
+    run (_match, _example, world) {
+      world.file = {
+        cid: 'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi',
+        filename: 'photo.jpg',
+        sizeBytes: 1024,
+        status: 'pinned',
+        pins: [
+          { provider: 'local-helia', status: 'failed', providerRef: null, pinnedAt: null, error: 'local pin failed' },
+          { provider: 'lighthouse', status: 'pinned', providerRef: null, pinnedAt: '2026-10-09T00:00:00.000Z', error: null }
+        ]
+      }
+    }
+  },
+  {
+    pattern: /^I check payment$/,
+    async run (_match, _example, world) {
+      world.payments = buildPaymentUseCases(world)
+      world.paymentResult = await world.payments.checkPayment({ paymentAddress: world.invoice.paymentAddress })
+    }
+  },
+  {
+    pattern: /^the payment status is <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.paymentResult.status !== expected) {
+        throw new Error(`expected payment status ${expected}, got ${world.paymentResult.status}`)
+      }
+    }
+  },
+  {
+    pattern: /^the background pin finishes$/,
+    async run (_match, _example, world) {
+      if (world.lighthouse.release) world.lighthouse.release()
+      await world.payments.whenBackgroundIdle()
+    }
+  },
+  {
+    pattern: /^the recorded local-helia pin state is <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      const pin = (world.file.pins || []).find(p => p.provider === 'local-helia')
+      if (!pin) throw new Error('no local-helia pin was recorded')
+      if (pin.status !== expected) {
+        throw new Error(`expected local-helia pin state ${expected}, got ${pin.status}`)
       }
     }
   },

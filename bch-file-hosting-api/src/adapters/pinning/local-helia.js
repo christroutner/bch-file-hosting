@@ -16,7 +16,7 @@ class LocalHeliaProvider extends PinningProvider {
   }
 
   get capabilities () {
-    return { pinByCid: true, uploadBytes: false, unpin: true }
+    return { pinByCid: true, uploadBytes: false, unpin: true, authoritative: false }
   }
 
   async pin ({ cid }) {

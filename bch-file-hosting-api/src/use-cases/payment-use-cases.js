@@ -19,6 +19,11 @@ class PaymentUseCases extends UseCase {
     this.invoice = new Invoice()
     this.lock = new KeyedLock()
 
+    // Pins run off the request path, so check-payment returns as soon as the
+    // payment is recorded. The set is encapsulated for tests and graceful
+    // shutdown, which can await it with whenBackgroundIdle().
+    this.background = new Set()
+
     this.checkPayment = this.checkPayment.bind(this)
     this.retrySweeps = this.retrySweeps.bind(this)
     this.retryPins = this.retryPins.bind(this)
@@ -57,9 +62,10 @@ class PaymentUseCases extends UseCase {
   }
 
   // Idempotent: never sweep again, but finish pinning if it did not complete.
+  // A file mid-pin ('pinning') is already being handled by a background task.
   async repayPaidInvoice (invoice) {
-    let file = await this.adapters.localdb.files.get(invoice.cid)
-    if (file.status !== FILE_STATUS.PINNED) file = await this.pinFile(file)
+    const file = await this.adapters.localdb.files.get(invoice.cid)
+    if (file.status === FILE_STATUS.PIN_FAILED) this.runInBackground(() => this.pinAndAnnounce(invoice.cid))
     return this.paidResult(invoice, file)
   }
 
@@ -89,30 +95,62 @@ class PaymentUseCases extends UseCase {
     })
     await localdb.invoices.removeCreatedIndex(paidInvoice)
 
-    let file = await localdb.files.update(invoice.cid, {
+    const file = await localdb.files.update(invoice.cid, {
       paymentAddress: invoice.paymentAddress,
       paidAt: paidAt.toISOString(),
-      hostedUntil: hostedUntil.toISOString()
+      hostedUntil: hostedUntil.toISOString(),
+      status: FILE_STATUS.PINNING
     })
     logger.info('Invoice paid', { paymentAddress: invoice.paymentAddress, cid: invoice.cid, receivedSats })
 
-    file = await this.pinFile(file)
-    await this.announce(file)
+    // Uploads and verification are slow, so they must not stall the request.
+    this.runInBackground(() => this.pinAndAnnounce(invoice.cid))
     const sweptInvoice = await this.sweep(paidInvoice)
 
     return this.paidResult(sweptInvoice, file)
   }
 
-  // Pin with every provider and record each result. The file is 'pinned' only
-  // if all providers succeed.
+  // Re-read the file, then pin and announce it. Runs in the background after
+  // payment, so it reads the latest record instead of a stale copy.
+  async pinAndAnnounce (cid) {
+    const file = await this.adapters.localdb.files.get(cid)
+    const updated = await this.pinFile(file)
+    await this.announce(updated)
+    return updated
+  }
+
+  // Run a task without blocking the caller. Failures are logged, never thrown,
+  // so a background pin can never reject an unhandled promise.
+  runInBackground (task) {
+    const promise = Promise.resolve()
+      .then(task)
+      .catch(err => this.adapters.logger.error(`Background pin failed: ${err.message}`))
+      .finally(() => this.background.delete(promise))
+    this.background.add(promise)
+    return promise
+  }
+
+  // Resolve when every background task has settled. Used by tests and shutdown.
+  async whenBackgroundIdle () {
+    while (this.background.size > 0) await Promise.all([...this.background])
+  }
+
+  // Pin with every provider that has not already succeeded and record each
+  // result. Providers already recorded as pinned are skipped, so a retry never
+  // re-uploads a file that Lighthouse already has. The file is 'pinned' when
+  // every authoritative provider succeeded; local/best-effort failures are
+  // recorded but do not fail the file.
   async pinFile (file) {
     const { localdb, pinning, logger } = this.adapters
+    const pins = [...(file.pins || [])]
 
-    const pins = []
     for (const provider of pinning.getProviders()) {
+      const existing = pins.find(p => p.provider === provider.name)
+      if (existing && existing.status === 'pinned') continue
+
       try {
-        const result = await provider.pin({ cid: file.cid, filename: file.filename, sizeBytes: file.sizeBytes })
-        pins.push({
+        const result = await provider.pin(this.pinArgs(provider, file))
+        this.recordPin(pins, {
           provider: provider.name,
           status: 'pinned',
           providerRef: result.providerRef ?? null,
@@ -121,15 +159,38 @@ class PaymentUseCases extends UseCase {
         })
       } catch (err) {
         logger.error(`Pinning ${file.cid} with ${provider.name} failed: ${err.message}`)
-        pins.push({ provider: provider.name, status: 'failed', providerRef: null, pinnedAt: null, error: err.message })
+        this.recordPin(pins, { provider: provider.name, status: 'failed', providerRef: null, pinnedAt: null, error: err.message })
       }
     }
 
-    const allPinned = pins.every(p => p.status === 'pinned')
     return localdb.files.update(file.cid, {
       pins,
-      status: allPinned ? FILE_STATUS.PINNED : FILE_STATUS.PIN_FAILED
+      status: this.pinStatus(pinning.getProviders(), pins)
     })
+  }
+
+  // Upload providers receive the file bytes; every other provider pins by CID.
+  pinArgs (provider, file) {
+    const args = { cid: file.cid, filename: file.filename, sizeBytes: file.sizeBytes }
+    if (provider.capabilities.uploadBytes) {
+      args.content = this.adapters.ipfs.cat({ cid: file.cid, filename: file.filename })
+    }
+    return args
+  }
+
+  recordPin (pins, pin) {
+    const index = pins.findIndex(p => p.provider === pin.provider)
+    if (index === -1) pins.push(pin)
+    else pins[index] = pin
+  }
+
+  pinStatus (providers, pins) {
+    const authoritative = providers.filter(p => p.capabilities.authoritative)
+    const required = authoritative.length ? authoritative : providers
+    const allPinned = required.every(provider =>
+      pins.some(pin => pin.provider === provider.name && pin.status === 'pinned')
+    )
+    return allPinned ? FILE_STATUS.PINNED : FILE_STATUS.PIN_FAILED
   }
 
   async announce (file) {
@@ -208,15 +269,17 @@ class PaymentUseCases extends UseCase {
     return { swept, failed, empty }
   }
 
-  // Retry pinning for files whose earlier pinning failed. Files that are
-  // already pinned or still staged are left alone.
+  // Retry the providers that failed earlier. Files whose authoritative pin is
+  // already complete are left alone, except that a failed best-effort (local)
+  // pin is retried without re-uploading to the providers that succeeded.
   async retryPins () {
-    const failed = await this.adapters.localdb.files.list({ status: FILE_STATUS.PIN_FAILED })
+    const all = await this.adapters.localdb.files.list()
+    const needing = all.filter(file => this.needsPinRetry(file))
     const retried = []
     const pinned = []
     const failedAgain = []
 
-    for (const file of failed) {
+    for (const file of needing) {
       const updated = await this.pinFile(file)
       retried.push(file.cid)
       if (updated.status === FILE_STATUS.PINNED) pinned.push(file.cid)
@@ -224,6 +287,11 @@ class PaymentUseCases extends UseCase {
     }
 
     return { retried, pinned, failed: failedAgain }
+  }
+
+  needsPinRetry (file) {
+    if (file.status === FILE_STATUS.PIN_FAILED) return true
+    return (file.pins || []).some(pin => pin.status === 'failed')
   }
 }
 

@@ -6,17 +6,19 @@ import path from 'path'
 
 const MAX_FILENAME_LENGTH = 255
 
-// staged: uploaded, awaiting payment. pinned: paid and pinned everywhere.
-// pinFailed: paid, but at least one provider failed to pin. deleted: unpaid and removed.
+// staged: uploaded, awaiting payment. pinning: paid, pinning in progress.
+// pinned: paid and pinned with every required provider. pinFailed: paid, but a
+// required provider failed to pin. deleted: unpaid and removed.
 export const FILE_STATUS = Object.freeze({
   STAGED: 'staged',
+  PINNING: 'pinning',
   PINNED: 'pinned',
   PIN_FAILED: 'pinFailed',
   DELETED: 'deleted'
 })
 
 export function isPaidFileStatus (status) {
-  return status === FILE_STATUS.PINNED || status === FILE_STATUS.PIN_FAILED
+  return status === FILE_STATUS.PINNING || status === FILE_STATUS.PINNED || status === FILE_STATUS.PIN_FAILED
 }
 
 function requireFilename (filename) {

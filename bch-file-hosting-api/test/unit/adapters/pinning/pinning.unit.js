@@ -66,7 +66,7 @@ describe('#pinning', () => {
 
     it('should describe itself', () => {
       assert.equal(uut.name, 'local-helia')
-      assert.deepEqual(uut.capabilities, { pinByCid: true, uploadBytes: false, unpin: true })
+      assert.deepEqual(uut.capabilities, { pinByCid: true, uploadBytes: false, unpin: true, authoritative: false })
       assert.isNull(uut.gatewayUrl('x'))
     })
 

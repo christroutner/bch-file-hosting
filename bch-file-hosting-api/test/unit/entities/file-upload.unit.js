@@ -4,7 +4,7 @@
 
 import { assert } from 'chai'
 
-import FileUpload from '../../../src/entities/file-upload.js'
+import FileUpload, { FILE_STATUS, isPaidFileStatus } from '../../../src/entities/file-upload.js'
 
 describe('#file-upload.js', () => {
   let uut
@@ -131,6 +131,19 @@ describe('#file-upload.js', () => {
 
     it('should throw if called with no arguments', () => {
       assert.throws(() => uut.validate(), /'filename' must be a non-empty string/)
+    })
+  })
+
+  describe('#isPaidFileStatus', () => {
+    it('should treat pinning, pinned, and pinFailed as paid', () => {
+      assert.isTrue(isPaidFileStatus(FILE_STATUS.PINNING))
+      assert.isTrue(isPaidFileStatus(FILE_STATUS.PINNED))
+      assert.isTrue(isPaidFileStatus(FILE_STATUS.PIN_FAILED))
+    })
+
+    it('should treat staged and deleted as not paid', () => {
+      assert.isFalse(isPaidFileStatus(FILE_STATUS.STAGED))
+      assert.isFalse(isPaidFileStatus(FILE_STATUS.DELETED))
     })
   })
 })

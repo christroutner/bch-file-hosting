@@ -5,9 +5,14 @@
   PINNING_PROVIDERS.
 
   capabilities:
-    pinByCid    - the provider fetches content from the IPFS network by CID
-    uploadBytes - the provider receives the file bytes from us
-    unpin       - the provider can remove a pin
+    pinByCid      - the provider fetches content from the IPFS network by CID
+    uploadBytes   - the provider receives the file bytes from us, as the
+                    `content` argument to pin()
+    unpin         - the provider can remove a pin
+    authoritative - the provider's pin is the file's success criterion. A file
+                    is `pinned` when every authoritative provider succeeded;
+                    non-authoritative (best-effort) providers are still
+                    recorded but their failures do not fail the file.
 */
 
 class PinningProvider {
@@ -19,8 +24,9 @@ class PinningProvider {
     throw new Error('PinningProvider subclasses must implement capabilities')
   }
 
-  // Returns { providerCid, providerRef }.
-  async pin ({ cid, filePath, filename, sizeBytes }) {
+  // Returns { providerCid, providerRef }. For an uploadBytes provider the
+  // caller supplies `content`, a stream or iterable of the file bytes.
+  async pin ({ cid, filePath, filename, sizeBytes, content }) {
     throw new Error(`${this.name} does not implement pin()`)
   }
 

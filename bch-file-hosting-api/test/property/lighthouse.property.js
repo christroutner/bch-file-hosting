@@ -17,7 +17,9 @@ import LighthouseProvider from '../../src/adapters/pinning/lighthouse.js'
 import { forAll, forAllAsync, integerBetween } from './lib/harness.js'
 
 const API = 'https://api.lighthouse.storage'
+const UPLOAD = 'https://upload.lighthouse.storage'
 const GATEWAY = 'https://gateway.lighthouse.storage/ipfs/'
+const SIZE = 1024
 const KNOWN_STATUSES = ['pinned', 'pinning', 'failed']
 
 const TOKEN_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -43,21 +45,44 @@ function jsonResponse (body, status = 200) {
   })
 }
 
+function addResponse (cid) {
+  return new Response(`{"Name":"f","Hash":"bafyfile"}\n{"Name":"","Hash":"${cid}"}\n`, { status: 200 })
+}
+
+function headResponse (status = 200, length = SIZE) {
+  return new Response(null, { status, headers: length === undefined ? {} : { 'content-length': String(length) } })
+}
+
+function content () {
+  return new Blob([new Uint8Array(SIZE)])
+}
+
 describe('#lighthouse.property.js', () => {
   let sandbox
   let fetch
+  let sleep
 
   beforeEach(() => {
     sandbox = sinon.createSandbox()
     fetch = sandbox.stub()
+    sleep = sandbox.stub().resolves()
   })
 
   afterEach(() => sandbox.restore())
 
   function build (overrides = {}) {
     return new LighthouseProvider({
-      config: { lighthouseApiKey: 'k', lighthouseApiUrl: API, lighthouseGateway: GATEWAY, ...overrides },
-      fetch
+      config: {
+        lighthouseApiKey: 'k',
+        lighthouseApiUrl: API,
+        lighthouseUploadUrl: UPLOAD,
+        lighthouseGateway: GATEWAY,
+        lighthouseVerifyAttempts: 1,
+        lighthouseVerifyDelayMs: 0,
+        ...overrides
+      },
+      fetch,
+      sleep
     })
   }
 
@@ -103,23 +128,24 @@ describe('#lighthouse.property.js', () => {
         seed: 2,
         runs: 200,
         generate: (random) => ({
-          expected: randomToken(random, 46),
-          mismatched: `x${randomToken(random, 46)}`,
+          expected: `bafy${randomToken(random, 42)}`,
+          mismatched: `bafy${randomToken(random, 42)}`,
           reportMatch: random() < 0.5
         }),
         property: async ({ expected, mismatched, reportMatch }) => {
           fetch.reset()
-          fetch.resolves(jsonResponse({ data: { cid: reportMatch ? expected : mismatched } }))
+          fetch.onFirstCall().resolves(addResponse(reportMatch ? expected : mismatched))
+          fetch.onSecondCall().resolves(headResponse(200, SIZE))
 
           if (reportMatch) {
-            const result = await build().pin({ cid: expected, filename: 'f' })
+            const result = await build().pin({ cid: expected, filename: 'f', sizeBytes: SIZE, content: content() })
             assert.deepEqual(result, { providerCid: expected, providerRef: null })
             return
           }
 
           let threw = false
           try {
-            await build().pin({ cid: expected, filename: 'f' })
+            await build().pin({ cid: expected, filename: 'f', sizeBytes: SIZE, content: content() })
           } catch (err) {
             threw = true
             assert.include(err.message, expected)
@@ -132,7 +158,7 @@ describe('#lighthouse.property.js', () => {
   })
 
   describe('#pin HTTP errors', () => {
-    it('should reject with the HTTP status for every non-2xx code', () => {
+    it('should reject with the HTTP status for every non-2xx upload code', () => {
       forAllAsync({
         seed: 3,
         runs: 100,
@@ -143,7 +169,7 @@ describe('#lighthouse.property.js', () => {
 
           let threw = false
           try {
-            await build().pin({ cid, filename: 'f' })
+            await build().pin({ cid, filename: 'f', sizeBytes: SIZE, content: content() })
           } catch (err) {
             threw = true
             assert.include(err.message, String(status))

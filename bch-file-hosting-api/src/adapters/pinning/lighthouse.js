@@ -1,20 +1,31 @@
 /*
   Pinning provider for Lighthouse (https://lighthouse.storage).
 
-  Pins an existing CID through the Lighthouse REST API, so Lighthouse stores our
-  exact CID instead of re-importing the bytes. The API key and HTTP client are
+  Uploads the file bytes to Lighthouse's IPFS-compatible endpoint (which
+  reproduces our exact wrapping-directory CID), verifies the copy is retrievable
+  through the Lighthouse gateway, and only then reports success. Pin-by-CID does
+  not work for us: Lighthouse fetches the CID from the IPFS network, and our
+  node's provide may not have propagated. The API key and HTTP client are
   injected, and the client is replaceable so tests never touch the network.
 
-  Endpoints (from the lighthouse-go-sdk):
-    POST   /api/lighthouse/pin                 { cid, fileName }
-    GET    /api/user/files_uploaded
-    DELETE /api/user/delete_file?id=<fileId>
+  Endpoints:
+    POST   /api/v0/add?wrap-with-directory=true&...   multipart file upload
+    GET    /api/user/files_uploaded                    list uploads
+    DELETE /api/user/delete_file?id=<fileId>           unpin
+  The gateway is checked with HEAD <gateway>/<cid>/<filename>.
 */
 
 import PinningProvider from './pinning-provider.js'
 
 const DEFAULT_API_URL = 'https://api.lighthouse.storage'
+const DEFAULT_UPLOAD_URL = 'https://upload.lighthouse.storage'
 const DEFAULT_GATEWAY_URL = 'https://gateway.lighthouse.storage/ipfs/'
+const DEFAULT_VERIFY_ATTEMPTS = 3
+const DEFAULT_VERIFY_DELAY_MS = 2000
+
+// Reproduce the exact CIDv1 / raw-leaves wrapping-directory import the IPFS
+// adapter uses, so Lighthouse reports the CID we issued.
+const ADD_QUERY = 'wrap-with-directory=true&cid-version=1&raw-leaves=true&pin=true'
 
 const STATUS_MAP = { pinned: 'pinned', pinning: 'pinning', failed: 'failed' }
 
@@ -26,13 +37,18 @@ function ensureTrailingSlash (url) {
   return url.endsWith('/') ? url : `${url}/`
 }
 
+// Read a response body and throw a descriptive error for a non-2xx response.
+async function readText (response, action) {
+  const text = await response.text()
+  if (!response.ok) {
+    throw new Error(`Lighthouse ${action} request failed with HTTP ${response.status}${text ? `: ${text}` : ''}`)
+  }
+  return text
+}
+
 // Decode the JSON body of a Response, or null for an empty or non-JSON body.
 async function readJson (response, action) {
-  if (!response.ok) {
-    const body = await response.text()
-    throw new Error(`Lighthouse ${action} request failed with HTTP ${response.status}${body ? `: ${body}` : ''}`)
-  }
-  const text = await response.text()
+  const text = await readText(response, action)
   if (!text) return null
   try {
     return JSON.parse(text)
@@ -41,25 +57,37 @@ async function readJson (response, action) {
   }
 }
 
-// The payload is either wrapped in a `data` property or is the body itself.
-function payloadOf (data) {
-  if (!data) return null
-  return data.data ?? data
+// IPFS's /api/v0/add returns newline-delimited JSON, one line per added item.
+// With wrap-with-directory the wrapping directory is the entry with no name.
+function parseAddedCid (text) {
+  let fallback = null
+  for (const line of text.split('\n')) {
+    if (!line.trim()) continue
+    let entry
+    try {
+      entry = JSON.parse(line)
+    } catch {
+      continue
+    }
+    const cid = entry.Hash ?? entry.cid ?? null
+    if (!cid) continue
+    if (entry.Name === '' || entry.path === '') return cid
+    fallback = cid
+  }
+  return fallback
 }
 
-// Lighthouse may echo the CID it accepted, under a few response shapes. Treat a
-// missing report as success (the request itself already succeeded).
-function reportedCid (data) {
-  const payload = payloadOf(data)
-  if (typeof payload === 'string') return payload
-  if (payload === null) return null
-  return payload.cid ?? payload.Hash ?? null
-}
+// Normalize the content source (a Blob, a web ReadableStream, or an async
+// iterable of chunks) into a Blob for the multipart upload.
+async function toBlob (content) {
+  if (typeof Blob !== 'undefined' && content instanceof Blob) return content
+  if (content && typeof content.getReader === 'function') return new Response(content).blob()
 
-function reportedRef (data) {
-  const payload = payloadOf(data)
-  if (typeof payload !== 'object' || payload === null) return null
-  return payload.id ?? payload.fileId ?? null
+  const chunks = []
+  for await (const chunk of content) {
+    chunks.push(typeof chunk === 'string' ? new TextEncoder().encode(chunk) : chunk)
+  }
+  return new Blob(chunks)
 }
 
 function mapStatus (status) {
@@ -67,14 +95,18 @@ function mapStatus (status) {
 }
 
 class LighthouseProvider extends PinningProvider {
-  constructor ({ config, fetch } = {}) {
+  constructor ({ config, fetch, sleep } = {}) {
     super()
     if (!config) throw new Error('LighthouseProvider requires a config object')
     this.config = config
     this.apiKey = config.lighthouseApiKey || ''
     this.apiUrl = trimTrailingSlash(config.lighthouseApiUrl || DEFAULT_API_URL)
+    this.uploadUrl = trimTrailingSlash(config.lighthouseUploadUrl || DEFAULT_UPLOAD_URL)
     this.gatewayBase = ensureTrailingSlash(config.lighthouseGateway || DEFAULT_GATEWAY_URL)
+    this.verifyAttempts = config.lighthouseVerifyAttempts ?? DEFAULT_VERIFY_ATTEMPTS
+    this.verifyDelayMs = config.lighthouseVerifyDelayMs ?? DEFAULT_VERIFY_DELAY_MS
     this.fetch = fetch || globalThis.fetch
+    this.sleep = sleep || (ms => new Promise(resolve => setTimeout(resolve, ms)))
   }
 
   get name () {
@@ -82,31 +114,72 @@ class LighthouseProvider extends PinningProvider {
   }
 
   get capabilities () {
-    return { pinByCid: true, uploadBytes: false, unpin: true }
+    return { pinByCid: false, uploadBytes: true, unpin: true, authoritative: true }
+  }
+
+  authHeaders () {
+    return { Authorization: `Bearer ${this.apiKey}` }
   }
 
   headers () {
-    return {
-      Authorization: `Bearer ${this.apiKey}`,
-      'Content-Type': 'application/json'
-    }
+    return { ...this.authHeaders(), 'Content-Type': 'application/json' }
   }
 
-  async pin ({ cid, filename } = {}) {
+  async pin ({ cid, filename, sizeBytes, content } = {}) {
     if (!this.apiKey) throw new Error('Lighthouse API key is not configured')
+    if (!content) throw new Error('Lighthouse pin requires the file content')
 
-    const response = await this.fetch(`${this.apiUrl}/api/lighthouse/pin`, {
-      method: 'POST',
-      headers: this.headers(),
-      body: JSON.stringify({ cid, fileName: filename })
-    })
-    const data = await readJson(response, 'pin')
-
-    const reported = reportedCid(data)
+    const reported = await this.upload({ filename, content })
     if (reported !== null && reported !== cid) {
       throw new Error(`Lighthouse reported CID ${reported}, expected ${cid}`)
     }
-    return { providerCid: cid, providerRef: reportedRef(data) }
+
+    await this.verify({ cid, filename, sizeBytes })
+    return { providerCid: cid, providerRef: null }
+  }
+
+  // Upload the bytes and return the CID Lighthouse reports, or null if it
+  // reported none.
+  async upload ({ filename, content }) {
+    const form = new FormData()
+    form.append('file', await toBlob(content), filename)
+
+    const response = await this.fetch(`${this.uploadUrl}/api/v0/add?${ADD_QUERY}`, {
+      method: 'POST',
+      headers: this.authHeaders(),
+      body: form
+    })
+    return parseAddedCid(await readText(response, 'upload'))
+  }
+
+  // Confirm the gateway serves the file we just uploaded, retrying briefly
+  // while the CDN propagates the new CID.
+  async verify ({ cid, filename, sizeBytes }) {
+    const url = this.gatewayUrl(cid, filename)
+    let reason = 'no response'
+
+    for (let attempt = 1; attempt <= this.verifyAttempts; attempt++) {
+      reason = await this.verifyOnce({ url, sizeBytes })
+      if (reason === null) return true
+      if (attempt < this.verifyAttempts) await this.sleep(this.verifyDelayMs)
+    }
+
+    throw new Error(`Lighthouse gateway could not retrieve ${cid}: ${reason}`)
+  }
+
+  // Returns null when the file is retrievable, or a reason string when it is not.
+  async verifyOnce ({ url, sizeBytes }) {
+    try {
+      const response = await this.fetch(url, { method: 'HEAD' })
+      if (!response.ok) return `HTTP ${response.status}`
+      const length = Number(response.headers.get('content-length'))
+      if (length !== sizeBytes) {
+        return `content-length ${response.headers.get('content-length')}, expected ${sizeBytes}`
+      }
+      return null
+    } catch (err) {
+      return err.message
+    }
   }
 
   async status (cid) {
@@ -144,7 +217,3 @@ class LighthouseProvider extends PinningProvider {
 }
 
 export default LighthouseProvider
-
-// mutate4javascript-manifest-begin
-// {"version":1,"tested_at":"2026-10-09T16:51:50.440Z","module_hash":"29ea487bfb085e0bdfcc9a11c20e31b7f108e5e566a6351458f01f3931da36b1","functions":[{"id":"func/trimTrailingSlash","name":"trimTrailingSlash","line":21,"end_line":23,"hash":"19c0e21ecb4e1b92a42dfafe6af982ef45ed6a85114bead015ccddb1a5763077"},{"id":"func/ensureTrailingSlash","name":"ensureTrailingSlash","line":25,"end_line":27,"hash":"ef6b753d88bcc488e5b1b494f79df881d6b51f1c12cd5bd0266bbe223751fe73"},{"id":"func/readJson","name":"readJson","line":30,"end_line":42,"hash":"e6d97910fadcbeb2b948dbeaa3a8b8d6ab98b0b4e989afc1e21b51ea36e52d92"},{"id":"func/payloadOf","name":"payloadOf","line":45,"end_line":48,"hash":"b32a1696dcbf09fd0c0e4e1f50db4ca2f28a6e224c0bab870f65f8d65832bd01"},{"id":"func/reportedCid","name":"reportedCid","line":52,"end_line":57,"hash":"cca121dc3f2b894f60437a53e74939a322346526c68803ca86e973abc77ce7d2"},{"id":"func/reportedRef","name":"reportedRef","line":59,"end_line":63,"hash":"e09b0b3fb0fbe094b2daf206312fed68668d5204897b3ad26d5c665e3029434c"},{"id":"func/mapStatus","name":"mapStatus","line":65,"end_line":67,"hash":"e7b9bfda3b62cfa848c546b80f759819b725d0a014fca971047e3a77c4dc6864"},{"id":"func/LighthouseProvider.constructor","name":"LighthouseProvider.constructor","line":70,"end_line":78,"hash":"ea1d03abd6827ce9060b7d5f3cbe9548cff3698fc0f7cadd2ca73b5c0ed87059"},{"id":"func/LighthouseProvider.name","name":"LighthouseProvider.name","line":80,"end_line":82,"hash":"b6b9f0ea8a007b0bc47de0fa480327eececbc236db920274adfebb84515770e0"},{"id":"func/LighthouseProvider.capabilities","name":"LighthouseProvider.capabilities","line":84,"end_line":86,"hash":"46a64809d388268fb87e2ebe7550bb608b90b853d6e1fcd091ff93f646c7fe9d"},{"id":"func/LighthouseProvider.headers","name":"LighthouseProvider.headers","line":88,"end_line":93,"hash":"bcee0d0202f66c3ddec14627fa65648ff397179493d30b6c56596fd7f2c8c1be"},{"id":"func/LighthouseProvider.pin","name":"LighthouseProvider.pin","line":95,"end_line":110,"hash":"edb0c51f32768ba87a72a5230073f6f3768b393fac0b7e927e5024f720805a64"},{"id":"func/LighthouseProvider.status","name":"LighthouseProvider.status","line":112,"end_line":116,"hash":"298440b3aefe5d4de9aff533c8d259beccfddf4f1c7ef4f62b6bd3ca79dbe7c5"},{"id":"func/LighthouseProvider.unpin","name":"LighthouseProvider.unpin","line":118,"end_line":128,"hash":"d7c1032faf4894819cfceea795153a3a8e2bc5e2e473216da9b36d14e46440b9"},{"id":"func/LighthouseProvider.gatewayUrl","name":"LighthouseProvider.gatewayUrl","line":130,"end_line":133,"hash":"a4a0500b88dba68b70eab6cf498f34cc939ed06f7fc3b728da9082650f7130f8"},{"id":"func/LighthouseProvider.findUpload","name":"LighthouseProvider.findUpload","line":135,"end_line":143,"hash":"3b30ae0f1e72fc68f5bb0e16450918ff04cb7691f99674789b45782bd5d49781"}]}
-// mutate4javascript-manifest-end

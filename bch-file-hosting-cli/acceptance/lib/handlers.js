@@ -18,6 +18,7 @@ import FileUpload from '../../src/commands/file-upload.js'
 import FileCheck from '../../src/commands/file-check.js'
 import FileStatus from '../../src/commands/file-status.js'
 import FilePay from '../../src/commands/file-pay.js'
+import FileHost from '../../src/commands/file-host.js'
 import WalletCreate from '../../src/commands/wallet-create.js'
 import WalletBalance from '../../src/commands/wallet-balance.js'
 import WalletStore from '../../src/lib/wallet-store.js'
@@ -63,6 +64,8 @@ function createWorld () {
     tmpDir,
     config: { apiUrl: 'http://localhost:5050' },
     apiResult: null,
+    uploadResult: null,
+    checkResults: [],
     apiError: null,
     receivedAddress: null,
     receivedCid: null,
@@ -81,11 +84,12 @@ function createWorld () {
   world.hostingApi = {
     upload: async () => {
       if (world.apiError) throw new Error(world.apiError)
-      return world.apiResult
+      return world.uploadResult
     },
     checkPayment: async ({ paymentAddress } = {}) => {
       world.receivedAddress = paymentAddress
       if (world.apiError) throw new Error(world.apiError)
+      if (world.checkResults.length > 0) return world.checkResults.shift()
       return world.apiResult
     },
     getStatus: async ({ cid } = {}) => {
@@ -117,6 +121,7 @@ function buildCommand (world, CommandClass) {
     hostingApi: world.hostingApi,
     walletStore: world.walletStore,
     walletService: world.walletService,
+    sleep: async () => {},
     output: (msg) => { world.stdout += `${msg}\n` },
     errorOutput: (msg) => { world.stderr += `${msg}\n` }
   })
@@ -160,6 +165,12 @@ const handlers = [
     }
   },
   {
+    pattern: /^a file-host command$/,
+    run (_match, _example, world) {
+      buildCommand(world, FileHost)
+    }
+  },
+  {
     pattern: /^a wallet-create command$/,
     run (_match, _example, world) {
       buildCommand(world, WalletCreate)
@@ -174,7 +185,7 @@ const handlers = [
   {
     pattern: /^the hosting API quotes <([A-Za-z0-9_]+)> satoshis at <([A-Za-z0-9_]+)>$/,
     run (match, example, world) {
-      world.apiResult = {
+      world.uploadResult = world.apiResult = {
         success: true,
         cid: 'bafyquote',
         filename: 'upload.bin',
@@ -189,7 +200,7 @@ const handlers = [
   {
     pattern: /^the hosting API reports the file is already hosted at <([A-Za-z0-9_]+)>$/,
     run (match, example, world) {
-      world.apiResult = {
+      world.uploadResult = world.apiResult = {
         success: true,
         alreadyHosted: true,
         cid: 'bafyalready',
@@ -355,6 +366,13 @@ const handlers = [
         receivedSats: asInt(exampleValue(example, match[1]), match[1]),
         requiredSats: asInt(exampleValue(example, match[2]), match[2])
       }
+    }
+  },
+  {
+    pattern: /^the hosting API reports the payment as unpaid$/,
+    run (_match, _example, world) {
+      world.apiResult = { success: true, status: 'unpaid', receivedSats: 0, requiredSats: 0 }
+      world.checkResults.push(world.apiResult)
     }
   },
   {
@@ -559,6 +577,51 @@ const handlers = [
     async run (match, example, world) {
       world.exitCode = await world.command.run({
         address: expectedText(example, match[1]),
+        name: expectedText(example, match[2]),
+        json: true
+      })
+    }
+  },
+  {
+    pattern: /^I run file-host for the file (.+) with the wallet (.+)$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({
+        file: fixturePath(world, expectedText(example, match[1])),
+        name: expectedText(example, match[2])
+      })
+    }
+  },
+  {
+    pattern: /^I run file-host with the wallet (.+)$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({ name: expectedText(example, match[1]) })
+    }
+  },
+  {
+    pattern: /^I run file-host for the file (.+) with no wallet$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({
+        file: fixturePath(world, expectedText(example, match[1]))
+      })
+    }
+  },
+  {
+    pattern: /^I try file-host for the missing file (.+) with the wallet (.+)$/,
+    async run (match, example, world) {
+      const requested = expectedText(example, match[1])
+      const missing = path.join(world.tmpDir, path.basename(requested))
+      if (fs.existsSync(missing)) fs.rmSync(missing)
+      world.exitCode = await world.command.run({
+        file: missing,
+        name: expectedText(example, match[2])
+      })
+    }
+  },
+  {
+    pattern: /^I run file-host with JSON output for the file (.+) with the wallet (.+)$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({
+        file: fixturePath(world, expectedText(example, match[1])),
         name: expectedText(example, match[2]),
         json: true
       })

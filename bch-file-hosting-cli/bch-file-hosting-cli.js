@@ -12,6 +12,7 @@ import FileUpload from './src/commands/file-upload.js'
 import FileCheck from './src/commands/file-check.js'
 import FileStatus from './src/commands/file-status.js'
 import FilePay from './src/commands/file-pay.js'
+import FileHost from './src/commands/file-host.js'
 import WalletCreate from './src/commands/wallet-create.js'
 import WalletBalance from './src/commands/wallet-balance.js'
 
@@ -20,6 +21,7 @@ const fileUpload = new FileUpload()
 const fileCheck = new FileCheck()
 const fileStatus = new FileStatus()
 const filePay = new FilePay()
+const fileHost = new FileHost()
 const walletCreate = new WalletCreate()
 const walletBalance = new WalletBalance()
 
@@ -60,6 +62,15 @@ program.command('file-pay')
   .option('--json', 'print the result as a single JSON object')
   .action(async (flags) => {
     process.exitCode = await filePay.run(flags)
+  })
+
+program.command('file-host')
+  .description('Upload, pay, and confirm hosting in one step (-f <path>, -n <name>, --json)')
+  .option('-f, --file <path>', 'path of the file to host')
+  .option('-n, --name <name>', 'wallet name to pay from')
+  .option('--json', 'print the result as a single JSON object')
+  .action(async (flags) => {
+    process.exitCode = await fileHost.run(flags)
   })
 
 program.command('wallet-create')

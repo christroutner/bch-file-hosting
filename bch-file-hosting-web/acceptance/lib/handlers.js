@@ -1,11 +1,13 @@
 /*
   Project step handlers for the bch-file-hosting-web acceptance pipeline.
 
-  These handlers connect the Gherkin step text to the real upload page service
+  These handlers connect the Gherkin step text to the real page service
   (src/services/file-upload-page.js) and the real presentational component
   (src/components/app-body/file-hosting/upload-quote-view.js). The hosting API
-  adapter is replaced with a deterministic fake that returns the response (or
-  error) the scenario configured, so the acceptance run is offline.
+  adapter and the wallet are replaced with deterministic fakes that return the
+  response (or error) the scenario configured, so the acceptance run is
+  offline. The page clock and sleep are injected too, so countdowns and polling
+  are deterministic.
 
   Regex matching with placeholder-name capture is the default style: one
   handler captures the placeholder name (e.g. <api_sats>) and fetches the
@@ -19,6 +21,11 @@ const ReactDOMServer = require('react-dom/server')
 
 const FileUploadPage = require('../../src/services/file-upload-page')
 const UploadQuoteView = require('../../src/components/app-body/file-hosting/upload-quote-view')
+
+const MINUTE_MS = 60 * 1000
+
+// A fixed clock keeps the countdown and quote-expiry steps deterministic.
+const FIXED_NOW = Date.parse('2026-10-09T12:00:00Z')
 
 // Resolve a step value that is a <parameter> placeholder against the example
 // store. Literal values pass through.
@@ -37,22 +44,48 @@ function resolveParam (value, example) {
 // A world/state object is created fresh for every scenario execution.
 function createWorld () {
   return {
+    now: () => FIXED_NOW,
     page: null,
     response: null,
     error: null,
     state: null,
-    html: null
+    html: null,
+    walletSends: [],
+    walletTxid: null,
+    walletError: null,
+    checkResults: [],
+    pendingPaid: null
   }
 }
 
-// Fake hosting API: returns the configured response or throws the configured
-// error. The real FileUploadPage service drives it, so the handler exercises
-// the production state machine.
+// Fake hosting API: upload returns the configured response or throws the
+// configured error; check-payment returns the configured results in order,
+// repeating the last one. The real FileUploadPage service drives both, so the
+// handlers exercise the production state machine.
 function makeHostingApi (world) {
+  let checkIndex = 0
   return {
     upload: async () => {
       if (world.error) throw new Error(world.error)
       return world.response
+    },
+    checkPayment: async () => {
+      if (world.checkResults.length === 0) return { status: 'unpaid' }
+      const index = Math.min(checkIndex, world.checkResults.length - 1)
+      checkIndex++
+      return world.checkResults[index]
+    }
+  }
+}
+
+// Fake browser wallet: records every send, then returns the configured
+// transaction id or throws the configured error.
+function makeWallet (world) {
+  return {
+    send: async ({ address, amountSats }) => {
+      world.walletSends.push({ address, amountSats })
+      if (world.walletError) throw new Error(world.walletError)
+      return world.walletTxid || 'acceptance-txid'
     }
   }
 }
@@ -61,7 +94,7 @@ function makeHostingApi (world) {
 // uses, and cache the static HTML.
 function renderPage (world) {
   if (world.state === null) {
-    throw new Error('No upload has happened yet.')
+    throw new Error('No upload or payment has happened yet.')
   }
   if (world.html === null) {
     world.html = ReactDOMServer.renderToStaticMarkup(
@@ -76,16 +109,25 @@ function visibleText (html) {
   return html.replace(/<[^>]+>/g, '')
 }
 
+// Apply an async page transition and invalidate the cached render.
+async function transition (world, action) {
+  world.state = await action()
+  world.html = null
+  return world.state
+}
+
 const handlers = [
   {
     name: 'a fresh file hosting web page',
     pattern: /^a fresh file hosting web page$/,
     run (m, example, world) {
-      world.response = null
-      world.error = null
-      world.state = null
-      world.html = null
-      world.page = new FileUploadPage({ hostingApi: makeHostingApi(world) })
+      world.page = new FileUploadPage({
+        hostingApi: makeHostingApi(world),
+        wallet: makeWallet(world),
+        now: world.now,
+        sleep: async () => {},
+        maxConfirmations: 10
+      })
     }
   },
   {
@@ -97,6 +139,27 @@ const handlers = [
         priceSats: Number(resolveParam(m[1], example)),
         paymentAddress: resolveParam(m[2], example)
       }
+    }
+  },
+  {
+    name: 'the quote expires in N minutes',
+    pattern: /^the quote expires in (<[A-Za-z0-9_]+>) minutes$/,
+    run (m, example, world) {
+      const minutes = Number(resolveParam(m[1], example))
+      world.response.quoteExpiresAt = new Date(world.now() + minutes * MINUTE_MS).toISOString()
+    }
+  },
+  {
+    name: 'an open hosting quote',
+    pattern: /^an open hosting quote$/,
+    async run (m, example, world) {
+      world.response = {
+        alreadyHosted: false,
+        filename: 'upload.bin',
+        priceSats: 2000,
+        paymentAddress: 'bitcoincash:qopenquote'
+      }
+      await transition(world, () => world.page.upload({ name: 'upload.bin' }))
     }
   },
   {
@@ -117,20 +180,117 @@ const handlers = [
     }
   },
   {
+    name: 'the hosting API reports the payment as unpaid',
+    pattern: /^the hosting API reports the payment as unpaid$/,
+    run (m, example, world) {
+      world.checkResults.push({ status: 'unpaid' })
+    }
+  },
+  {
+    name: 'the hosting API reports the payment as expired',
+    pattern: /^the hosting API reports the payment as expired$/,
+    run (m, example, world) {
+      world.checkResults.push({ status: 'expired' })
+    }
+  },
+  {
+    name: 'the hosting API reports a paid invoice with a CID',
+    pattern: /^the hosting API reports a paid invoice with CID (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      const paid = {
+        status: 'paid',
+        cid: resolveParam(m[1], example),
+        filename: 'upload.bin',
+        downloadUrl: '',
+        gatewayUrls: []
+      }
+      world.pendingPaid = paid
+      world.checkResults.push(paid)
+    }
+  },
+  {
+    name: 'the hosting API reports the download URL of the paid invoice',
+    pattern: /^the hosting API reports the download URL (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.pendingPaid.downloadUrl = resolveParam(m[1], example)
+    }
+  },
+  {
+    name: 'the hosting API reports a gateway URL of the paid invoice',
+    pattern: /^the hosting API reports the gateway URL (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.pendingPaid.gatewayUrls.push(resolveParam(m[1], example))
+    }
+  },
+  {
+    name: 'the wallet will broadcast a transaction',
+    pattern: /^the wallet will broadcast the transaction (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.walletTxid = resolveParam(m[1], example)
+    }
+  },
+  {
+    name: 'the browser wallet rejects the payment',
+    pattern: /^the browser wallet rejects the payment with error (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.walletError = resolveParam(m[1], example)
+    }
+  },
+  {
     name: 'the visitor uploads a file',
+    pattern: /^the visitor uploads a file$/,
+    async run (m, example, world) {
+      await transition(world, () => world.page.upload({ name: 'upload.bin' }))
+    }
+  },
+  {
+    name: 'the visitor uploads a named file',
     pattern: /^the visitor uploads the file (<[A-Za-z0-9_]+>)$/,
     async run (m, example, world) {
       const name = resolveParam(m[1], example)
-      world.state = await world.page.upload({ name })
-      world.html = null
+      await transition(world, () => world.page.upload({ name }))
     }
   },
   {
     name: 'the visitor uploads no file',
     pattern: /^the visitor uploads no file$/,
     async run (m, example, world) {
-      world.state = await world.page.upload(null)
-      world.html = null
+      await transition(world, () => world.page.upload(null))
+    }
+  },
+  {
+    name: 'the visitor pays the quote from the browser wallet',
+    pattern: /^the visitor pays the quote from the browser wallet$/,
+    async run (m, example, world) {
+      await transition(world, async () => {
+        await world.page.payFromWallet()
+        return world.page.getViewModel()
+      })
+    }
+  },
+  {
+    name: 'the visitor waits for the payment to be confirmed',
+    pattern: /^the visitor waits for the payment to be confirmed$/,
+    async run (m, example, world) {
+      await transition(world, () => world.page.waitForConfirmation())
+    }
+  },
+  {
+    name: 'the wallet paid an amount to an address',
+    pattern: /^the wallet paid (<[A-Za-z0-9_]+>) satoshis to (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      const amount = Number(resolveParam(m[1], example))
+      const address = resolveParam(m[2], example)
+      const last = world.walletSends[world.walletSends.length - 1]
+      if (!last) {
+        throw new Error('The wallet did not send a payment.')
+      }
+      if (last.address !== address) {
+        throw new Error(`Expected the wallet to pay ${address}, got ${last.address}.`)
+      }
+      if (last.amountSats !== amount) {
+        throw new Error(`Expected the wallet to pay ${amount} satoshis, got ${last.amountSats}.`)
+      }
     }
   },
   {
@@ -173,6 +333,29 @@ const handlers = [
     }
   },
   {
+    name: 'the page shows a payment QR code',
+    pattern: /^the page shows a payment QR code$/,
+    run (m, example, world) {
+      const html = renderPage(world)
+      if (!html.includes('file-upload-qr') || !html.includes('<svg')) {
+        throw new Error('Rendered page does not show a payment QR code.')
+      }
+    }
+  },
+  {
+    name: 'the page shows a quote countdown',
+    pattern: /^the page shows a quote countdown of (.+)$/,
+    run (m, example, world) {
+      const expected = resolveParam(m[1], example)
+      if (world.state.countdown !== expected) {
+        throw new Error(`Expected the page to show a countdown of "${expected}", got "${world.state.countdown}".`)
+      }
+      if (!renderPage(world).includes(expected)) {
+        throw new Error(`Rendered page does not show the countdown "${expected}".`)
+      }
+    }
+  },
+  {
     name: 'the page shows the download URL',
     pattern: /^the page shows the download URL (<[A-Za-z0-9_]+>)$/,
     run (m, example, world) {
@@ -182,6 +365,45 @@ const handlers = [
       }
       if (!renderPage(world).includes(expected)) {
         throw new Error(`Rendered page does not show the download URL ${expected}.`)
+      }
+    }
+  },
+  {
+    name: 'the page shows the CID',
+    pattern: /^the page shows the CID (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      const expected = resolveParam(m[1], example)
+      if (world.state.cid !== expected) {
+        throw new Error(`Expected the page to show the CID ${expected}, got "${world.state.cid}".`)
+      }
+      if (!renderPage(world).includes(expected)) {
+        throw new Error(`Rendered page does not show the CID ${expected}.`)
+      }
+    }
+  },
+  {
+    name: 'the page shows the gateway URL',
+    pattern: /^the page shows the gateway URL (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      const expected = resolveParam(m[1], example)
+      if (!(world.state.gatewayUrls || []).includes(expected)) {
+        throw new Error(`Expected the page to show the gateway URL ${expected}.`)
+      }
+      if (!renderPage(world).includes(expected)) {
+        throw new Error(`Rendered page does not show the gateway URL ${expected}.`)
+      }
+    }
+  },
+  {
+    name: 'the page shows the payment transaction',
+    pattern: /^the page shows the payment transaction (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      const expected = resolveParam(m[1], example)
+      if (world.state.txid !== expected) {
+        throw new Error(`Expected the page to show the payment transaction ${expected}, got "${world.state.txid}".`)
+      }
+      if (!renderPage(world).includes(expected)) {
+        throw new Error(`Rendered page does not show the payment transaction ${expected}.`)
       }
     }
   },

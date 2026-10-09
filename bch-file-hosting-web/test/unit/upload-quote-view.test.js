@@ -64,3 +64,55 @@ test('renders an empty result container before an upload', () => {
   assert.ok(html.includes('file-upload-result'))
   assert.ok(!html.includes('satoshis'))
 })
+
+test('renders a payment QR code and a countdown for a quote', () => {
+  const html = render({
+    status: 'quote',
+    filename: 'photo.jpg',
+    priceSats: 2000,
+    paymentAddress: 'bitcoincash:qquote',
+    countdown: '24 hours'
+  })
+
+  assert.ok(html.includes('file-upload-qr'))
+  assert.ok(html.includes('<svg'))
+  assert.ok(html.includes('Quote expires in 24 hours'))
+})
+
+test('omits the countdown when the quote has none', () => {
+  const html = render({
+    status: 'quote',
+    filename: 'photo.jpg',
+    priceSats: 2000,
+    paymentAddress: 'bitcoincash:qquote'
+  })
+
+  assert.ok(html.includes('file-upload-qr'))
+  assert.ok(!html.includes('Quote expires in'))
+})
+
+test('renders the CID, download URL, gateway URL, and payment transaction', () => {
+  const html = render({
+    status: 'paid',
+    filename: 'photo.jpg',
+    cid: 'bafy123',
+    downloadUrl: 'http://localhost:5050/download/bafy123',
+    gatewayUrls: ['https://ipfs.io/ipfs/bafy123/photo.jpg'],
+    txid: 'abc123'
+  })
+
+  assert.ok(html.includes('bafy123'))
+  assert.ok(html.includes('http://localhost:5050/download/bafy123'))
+  assert.ok(html.includes('https://ipfs.io/ipfs/bafy123/photo.jpg'))
+  assert.ok(html.includes('abc123'))
+})
+
+test('renders the expired and pending messages', () => {
+  const expired = render({ status: 'expired', message: 'This quote has expired.' })
+  const pending = render({ status: 'pending', message: 'Payment not confirmed.' })
+
+  assert.ok(expired.includes('This quote has expired.'))
+  assert.ok(expired.includes('file-upload-expired'))
+  assert.ok(pending.includes('Payment not confirmed.'))
+  assert.ok(pending.includes('file-upload-pending'))
+})

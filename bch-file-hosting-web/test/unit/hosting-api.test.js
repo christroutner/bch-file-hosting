@@ -92,3 +92,42 @@ test('falls back to the HTTP status when the error body is unreadable', async ()
 
   await assert.rejects(() => api.upload({ name: 'broken.bin' }), /HTTP 500/)
 })
+
+test('checks a payment at POST /files/check-payment and returns the parsed body', async () => {
+  const calls = []
+  const fakeFetch = async (url, options) => {
+    calls.push({ url, options })
+    return jsonResponse(200, { success: true, status: 'unpaid', receivedSats: 0, requiredSats: 2000 })
+  }
+  const api = new HostingApi({
+    config: { apiUrl: 'http://localhost:5050' },
+    fetch: fakeFetch,
+    FormData: FakeFormData
+  })
+
+  const body = await api.checkPayment({ paymentAddress: 'bitcoincash:qinvoice' })
+
+  assert.equal(calls[0].url, 'http://localhost:5050/files/check-payment')
+  assert.equal(calls[0].options.method, 'POST')
+  assert.equal(calls[0].options.headers['Content-Type'], 'application/json')
+  assert.equal(calls[0].options.body, JSON.stringify({ paymentAddress: 'bitcoincash:qinvoice' }))
+  assert.equal(body.status, 'unpaid')
+})
+
+test('maps a check-payment rejection to HostingApiError', async () => {
+  const fakeFetch = async () => jsonResponse(404, { error: 'Invoice not found' })
+  const api = new HostingApi({
+    config: { apiUrl: 'http://localhost:5050' },
+    fetch: fakeFetch,
+    FormData: FakeFormData
+  })
+
+  await assert.rejects(
+    () => api.checkPayment({ paymentAddress: 'bitcoincash:qmissing' }),
+    (err) => {
+      assert.ok(err instanceof HostingApiError)
+      assert.equal(err.message, 'Invoice not found')
+      return true
+    }
+  )
+})

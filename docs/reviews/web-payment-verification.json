@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "task": "web-payment",
+  "component": "bch-file-hosting-web",
+  "git_sha": "8d6f2b27a57878d4dde30f48f626740042f1befa",
+  "branch": "swarmforge-coder",
+  "timestamp": "2026-10-09T15:16:17.067Z",
+  "commands": [
+    {
+      "name": "unit",
+      "command": "npm test",
+      "exit": 0,
+      "duration_ms": 172,
+      "summary": "39 pass / 0 fail"
+    },
+    {
+      "name": "property",
+      "command": "npm run test:property",
+      "exit": 0,
+      "duration_ms": 340,
+      "summary": "17 pass / 0 fail"
+    },
+    {
+      "name": "acceptance",
+      "command": "npm run test:acceptance",
+      "exit": 0,
+      "duration_ms": 280,
+      "summary": "all 2 acceptance suites passed"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "exit": 0,
+      "duration_ms": 419,
+      "summary": "ok"
+    }
+  ],
+  "result": "pass"
+}

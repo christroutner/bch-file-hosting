@@ -30,6 +30,7 @@ class HostingApi {
     this.FormData = FormDataImpl || FormData
 
     this.upload = this.upload.bind(this)
+    this.checkPayment = this.checkPayment.bind(this)
   }
 
   // Upload a browser File to POST /files and return the parsed quote response.
@@ -40,6 +41,23 @@ class HostingApi {
     const response = await this.fetch(`${this.config.apiUrl}/files`, {
       method: 'POST',
       body: form
+    })
+    const body = await readJson(response)
+
+    if (!response.ok) {
+      throw new HostingApiError(errorMessage(response, body))
+    }
+
+    return body
+  }
+
+  // Ask whether an invoice has been paid at POST /files/check-payment. The
+  // response status is 'unpaid', 'expired', or 'paid'.
+  async checkPayment ({ paymentAddress } = {}) {
+    const response = await this.fetch(`${this.config.apiUrl}/files/check-payment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentAddress })
     })
     const body = await readJson(response)
 

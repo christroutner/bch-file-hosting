@@ -66,6 +66,27 @@ describe('#file-upload.js', () => {
       )
     })
 
+    it('should throw if the file name cleans down to an empty string', () => {
+      assert.throws(
+        () => uut.validate({ filename: '\u0000', sizeBytes: 1, maxFileSizeBytes }),
+        /usable file name/
+      )
+    })
+
+    it('should throw if the file name is a single dot', () => {
+      assert.throws(
+        () => uut.validate({ filename: '.', sizeBytes: 1, maxFileSizeBytes }),
+        /usable file name/
+      )
+    })
+
+    it('should accept a file name exactly at the maximum length', () => {
+      const name = 'a'.repeat(255)
+      const result = uut.validate({ filename: name, sizeBytes: 1, maxFileSizeBytes })
+
+      assert.equal(result.filename, name)
+    })
+
     it('should throw if the file name is too long', () => {
       assert.throws(
         () => uut.validate({ filename: 'a'.repeat(256), sizeBytes: 1, maxFileSizeBytes }),

@@ -1,0 +1,91 @@
+# Monorepo Rules
+
+## Project shape
+
+This project is a monorepo. Components:
+
+| Component | Path | Status | Responsibility |
+|-----------|------|--------|----------------|
+| bch-file-hosting-api | `bch-file-hosting-api/` | active | Express 5 REST API: upload, BCH invoices, payment checks, IPFS pinning, downloads |
+| bch-file-hosting-cli | `bch-file-hosting-cli/` | planned (phase 6) | Commander CLI for the hosting workflow |
+| bch-file-hosting-web | `bch-file-hosting-web/` | planned (phase 7) | Vite + React + react-bootstrap web UI |
+
+Do not create the planned components until a task asks for them. When one is
+created, add it to this table, to `swarmforge/scripts/verify.mjs`,
+`clean-builds.sh`, and `architect-startup.sh`, and make any gitignored runtime
+directories it needs self-provisioning.
+
+## Worktree discipline
+
+SwarmForge worktrees are branches of the same repository:
+
+- specifier: `master`
+- coder: `.worktrees/coder` on `swarmforge-coder`
+- refactorer: `.worktrees/refactorer` on `swarmforge-refactorer`
+- architect: `.worktrees/architect` on `swarmforge-architect`
+
+All worktrees share the same file system layout. A change in one worktree can
+touch any component directory. Do not create separate repositories or move
+component directories without explicit user direction.
+
+## Component boundaries and verification
+
+Each component has its own dependencies, scripts, and tests:
+
+```bash
+# bch-file-hosting-api
+cd bch-file-hosting-api
+npm test
+npm run lint
+```
+
+Prefer the canonical runner, which runs every verification command the
+component defines and writes a machine-readable record:
+
+```bash
+swarmforge/scripts/verify.sh api --record docs/reviews/<task>-verification.json --task <task>
+```
+
+Run the verification commands for every component a task touches before
+handing off. The architect runs the same per-component verification when
+merging and hardening.
+
+Never run `npm run test:integration` in bch-file-hosting-api. It spends real
+BCH on mainnet and is run only by a human.
+
+## Specification layout
+
+- Cross-component backlog: `specs/feature-backlog.md`
+- Standing specifier briefing: `specifier-prompt.md`
+- API feature files: `bch-file-hosting-api/specs/*.feature`
+- CLI and web feature files (future): `<component>/specs/*.feature`
+
+A single user-facing feature often requires specs or implementation changes in
+more than one component. Call out all affected components in the task
+description and in the backlog.
+
+## Shared rules across components
+
+All components must agree on the hosting rules defined in
+`dev-docs/long-term-plan.md` (section 7, Pricing):
+
+- Amounts are integer satoshis everywhere they are stored or compared. BCH
+  amounts are for display only.
+- Billing uses decimal units: 1 MB = 1,000,000 bytes. Files smaller than
+  `MIN_BILLED_BYTES` (100,000) are billed as that size, and no invoice is below
+  `MIN_INVOICE_SATS`.
+- A payment is accepted when `receivedSats > 0` and
+  `receivedSats >= priceSats - UNDERPAY_TOLERANCE_SATS`.
+- Each invoice has its own HD payment address. Only the HD index is stored;
+  private keys (WIFs) are derived on demand and never persisted or logged.
+
+When a rule changes, update the API first, then every client that displays or
+computes it.
+
+## Temporary files
+
+Each component may create its own `tmp/`, `target/`, `coverage/`, `logs/`, and
+runtime data directories (`.leveldb/`, `.ipfsdata/`). These are covered by the
+root `.gitignore`. Use the component's local `tmp/` for component-specific
+temporary work; use the root `./tmp/` for cross-component or SwarmForge tooling
+temporary work.

@@ -1,0 +1,53 @@
+# Engineering Rules
+
+## Startup Tools
+- On startup, procure the latest version of each required CRAP, mutation, and DRY tool for the project language directly from the listed repositories and get each one ready to run.
+- Resolve each listed repository at its latest available upstream version before installing or building it.
+- Do not rely on stale cached, vendored, or preinstalled copies when a fresh GitHub install/build is possible in the current environment.
+- Language tool table:
+  - Go: install with `go install`; mutation `github.com/unclebob/mutate4go`, CRAP `github.com/unclebob/crap4go`, DRY `github.com/unclebob/dry4go`.
+  - Clojure: install with Clojure CLI/deps.edn; mutation `github.com/unclebob/clj-mutate`, CRAP `github.com/unclebob/crap4clj`, DRY `github.com/unclebob/dry4clj`.
+  - Java: install with Maven (`mvn`); mutation `github.com/unclebob/mutate4java`, CRAP `github.com/unclebob/crap4java`, DRY `github.com/unclebob/dry4java`.
+  - Node.js JavaScript: install with `npm install`; mutation `github.com/FullStack-Agents/mutate4javascript`, CRAP `github.com/FullStack-Agents/crap4javascript`, DRY `github.com/FullStack-Agents/dry4javascript`.
+
+## Language Defaults
+- For JavaScript projects, prefer these npm dev dependencies: mocha for test runner, chai for assertion library, standard for linting, c8 for code coverage, semantic-release for version control.
+- In this project the JavaScript mutation, CRAP, and DRY tools are devDependencies of each component (`npm run mutate`, `npm run crap`, `npm run dry` in `bch-file-hosting-api/`). Refresh them with `npm install` in the component; do not install separate global copies.
+
+## Project Code Conventions (bch-file-hosting)
+- Follow Clean Architecture as described in `/home/trout/work/llm/prompt/clean-architecture/prompt.md`: entities (domain validation) <- use-cases (business logic) <- adapters (outputs: wallet, IPFS, LevelDB, pinning providers) and controllers (inputs: REST, timers). Dependencies point inward and are injected; put them on `this` so tests can replace them.
+- Follow the testing patterns in `/home/trout/work/llm/prompt/testing/testing-prompt.md`: Mocha, Chai `assert`, Sinon sandboxes, test files named `*.unit.js` mirroring `src/`, assertions on structure rather than brittle values. Keep unit coverage at 100%.
+- ES modules only (`"type": "module"`), Standard.js style.
+- Future CLI work follows `/home/trout/work/llm/prompt/cli/README.md`; future web UI work follows `/home/trout/work/llm/prompt/react/prompt.md`.
+- Money: store and compare integer satoshis only. Validate that backend balances are integers; never compare a BCH amount with a satoshi amount.
+- Keys: never persist, return from the API, or log a WIF or mnemonic. Derive invoice keys from the HD index when needed.
+- Third-party pinning services are added only as `PinningProvider` subclasses registered in `src/adapters/pinning/index.js`; use-cases must not import a provider directly.
+- Unit tests must never touch the network, mainnet, or the developer's `.env` (`SVC_ENV=test` skips `.env`).
+
+## Design And Testability
+- Work in small, reviewable increments.
+- Prefer the simplest design that supports the current behavior and leaves clear options for the next step.
+- Keep tests close to the behavior being changed.
+- Separate testable modules from environmentally unsuitable modules that open GUIs, depend on external devices, throw environment errors, emit system errors, or hang under automated tests. Maximize testable code and minimize the unsuitable boundary.
+- Only testable modules should participate in tools that run tests, including unit tests, acceptance tests, coverage, mutation testing, CRAP analysis, DRY analysis that invokes tests, and property tests.
+- Keep property tests separate from normal verification. Do not include property-test tags in normal unit coverage, Gherkin acceptance mutation, language mutation tools, CRAP, or coverage commands unless the role owns property-test verification or the user explicitly asks for property tests.
+
+## Acceptance Pipeline
+- Use github.com/unclebob/Acceptance-Pipeline-Specification for Gherkin acceptance tests.
+- The Acceptance Pipeline Specification supplies `gherkin-parser` and `gherkin-mutator`; install or build those commands from that repository instead of reimplementing them in the project.
+- Prefer the Babashka APS tools for `gherkin-parser`, `gherkin-mutator`, and related APS support commands.
+- Use Go-based APS tools only if the Babashka APS tools do not work in the current project environment.
+- Project-specific acceptance pipeline components are the acceptance entrypoint generator, acceptance runtime, project step handlers, runner adapter, and convenience scripts.
+- Gherkin acceptance mutation means running `gherkin-mutator` to mutate Gherkin example values.
+- Gherkin acceptance mutation runs must report periodic progress/status so agents can distinguish normal long-running work from a hang.
+
+## Verification
+- Before running language, build, or test commands, prefer project-local cache/configuration paths inside the assigned worktree. Avoid default cache locations that write outside the project and may trigger sandbox or permission restrictions.
+- Run acceptance generation and acceptance tests sequentially.
+- Avoid running whole-suite language test commands concurrently with acceptance generation.
+- Run the relevant local verification command before handoff whenever the project has one.
+
+## Guardrails
+- Do not edit mutation testing or Gherkin acceptance mutation manifests by hand; allow approved mutation tools to update those manifests as part of their normal runs.
+- Do not commit unrelated local changes or generated artifacts unless required for the task.
+- Before relying on an unfamiliar command, inspect local help or project documentation.

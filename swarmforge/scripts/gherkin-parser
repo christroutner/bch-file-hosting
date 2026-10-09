@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Wrapper for the Babashka APS gherkin-parser task.
+# Delegates to the single canonical APS checkout under <repo-root>/tmp/aps.
+set -euo pipefail
+if [ "$#" -ne 2 ]; then
+  echo "usage: gherkin-parser <feature-file> <json-output>" >&2
+  exit 2
+fi
+FEATURE_FILE="$(realpath -m "$1")"
+JSON_OUTPUT="$(realpath -m "$2")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APS_DIR="$("$SCRIPT_DIR/ensure-aps.sh")"
+cd "$APS_DIR"
+exec bb gherkin-parser "$FEATURE_FILE" "$JSON_OUTPUT"

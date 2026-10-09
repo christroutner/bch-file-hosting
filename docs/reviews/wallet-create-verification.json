@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "task": "wallet-create",
+  "component": "bch-file-hosting-cli",
+  "git_sha": "3b6a799f40ddebbb5f37ed571a00d0d6f21f78b9",
+  "branch": "swarmforge-architect",
+  "timestamp": "2026-10-09T04:12:31.708Z",
+  "commands": [
+    {
+      "name": "unit",
+      "command": "npm test",
+      "exit": 0,
+      "duration_ms": 584,
+      "summary": "47 passing"
+    },
+    {
+      "name": "property",
+      "command": "npm run test:property",
+      "exit": 0,
+      "duration_ms": 425,
+      "summary": "30 passing"
+    },
+    {
+      "name": "acceptance",
+      "command": "npm run test:acceptance",
+      "exit": 0,
+      "duration_ms": 997,
+      "summary": "all 4 acceptance suites passed"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "exit": 0,
+      "duration_ms": 813,
+      "summary": "ok"
+    }
+  ],
+  "result": "pass"
+}

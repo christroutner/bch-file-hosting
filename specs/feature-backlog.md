@@ -38,17 +38,13 @@ and P7.3 `web-file-status` followed, so **roadmap phase 7 (web UI) is complete**
 as of `5ed6759239`. The `web-upload-transport` hardening (browser `fetch`
 receiver in the web API adapter) is complete and merged at `279e8a77ba`. The
 `web-upload-size` hardening (file and billed sizes on the web quote) is
-complete and merged at `dba049d435`.
+complete and merged at `dba049d435`. The `web-upload-quote-columns` spec
+cleanup (anchor the size-scenario setup columns) is complete and merged at
+`959cf421e5`.
 
 ## In progress
 
-- **`web-upload-quote-columns` — make the new size-scenario setup columns
-  load-bearing (2026-10-09):** the `web-upload-size` soft mutation left 12
-  survivors from unasserted `api_sats`, `api_address`, and `upload_name`
-  columns in `web-upload.feature` scenarios 5 and 6. Add the existing `Then the
-  page shows the file name / price / payment address` assertions (and their
-  `shown_*` columns) so every column is load-bearing. Spec-only; the assertion
-  handlers already exist (verified locally: web-upload 12/12). Awaiting coder.
+- None.
 
 ## Up next (in order)
 
@@ -67,6 +63,19 @@ complete and merged at `dba049d435`.
   (D26–D29); none needs new Gherkin.
 
 ## Recently completed
+
+- **`web-upload-quote-columns` — make the size-scenario setup columns
+  load-bearing (2026-10-09):** spec-only follow-up to `web-upload-size`.
+  Scenarios `Web Upload - 5` and `Web Upload - 6` gained the established
+  `Then the page shows the file name / price / payment address` assertions and
+  the matching `shown_*` columns, so `api_sats`, `api_address`, and
+  `upload_name` are no longer mutation-inert. No handler or source change.
+  Pipeline commits: specifier `d380348`, architect `bbe1a02` (verification
+  `git_sha`), docs `959cf42`, merged to `master` at `959cf421e5` (fast-forward).
+  `verify.sh web` pass 4/4 (unit 62, property 57, acceptance all 4 suites, lint
+  ok); soft Gherkin 38/38 killed, 0 survived (the prior 12 survivors are gone);
+  independent post-merge acceptance check: web-upload 12/12. Architect summary:
+  `docs/reviews/web-upload-quote-columns-summary.md`.
 
 - **`web-upload-size` — show the file and billed sizes on the web quote
   (2026-10-09):** the `/host` quote view now shows `Size: <n> bytes` whenever

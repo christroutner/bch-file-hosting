@@ -53,26 +53,20 @@ the background, plus a web dashboard to watch progress (`web-dashboard`).
 
 ## In progress
 
-- None.
+- **`lighthouse-upload-verify` (2026-10-09):** replace Lighthouse's
+  asynchronous pin-by-CID with an upload of the file bytes, verify the gateway,
+  and run it in the background. Specs: `lighthouse-pinning.feature` (1 upload
+  records the reported CID; 2 upload error; 5 uploaded file not retrievable),
+  new `background-pinning.feature` (1 checking payment returns without waiting;
+  2 the background pin settles `pinned`; 3 a failed Lighthouse pin → `pinFailed`;
+  4 a failed local pin still `pinned`), and `pin-retry.feature` (4 retries a
+  failed local pin without re-uploading; 5 keeps `pinned` when the local retry
+  fails again). Decided: the verified Lighthouse copy is the success criterion;
+  the local pin is best-effort and retried by `retryPins`, which now retries only
+  the providers that failed. Awaiting coder.
 
 ## Up next (in order)
 
-- **`lighthouse-upload-verify` (API, top priority):** `POST
-  /api/lighthouse/pin` is asynchronous and must *fetch* the CID from the
-  network, but our node never announces it (the provide times out at the
-  kad-dht 180 s limit; `delegated-ipfs.dev/routing/v1/providers/<cid>` shows no
-  providers). Replace pin-by-CID with an upload of the file bytes to Lighthouse's
-  IPFS-compatible endpoint
-  `upload.lighthouse.storage/api/v0/add?wrap-with-directory=true&cid-version=1&raw-leaves=true&pin=true`,
-  which reproduces our exact Helia CID (verified byte-for-byte at 1.5 KB and 3 MB
-  multi-chunk). Upload + verify + local pin run in the **background**; the file
-  status becomes `pinning` immediately and settles at `pinned` only when
-  Lighthouse is verified retrievable. Decisions: the verified Lighthouse copy is
-  the success criterion; the local pin is recorded separately and retried via
-  `retryPins` if it fails. Verification is a cheap gateway `HEAD` (`200` +
-  `content-length == sizeBytes`) against `LIGHTHOUSE_GATEWAY`, with retries for
-  propagation. Stream the bytes from Helia at pin time (`ipfs.cat({cid,
-  filename})`), because the staging file is deleted after the quote.
 - **`web-dashboard` (web UI):** a dashboard view that lists the visitor's
   uploads with live pin/verification progress, so a user can upload a file, then
   watch the background process settle. Depends on `lighthouse-upload-verify` for

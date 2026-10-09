@@ -381,8 +381,11 @@ web-upload-transport, web-upload-size, web-upload-quote-columns,
 lighthouse-file-link) are in the backlog. Open follow-ups: the CLI
 `upload_path`/`api_txid` columns, the `web-payment` scenario-8
 `paid_cid`/`paid_name` survivors, the image-link `rel` hardening, the
-mutation-inert mnemonic-hygiene scenarios, and the `ipfs-public-node`
-provide-failure decision.
+mutation-inert mnemonic-hygiene scenarios, the `ipfs-public-node`
+provide-failure decision, and the `ipfs-service-dependencies` regression test
+(`uPnPNAT()` required `@libp2p/autonat`; hotfixed on `master` with
+`autoConfirmAddress: true`). The `ipfs-public-node` real-network verification
+(restart the API, check public routing + Lighthouse) is still pending.
 
 Current `master` HEAD: `e2b9f571d1` (Record ipfs-public-node architect review and
 verification).

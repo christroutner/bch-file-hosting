@@ -52,7 +52,7 @@ export function buildPublicNetworkServices () {
         protocol: PSF_DHT_PROTOCOL,
         clientMode: DHT_CLIENT_MODE
       }),
-      upnpNAT: uPnPNAT(),
+      upnpNAT: uPnPNAT({ autoConfirmAddress: true }),
       dcutr: dcutr()
     },
     dhtProtocols: {

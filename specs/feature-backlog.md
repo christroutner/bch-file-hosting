@@ -69,6 +69,13 @@ merged at `e2b9f571d1`.
   `target="_blank"` without `rel`; every other `_blank` anchor in
   `bch-file-hosting-web` uses `rel="noreferrer"`. Add `rel="noreferrer"` (with
   a unit assertion). Flagged by the `lighthouse-file-link` architect.
+- **Hardening follow-up (`ipfs-service-dependencies`):** `Ipfs Public Node - 2`
+  only inspects the `natServices` metadata, so it missed that `uPnPNAT()`
+  requires the `@libp2p/autonat` capability and the API failed to start. Hotfixed
+  on `master` with `uPnPNAT({ autoConfirmAddress: true })`. Add a regression test
+  that builds the public-network service set and asserts every
+  `serviceDependencies` capability is provided, so the next added service cannot
+  break startup silently.
 
 ## Needs a decision from the user
 

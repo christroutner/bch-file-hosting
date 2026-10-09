@@ -9,11 +9,6 @@ import RecordStore from './record-store.js'
 const INVOICE_PREFIX = 'invoice:'
 const CREATED_PREFIX = 'idx:created:'
 
-// ':' is followed by ';' in ASCII, so '<prefix minus colon>;' is the end of the range.
-function prefixRange (prefix) {
-  return { gte: prefix, lt: prefix.slice(0, -1) + ';' }
-}
-
 class InvoiceStore extends RecordStore {
   constructor ({ db } = {}) {
     super({ db, prefix: INVOICE_PREFIX, label: 'Invoice', idField: 'paymentAddress' })
@@ -48,13 +43,12 @@ class InvoiceStore extends RecordStore {
 
   // List invoices, optionally filtered by status and/or sweepStatus.
   async list ({ status, sweepStatus } = {}) {
-    const invoices = []
-    for await (const invoice of this.db.values(prefixRange(INVOICE_PREFIX))) {
-      if (status && invoice.status !== status) continue
-      if (sweepStatus && invoice.sweepStatus !== sweepStatus) continue
-      invoices.push(invoice)
-    }
-    return invoices
+    const invoices = await this.listAll()
+    return invoices.filter(invoice => {
+      if (status && invoice.status !== status) return false
+      if (sweepStatus && invoice.sweepStatus !== sweepStatus) return false
+      return true
+    })
   }
 }
 

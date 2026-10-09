@@ -17,7 +17,8 @@ class TimerControllers {
 
     this.jobs = [
       { name: 'deleteUnpaid', intervalMs: 60 * MINUTE, run: () => this.useCases.cleanup.deleteUnpaid() },
-      { name: 'retrySweeps', intervalMs: 30 * MINUTE, run: () => this.useCases.payments.retrySweeps() }
+      { name: 'retrySweeps', intervalMs: 30 * MINUTE, run: () => this.useCases.payments.retrySweeps() },
+      { name: 'retryPins', intervalMs: 60 * MINUTE, run: () => this.useCases.payments.retryPins() }
     ]
     this.handles = []
     this.running = new Set()

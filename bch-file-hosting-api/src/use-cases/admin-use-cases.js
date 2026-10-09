@@ -13,6 +13,7 @@ class AdminUseCases extends UseCase {
     super({ adapters, name: 'AdminUseCases' })
 
     this.listInvoices = this.listInvoices.bind(this)
+    this.listFiles = this.listFiles.bind(this)
     this.removeFile = this.removeFile.bind(this)
   }
 
@@ -24,6 +25,13 @@ class AdminUseCases extends UseCase {
       throw new ValidationError(`Unknown sweep status '${sweepStatus}'`)
     }
     return this.adapters.localdb.invoices.list({ status, sweepStatus })
+  }
+
+  async listFiles ({ status } = {}) {
+    if (status && !Object.values(FILE_STATUS).includes(status)) {
+      throw new ValidationError(`Unknown file status '${status}'`)
+    }
+    return this.adapters.localdb.files.list({ status })
   }
 
   // Unpin from every third-party provider, then unpin and delete the local

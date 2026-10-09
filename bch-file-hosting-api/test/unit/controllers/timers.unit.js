@@ -18,7 +18,7 @@ describe('#timer-controllers.js', () => {
     sandbox = sinon.createSandbox()
     useCases = {
       cleanup: { deleteUnpaid: sandbox.stub().resolves({}) },
-      payments: { retrySweeps: sandbox.stub().resolves({}) }
+      payments: { retrySweeps: sandbox.stub().resolves({}), retryPins: sandbox.stub().resolves({}) }
     }
     logger = { error: sandbox.stub(), info: sandbox.stub() }
     uut = new TimerControllers({ useCases, logger })
@@ -33,11 +33,11 @@ describe('#timer-controllers.js', () => {
   })
 
   describe('#startTimers', () => {
-    it('should run cleanup hourly and sweep retries every 30 minutes', () => {
+    it('should run cleanup hourly, sweep retries every 30 minutes, and pin retries hourly', () => {
       const count = uut.startTimers()
 
-      assert.equal(count, 2)
-      assert.deepEqual(uut.setInterval.args.map(a => a[1]), [60 * 60 * 1000, 30 * 60 * 1000])
+      assert.equal(count, 3)
+      assert.deepEqual(uut.setInterval.args.map(a => a[1]), [60 * 60 * 1000, 30 * 60 * 1000, 60 * 60 * 1000])
     })
 
     it('should call the use-cases when the timers fire', async () => {
@@ -47,14 +47,15 @@ describe('#timer-controllers.js', () => {
 
       assert.isTrue(useCases.cleanup.deleteUnpaid.calledOnce)
       assert.isTrue(useCases.payments.retrySweeps.calledOnce)
+      assert.isTrue(useCases.payments.retryPins.calledOnce)
     })
 
     it('should not create duplicate timers when started twice', () => {
       uut.startTimers()
       uut.startTimers()
 
-      assert.lengthOf(uut.handles, 2)
-      assert.equal(uut.clearInterval.callCount, 2)
+      assert.lengthOf(uut.handles, 3)
+      assert.equal(uut.clearInterval.callCount, 3)
     })
   })
 
@@ -89,7 +90,7 @@ describe('#timer-controllers.js', () => {
       uut.startTimers()
       uut.stopTimers()
 
-      assert.equal(uut.clearInterval.callCount, 2)
+      assert.equal(uut.clearInterval.callCount, 3)
       assert.lengthOf(uut.handles, 0)
     })
   })
@@ -99,7 +100,7 @@ describe('#timer-controllers.js', () => {
       const real = new TimerControllers({ useCases, logger })
 
       real.startTimers()
-      assert.lengthOf(real.handles, 2)
+      assert.lengthOf(real.handles, 3)
       real.stopTimers()
       assert.lengthOf(real.handles, 0)
     })

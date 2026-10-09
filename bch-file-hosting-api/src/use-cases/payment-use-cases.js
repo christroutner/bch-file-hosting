@@ -21,6 +21,7 @@ class PaymentUseCases extends UseCase {
 
     this.checkPayment = this.checkPayment.bind(this)
     this.retrySweeps = this.retrySweeps.bind(this)
+    this.retryPins = this.retryPins.bind(this)
   }
 
   checkPayment ({ paymentAddress } = {}) {
@@ -205,6 +206,24 @@ class PaymentUseCases extends UseCase {
     }
 
     return { swept, failed, empty }
+  }
+
+  // Retry pinning for files whose earlier pinning failed. Files that are
+  // already pinned or still staged are left alone.
+  async retryPins () {
+    const failed = await this.adapters.localdb.files.list({ status: FILE_STATUS.PIN_FAILED })
+    const retried = []
+    const pinned = []
+    const failedAgain = []
+
+    for (const file of failed) {
+      const updated = await this.pinFile(file)
+      retried.push(file.cid)
+      if (updated.status === FILE_STATUS.PINNED) pinned.push(file.cid)
+      else failedAgain.push(file.cid)
+    }
+
+    return { retried, pinned, failed: failedAgain }
   }
 }
 

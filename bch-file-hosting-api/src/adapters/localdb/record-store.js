@@ -31,6 +31,17 @@ class RecordStore {
     await this.db.put(this.recordKey(id), updated)
     return updated
   }
+
+  // Read every record under this store's prefix. ':' is followed by ';' in
+  // ASCII, so '<prefix minus colon>;' is the exclusive end of the range.
+  async listAll () {
+    const range = { gte: this.prefix, lt: this.prefix.slice(0, -1) + ';' }
+    const records = []
+    for await (const record of this.db.values(range)) {
+      records.push(record)
+    }
+    return records
+  }
 }
 
 export default RecordStore

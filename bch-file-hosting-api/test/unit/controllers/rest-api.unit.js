@@ -54,6 +54,7 @@ describe('#rest-api', () => {
       cleanup: { deleteUnpaid: sandbox.stub().resolves({ checked: 1, deleted: 1, rescued: 0, failed: 0 }) },
       admin: {
         listInvoices: sandbox.stub().resolves([{ paymentAddress: ADDRESS }]),
+        listFiles: sandbox.stub().resolves([{ cid: 'bafy', status: 'pinFailed' }]),
         removeFile: sandbox.stub().resolves({ cid: 'bafy', unpinned: ['local-helia'], failed: [] })
       }
     }
@@ -331,6 +332,21 @@ describe('#rest-api', () => {
       assert.equal(res.status, 200)
       assert.deepEqual(res.body, { success: true, invoices: [{ paymentAddress: ADDRESS }] })
       assert.isTrue(useCases.admin.listInvoices.calledWith({ status: 'paid', sweepStatus: 'pending' }))
+    })
+
+    it('should list files by status', async () => {
+      const res = await request(app).get('/admin/files?status=pinFailed').set('x-api-key', 'secret-key')
+
+      assert.equal(res.status, 200)
+      assert.deepEqual(res.body, { success: true, files: [{ cid: 'bafy', status: 'pinFailed' }] })
+      assert.isTrue(useCases.admin.listFiles.calledWith({ status: 'pinFailed' }))
+    })
+
+    it('should list every file when no status is given', async () => {
+      const res = await request(app).get('/admin/files').set('x-api-key', 'secret-key')
+
+      assert.equal(res.status, 200)
+      assert.isTrue(useCases.admin.listFiles.calledWith({ status: undefined }))
     })
 
     it('should remove a file', async () => {

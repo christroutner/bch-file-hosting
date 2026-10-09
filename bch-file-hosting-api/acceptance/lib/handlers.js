@@ -9,8 +9,10 @@
 import { calculatePrice } from '../../src/use-cases/pricing.js'
 import FileUseCases from '../../src/use-cases/file-use-cases.js'
 import PaymentUseCases from '../../src/use-cases/payment-use-cases.js'
+import AdminUseCases from '../../src/use-cases/admin-use-cases.js'
 import PinningRegistry from '../../src/adapters/pinning/index.js'
 import LighthouseProvider from '../../src/adapters/pinning/lighthouse.js'
+import TimerControllers from '../../src/controllers/timer-controllers.js'
 
 const UPLOAD_FILENAME = 'upload.bin'
 const UPLOAD_ADDRESS = 'bitcoincash:qpuploadaddress000000000000000000000000000'
@@ -71,7 +73,11 @@ function createWorld () {
     ipfs: { pin: async () => true, unpin: async () => true, isPinned: async () => true },
     lighthouseResponses: [],
     lighthouseRequests: [],
-    file: null
+    file: null,
+    files: [],
+    adminFiles: null,
+    adminError: null,
+    retryResult: null
   }
   world.lighthouseFetch = async (url, options) => {
     world.lighthouseRequests.push({ url, options })
@@ -117,6 +123,65 @@ function createUploadUseCases (world) {
   // The acceptance run never writes a temp file; keep the cleanup a no-op.
   useCases.unlink = async () => {}
   return useCases
+}
+
+// Build the real pinning registry with an injected Lighthouse HTTP client, so
+// a scenario can drive the production pin path without a network call.
+function buildLighthouseRegistry (world) {
+  return new PinningRegistry({
+    ipfs: world.ipfs,
+    config: world.pinningConfig,
+    factories: {
+      lighthouse: ({ config }) => new LighthouseProvider({ config, fetch: world.lighthouseFetch })
+    }
+  })
+}
+
+function buildPinUseCases (world, files) {
+  return new PaymentUseCases({
+    adapters: {
+      config: world.pinningConfig,
+      localdb: { files },
+      pinning: buildLighthouseRegistry(world),
+      logger: { info: () => {}, error: () => {} }
+    }
+  })
+}
+
+// A one-file store for the pin-retry scenarios. `retryPins` lists pinFailed
+// files and updates them in place.
+function inMemoryFileStore (world) {
+  return {
+    list: async ({ status } = {}) => {
+      if (!world.file) return []
+      return (!status || world.file.status === status) ? [world.file] : []
+    },
+    update: async (cid, changes) => {
+      world.file = { ...world.file, ...changes }
+      return world.file
+    }
+  }
+}
+
+// Exercise the real admin listing use-case against the seeded file store.
+async function listAdminFiles (world, status) {
+  const files = {
+    list: async ({ status: wanted } = {}) => world.files.filter(f => !wanted || f.status === wanted)
+  }
+  const useCases = new AdminUseCases({
+    adapters: {
+      config: world.pinningConfig,
+      localdb: { files },
+      logger: { info: () => {}, error: () => {} }
+    }
+  })
+  try {
+    world.adminFiles = await useCases.listFiles({ status })
+    world.adminError = null
+  } catch (err) {
+    world.adminFiles = null
+    world.adminError = { status: err.status, message: err.message }
+  }
 }
 
 const handlers = [
@@ -259,28 +324,7 @@ const handlers = [
       // Exercise the real registry and pinning use-case with an injected
       // Lighthouse HTTP client, so the file status and recorded pins come from
       // production code rather than the test.
-      const registry = new PinningRegistry({
-        ipfs: world.ipfs,
-        config: world.pinningConfig,
-        factories: {
-          lighthouse: ({ config }) => new LighthouseProvider({ config, fetch: world.lighthouseFetch })
-        }
-      })
-      const useCases = new PaymentUseCases({
-        adapters: {
-          config: world.pinningConfig,
-          localdb: {
-            files: {
-              update: async (cid, changes) => {
-                world.file = { ...world.file, ...changes }
-                return world.file
-              }
-            }
-          },
-          pinning: registry,
-          logger: { info: () => {}, error: () => {} }
-        }
-      })
+      const useCases = buildPinUseCases(world, inMemoryFileStore(world))
       world.file = await useCases.pinFile(world.file)
     }
   },
@@ -323,6 +367,121 @@ const handlers = [
       const registry = new PinningRegistry({ ipfs: world.ipfs, config: world.pinningConfig })
       if (!registry.getProvider(name)) {
         throw new Error(`configured pinning providers do not include ${name}`)
+      }
+    }
+  },
+  {
+    pattern: /^a file with CID <([A-Za-z0-9_]+)> and status <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.file = {
+        cid: exampleValue(example, match[1]),
+        filename: 'photo.jpg',
+        sizeBytes: 1024,
+        status: exampleValue(example, match[2]),
+        pins: []
+      }
+    }
+  },
+  {
+    pattern: /^the Lighthouse API pins by CID$/,
+    run (_match, _example, world) {
+      world.lighthouseResponses = [() => jsonResponse({ data: { cid: world.file.cid } })]
+    }
+  },
+  {
+    pattern: /^I retry failed pins$/,
+    async run (_match, _example, world) {
+      const useCases = buildPinUseCases(world, inMemoryFileStore(world))
+      world.retryResult = await useCases.retryPins()
+    }
+  },
+  {
+    pattern: /^the file is <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.file.status !== expected) {
+        throw new Error(`expected file status ${expected}, got ${world.file.status}`)
+      }
+    }
+  },
+  {
+    pattern: /^the Lighthouse provider was asked to pin <([A-Za-z0-9_]+)> times$/,
+    run (match, example, world) {
+      const expected = asInt(exampleValue(example, match[1]), match[1])
+      const attempts = world.lighthouseRequests.filter(r => r.url.endsWith('/api/lighthouse/pin')).length
+      if (attempts !== expected) {
+        throw new Error(`expected ${expected} Lighthouse pin attempts, got ${attempts}`)
+      }
+    }
+  },
+  {
+    pattern: /^the timer retries failed pins on its schedule$/,
+    async run (_match, _example, world) {
+      let calls = 0
+      const useCases = {
+        cleanup: { deleteUnpaid: async () => {} },
+        payments: { retrySweeps: async () => {}, retryPins: async () => { calls++ } }
+      }
+      const timers = new TimerControllers({ useCases, logger: { info: () => {}, error: () => {} } })
+      timers.setInterval = (fn) => { fn(); return { fn } }
+      timers.clearInterval = () => {}
+      timers.startTimers()
+      if (calls !== 1) {
+        throw new Error(`expected the timer to retry failed pins, got ${calls} calls`)
+      }
+    }
+  },
+  {
+    pattern: /^the file store contains a ([A-Za-z0-9_]+) file ([A-Za-z0-9]+)$/,
+    run (match, _example, world) {
+      world.files.push({ cid: match[2], filename: `${match[2]}.bin`, status: match[1], pins: [] })
+    }
+  },
+  {
+    pattern: /^I list admin files with status <([A-Za-z0-9_]+)>$/,
+    async run (match, example, world) {
+      await listAdminFiles(world, exampleValue(example, match[1]))
+    }
+  },
+  {
+    pattern: /^I list every admin file$/,
+    async run (_match, _example, world) {
+      await listAdminFiles(world)
+    }
+  },
+  {
+    pattern: /^the listed CIDs are <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1]).split(',').map(s => s.trim())
+      const actual = (world.adminFiles || []).map(f => f.cid)
+      if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+        throw new Error(`expected listed CIDs ${expected.join(',')}, got ${actual.join(',')}`)
+      }
+    }
+  },
+  {
+    pattern: /^the admin file listing is rejected with status <([A-Za-z0-9_]+)> and error <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expectedStatus = asInt(exampleValue(example, match[1]), match[1])
+      const expectedError = exampleValue(example, match[2])
+      if (!world.adminError) {
+        throw new Error('expected the admin file listing to be rejected')
+      }
+      if (world.adminError.status !== expectedStatus) {
+        throw new Error(`expected rejection status ${expectedStatus}, got ${world.adminError.status}`)
+      }
+      if (world.adminError.message !== expectedError) {
+        throw new Error(`expected error '${expectedError}', got '${world.adminError.message}'`)
+      }
+    }
+  },
+  {
+    pattern: /^<([A-Za-z0-9_]+)> files are listed$/,
+    run (match, example, world) {
+      const expected = asInt(exampleValue(example, match[1]), match[1])
+      const actual = (world.adminFiles || []).length
+      if (actual !== expected) {
+        throw new Error(`expected ${expected} files listed, got ${actual}`)
       }
     }
   }

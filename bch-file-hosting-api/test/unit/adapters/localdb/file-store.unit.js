@@ -55,4 +55,22 @@ describe('#file-store.js', () => {
       assert.include(err.message, 'File not found')
     }
   })
+
+  it('should list every file when no status is given', async () => {
+    await uut.put(file)
+    await uut.put({ ...file, cid: 'bafy-other', status: 'pinned' })
+
+    const result = await uut.list()
+
+    assert.deepEqual(result.map(f => f.cid).sort(), ['bafy-other', 'bafy-test-cid'])
+  })
+
+  it('should list only files with the requested status', async () => {
+    await uut.put(file)
+    await uut.put({ ...file, cid: 'bafy-other', status: 'pinned' })
+
+    const result = await uut.list({ status: 'pinned' })
+
+    assert.deepEqual(result.map(f => f.cid), ['bafy-other'])
+  })
 })

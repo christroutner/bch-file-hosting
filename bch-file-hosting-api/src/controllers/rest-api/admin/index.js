@@ -16,6 +16,7 @@ class AdminRouter {
 
   attach (app) {
     app.get('/admin/invoices', this.auth, this.controller.listInvoices)
+    app.get('/admin/files', this.auth, this.controller.listFiles)
     app.post('/admin/files/:cid/delete', this.auth, this.controller.removeFile)
     app.post('/admin/sweeps/retry', this.auth, this.controller.retrySweeps)
     app.post('/admin/cleanup/run', this.auth, this.controller.runCleanup)

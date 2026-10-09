@@ -64,6 +64,35 @@ describe('#admin-use-cases.js', () => {
     })
   })
 
+  describe('#listFiles', () => {
+    beforeEach(async () => {
+      await adapters.localdb.files.put({ cid: 'bafy-pinFailed', filename: 'b.txt', status: FILE_STATUS.PIN_FAILED })
+      await adapters.localdb.files.put({ cid: 'bafy-staged', filename: 'c.txt', status: FILE_STATUS.STAGED })
+    })
+
+    it('should list every file when no status is given', async () => {
+      const result = await uut.listFiles()
+
+      assert.deepEqual(result.map(f => f.cid).sort(), ['bafy-pinFailed', 'bafy-staged', TEST_CID])
+    })
+
+    it('should list only files with the requested status', async () => {
+      const result = await uut.listFiles({ status: FILE_STATUS.PIN_FAILED })
+
+      assert.deepEqual(result.map(f => f.cid), ['bafy-pinFailed'])
+    })
+
+    it('should reject an unknown file status with a 422 error', async () => {
+      try {
+        await uut.listFiles({ status: 'bogus' })
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.equal(err.status, 422)
+        assert.equal(err.message, "Unknown file status 'bogus'")
+      }
+    })
+  })
+
   describe('#removeFile', () => {
     it('should unpin from third-party providers, remove the local copy, and mark the file deleted', async () => {
       const lighthouse = { ...makeProvider(sandbox, 'lighthouse'), unpin: sandbox.stub().resolves() }

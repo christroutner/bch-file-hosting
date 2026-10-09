@@ -375,4 +375,38 @@ describe('#payment-use-cases.js', () => {
       assert.deepEqual(result.swept, [quote.paymentAddress])
     })
   })
+
+  describe('#retryPins', () => {
+    const failedFile = { cid: 'bafy-pin-failed', filename: 'photo.jpg', sizeBytes: 20000, status: FILE_STATUS.PIN_FAILED, pins: [] }
+
+    it('should retry a pinFailed file and mark it pinned when the providers succeed', async () => {
+      await adapters.localdb.files.put(failedFile)
+
+      const result = await uut.retryPins()
+
+      assert.deepEqual(result, { retried: ['bafy-pin-failed'], pinned: ['bafy-pin-failed'], failed: [] })
+      assert.equal((await adapters.localdb.files.get('bafy-pin-failed')).status, FILE_STATUS.PINNED)
+      assert.isTrue(adapters.pinning.providers[0].pin.calledOnceWith({ cid: 'bafy-pin-failed', filename: 'photo.jpg', sizeBytes: 20000 }))
+    })
+
+    it('should keep a file pinFailed when the providers still fail', async () => {
+      adapters.pinning.providers[0].pin.rejects(new Error('still down'))
+      await adapters.localdb.files.put(failedFile)
+
+      const result = await uut.retryPins()
+
+      assert.deepEqual(result, { retried: ['bafy-pin-failed'], pinned: [], failed: ['bafy-pin-failed'] })
+      assert.equal((await adapters.localdb.files.get('bafy-pin-failed')).status, FILE_STATUS.PIN_FAILED)
+    })
+
+    it('should not touch pinned or staged files', async () => {
+      await adapters.localdb.files.put({ ...failedFile, cid: 'bafy-pinned', status: FILE_STATUS.PINNED })
+      await adapters.localdb.files.put({ ...failedFile, cid: 'bafy-staged', status: FILE_STATUS.STAGED })
+
+      const result = await uut.retryPins()
+
+      assert.deepEqual(result, { retried: [], pinned: [], failed: [] })
+      assert.isTrue(adapters.pinning.providers[0].pin.notCalled)
+    })
+  })
 })

@@ -15,6 +15,12 @@ class FileStore extends RecordStore {
     await this.db.put(this.recordKey(file.cid), file)
     return file
   }
+
+  // List files, optionally filtered by status.
+  async list ({ status } = {}) {
+    const files = await this.listAll()
+    return status ? files.filter(file => file.status === status) : files
+  }
 }
 
 export default FileStore

@@ -10,6 +10,7 @@ class AdminController {
     this.useCases = useCases
 
     this.listInvoices = this.listInvoices.bind(this)
+    this.listFiles = this.listFiles.bind(this)
     this.removeFile = this.removeFile.bind(this)
     this.retrySweeps = this.retrySweeps.bind(this)
     this.runCleanup = this.runCleanup.bind(this)
@@ -24,6 +25,16 @@ class AdminController {
     const { status, sweepStatus } = req.query
     const invoices = await this.useCases.admin.listInvoices({ status, sweepStatus })
     sendSuccess(res, { invoices })
+  }
+
+  /**
+   * @api {get} /admin/files List files
+   * @apiQuery {String} [status] staged, pinned, pinFailed, or deleted
+   */
+  async listFiles (req, res) {
+    const { status } = req.query
+    const files = await this.useCases.admin.listFiles({ status })
+    sendSuccess(res, { files })
   }
 
   /**

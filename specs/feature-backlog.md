@@ -22,24 +22,14 @@ pluggable third-party pinning services.
 
 The core port (roadmap phase 3) is complete and verified on mainnet. SwarmForge
 was integrated in phase 4, and the pipeline smoke test (S0) completed the first
-full four-role cycle. Q1 set the language-quality baseline. Next is
-third-party pinning (phase 5), starting with the P5.1 provider study.
+full four-role cycle. Q1 set the language-quality baseline and P5.1 finished
+the pinning-provider study. Next is P5.2, the Lighthouse provider adapter.
 
 ## In progress
 
 - None.
 
 ## Up next (in order)
-
-### P5.1. `pinning-provider-study` — research (docs only)
-
-- Fill in `dev-docs/pinning-providers.md` using the criteria in the long-term
-  plan (section 10) for Lighthouse first, then Pinata, Filebase, Storacha, and
-  Filecoin Onchain Cloud.
-- Key questions for Lighthouse: pin by CID or upload bytes? Does an upload
-  return the same CID as our Helia import (CIDv1, raw leaves, 1 MiB chunks,
-  wrapping directory)? Is unpin supported? Gateway URL format?
-- Not a coding task; the specifier does it with the user before P5.2.
 
 ### P5.2. `lighthouse-provider` — first third-party pinning provider (api)
 
@@ -77,6 +67,13 @@ them until the user decides.
 
 ## Recently completed
 
+- **P5.1 `pinning-provider-study` — provider research (2026-10-09):**
+  `dev-docs/pinning-providers.md` documents our CID profile (CIDv1, raw leaves,
+  1 MiB chunks, dag-pb directory wrap), the pin-by-CID vs upload-bytes
+  trade-off, and Lighthouse, Filebase, Pinata, Storacha, and Filecoin Onchain
+  Cloud against the §10 criteria. Recommends pin-by-CID for P5.2 (Lighthouse),
+  Filebase as the second adapter, Pinata third; defers Storacha and FOC. No
+  code; docs-only.
 - **Q1 `api-quality-baseline` — quality baseline (2026-10-09):** full
   refactorer -> architect quality pass over `bch-file-hosting-api/`, behavior
   unchanged. Spec `dev-docs/api-quality-baseline.md`. Refactorer `e768509`:

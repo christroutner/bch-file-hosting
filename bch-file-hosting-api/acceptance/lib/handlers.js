@@ -54,18 +54,26 @@ function jsonResponse (body, status = 200) {
 }
 
 // A minimal in-memory Helia node for the public-network scenarios. It records
-// the CIDs announced to content routing and accepts pins without a network.
-function makeFakeIpfsNode () {
+// the CIDs announced to content routing and the CIDs pinned, and can be made
+// to fail or never settle a provide.
+function makeFakeIpfsNode ({ provideError, provideNeverSettles } = {}) {
   const provided = []
+  const pinned = []
   return {
     provided,
+    pinned,
     pins: {
-      add: async function * (cid) { yield cid },
+      add: async function * (cid) { pinned.push(cid); yield cid },
       rm: async function * (cid) { yield cid },
       isPinned: async () => false
     },
     routing: {
-      provide: async (cid) => { provided.push(cid) }
+      provide: (cid) => {
+        if (provideError) return Promise.reject(provideError)
+        if (provideNeverSettles) return new Promise(() => {})
+        provided.push(cid)
+        return Promise.resolve()
+      }
     }
   }
 }
@@ -541,9 +549,44 @@ const handlers = [
     }
   },
   {
+    pattern: /^an IPFS adapter whose node provide fails$/,
+    run (_match, _example, world) {
+      world.ipfsNode = makeFakeIpfsNode({ provideError: new Error('provide failed') })
+      world.ipfsAdapter = new IpfsAdapter({ config: {}, logger: null })
+      world.ipfsAdapter.helia = world.ipfsNode
+    }
+  },
+  {
+    pattern: /^an IPFS adapter whose node provide never settles$/,
+    run (_match, _example, world) {
+      world.ipfsNode = makeFakeIpfsNode({ provideNeverSettles: true })
+      world.ipfsAdapter = new IpfsAdapter({ config: {}, logger: null })
+      world.ipfsAdapter.helia = world.ipfsNode
+    }
+  },
+  {
     pattern: /^the adapter pins the CID <([A-Za-z0-9_]+)>$/,
     async run (match, example, world) {
       await world.ipfsAdapter.pin(exampleValue(example, match[1]))
+      world.pinResolved = true
+    }
+  },
+  {
+    pattern: /^the adapter resolves the pin$/,
+    run (_match, _example, world) {
+      if (world.pinResolved !== true) {
+        throw new Error('the adapter did not resolve the pin')
+      }
+    }
+  },
+  {
+    pattern: /^the node pinned the CID <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      const pinned = world.ipfsNode.pinned.map(cid => cid.toString())
+      if (!pinned.includes(expected)) {
+        throw new Error(`expected the node to pin ${expected}, got [${pinned.join(', ')}]`)
+      }
     }
   },
   {

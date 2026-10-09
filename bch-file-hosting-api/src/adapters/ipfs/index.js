@@ -174,8 +174,17 @@ class IpfsAdapter {
     } catch (err) {
       if (!err.message.includes('Already pinned')) throw err
     }
-    await this.provide(cid)
+    this.provideInBackground(cid)
     return true
+  }
+
+  // Announce the CID to content routing off the request path. The local pin is
+  // already durable, so a slow or failing provide must not block or fail it:
+  // failures are logged and forgotten, and the CID can be re-provided later.
+  provideInBackground (cid) {
+    this.provide(cid).catch((err) => {
+      this.logger?.warn?.(`Content-routing provide failed for ${cid}: ${err.message}`)
+    })
   }
 
   // Announce to content routing that this node provides the CID. Public pinning

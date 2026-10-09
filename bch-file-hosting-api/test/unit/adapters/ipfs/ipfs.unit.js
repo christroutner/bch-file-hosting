@@ -297,16 +297,32 @@ describe('#ipfs/index.js', () => {
         assert.equal(helia.routing.provide.firstCall.args[0].toString(), cid)
       })
 
-      it('should surface a content-routing provide failure', async () => {
+      it('should not fail the pin when content-routing provide fails', async () => {
         helia.routing.provide.rejects(new Error('routing unavailable'))
         const cid = (await makeCid('provide-fail')).toString()
 
-        try {
-          await uut.pin(cid)
-          assert.fail('Unexpected result')
-        } catch (err) {
-          assert.include(err.message, 'routing unavailable')
-        }
+        assert.isTrue(await uut.pin(cid))
+        assert.isTrue(await uut.isPinned(cid))
+      })
+
+      it('should log a failed content-routing provide', async () => {
+        uut.logger = { warn: sandbox.stub() }
+        helia.routing.provide.rejects(new Error('routing unavailable'))
+        const cid = (await makeCid('provide-log')).toString()
+
+        assert.isTrue(await uut.pin(cid))
+        await new Promise(resolve => setImmediate(resolve))
+
+        assert.isTrue(uut.logger.warn.calledOnce)
+        assert.include(uut.logger.warn.firstCall.args[0], 'routing unavailable')
+      })
+
+      it('should not wait for the content-routing provide before resolving the pin', async () => {
+        helia.routing.provide.returns(new Promise(() => {}))
+        const cid = (await makeCid('provide-hang')).toString()
+
+        assert.isTrue(await uut.pin(cid))
+        assert.isTrue(await uut.isPinned(cid))
       })
 
       it('should provide a CID directly to content routing', async () => {

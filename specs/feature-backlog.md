@@ -37,12 +37,7 @@ merged at `f2e3615e99`.
 
 ## In progress
 
-- **`web-payment-poll-error` — check-payment failure handling (started
-  2026-10-09):** map a rejected `POST /files/check-payment` during polling to
-  the error state (show the API error message and stop polling) and add
-  `Web Payment - 7` to `bch-file-hosting-web/specs/web-payment.feature`. This
-  removes the unhandled rejection the P7.2 architect review flagged. Handed to
-  the coder as task `web-payment-poll-error`.
+- None.
 
 ## Up next (in order)
 
@@ -60,6 +55,23 @@ merged at `f2e3615e99`.
   (D26–D29); none needs new Gherkin.
 
 ## Recently completed
+
+- **`web-payment-poll-error` — check-payment failure handling (2026-10-09):**
+  a rejected `POST /files/check-payment` during confirmation polling now renders
+  the page error state with the API message and stops polling, instead of
+  rejecting unhandled through the shell. The refactorer extracted `pollOnce` to
+  keep `waitForConfirmation` at CRAP 5.0. Spec `web-payment.feature` gained
+  `Web Payment - 7`. Pipeline commits: specifier `cf2625b`, coder `2ab8753`,
+  refactorer `e986d8b`, architect `9fb446c` (verification `git_sha`), docs
+  `431eb18`, merged to `master` at `431eb180d3` (fast-forward). `verify.sh web`
+  pass 4/4 (unit 42, property 41, acceptance 2 suites, lint ok); language
+  mutation of `file-upload-page.js` 13/13 killed; independent post-merge
+  acceptance check web-payment 13/13 and web-upload 8/8. Architect summary:
+  `docs/reviews/web-payment-poll-error-summary.md`.
+  - The architect re-flagged the `Web Payment - 3` fixture `filename`; verified
+    again that the real paid response includes it (`paidResult` in
+    `bch-file-hosting-api/src/use-cases/payment-use-cases.js`, returned straight
+    by the controller), so there is nothing to change.
 
 - **P7.2 `web-payment` — pay the quote and confirm (2026-10-09):** the
   `bch-file-hosting-web` quote view now shows a payment QR code and an expiry

@@ -438,3 +438,39 @@ test('property: confirming requires an open quote', async () => {
 
   await assert.rejects(() => page.waitForConfirmation(), /open quote/)
 })
+
+test('property: a quote carries only the sizes the API reports, as numbers', async () => {
+  await forAllAsync({
+    seed: 14,
+    runs: 300,
+    generate: (random) => {
+      const pick = (choice) => {
+        if (choice === 0) return undefined
+        if (choice === 1) return null
+        return integerBetween(random, 0, 100000000)
+      }
+      return {
+        sizeBytes: pick(integerBetween(random, 0, 2)),
+        billedBytes: pick(integerBetween(random, 0, 2))
+      }
+    },
+    property: async ({ sizeBytes, billedBytes }) => {
+      const page = paymentPage({ quote: { sizeBytes, billedBytes } })
+
+      const state = await page.upload({ name: 'photo.jpg' })
+
+      if (sizeBytes === undefined || sizeBytes === null) {
+        assert.equal('sizeBytes' in state, false)
+      } else {
+        assert.equal(state.sizeBytes, Number(sizeBytes))
+        assert.equal(typeof state.sizeBytes, 'number')
+      }
+      if (billedBytes === undefined || billedBytes === null) {
+        assert.equal('billedBytes' in state, false)
+      } else {
+        assert.equal(state.billedBytes, Number(billedBytes))
+        assert.equal(typeof state.billedBytes, 'number')
+      }
+    }
+  })
+})

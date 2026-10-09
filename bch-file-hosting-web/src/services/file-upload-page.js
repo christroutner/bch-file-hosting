@@ -31,6 +31,14 @@ const PENDING_MESSAGE = 'Payment not confirmed.'
 const DEFAULT_CONFIRMATION_ATTEMPTS = 10
 const DEFAULT_POLL_DELAY_MS = 3000
 
+// Normalize an optional byte count from the API. `undefined` and `null` mean
+// "not reported"; any other value is coerced to a number so the view model
+// carries only numbers.
+function optionalNumber (value) {
+  if (value === undefined || value === null) return undefined
+  return Number(value)
+}
+
 function quoteState (response, filename, now) {
   const state = {
     status: 'quote',
@@ -39,14 +47,13 @@ function quoteState (response, filename, now) {
     paymentAddress: response.paymentAddress
   }
 
-  // The API reports the selected file size and the billed size separately. The
-  // billed size is only shown when the API reports both.
-  if (response.sizeBytes !== undefined && response.sizeBytes !== null) {
-    state.sizeBytes = Number(response.sizeBytes)
-  }
-  if (response.billedBytes !== undefined && response.billedBytes !== null) {
-    state.billedBytes = Number(response.billedBytes)
-  }
+  // The API reports the selected file size and the billed size separately. A
+  // size is kept only when the API reported it; the view shows a separate
+  // billed line only when billing rounded the size up.
+  const sizeBytes = optionalNumber(response.sizeBytes)
+  if (sizeBytes !== undefined) state.sizeBytes = sizeBytes
+  const billedBytes = optionalNumber(response.billedBytes)
+  if (billedBytes !== undefined) state.billedBytes = billedBytes
 
   // A quote that carries an expiry gets a stable countdown label. Quotes
   // without one (for example an already-hosted response) render no countdown.

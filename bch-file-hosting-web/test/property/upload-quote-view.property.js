@@ -206,3 +206,29 @@ test('property: a quote with a countdown shows the countdown and a QR code', () 
     }
   })
 })
+
+test('property: a quote shows a size line only when a size is reported and a billed line only when billing rounded it up', () => {
+  forAll({
+    seed: 10,
+    runs: 300,
+    generate: (random) => {
+      const sizeBytes = random() < 0.8 ? integerBetween(random, 0, 100000000) : undefined
+      let billedBytes
+      if (random() < 0.2) billedBytes = undefined
+      else if (sizeBytes !== undefined && random() < 0.5) billedBytes = sizeBytes
+      else billedBytes = integerBetween(random, 0, 100000000)
+      return { sizeBytes, billedBytes }
+    },
+    property: ({ sizeBytes, billedBytes }) => {
+      const html = render({ status: 'quote', filename: 'f.bin', priceSats: 1, paymentAddress: 'addr', sizeBytes, billedBytes })
+
+      const showsSize = sizeBytes !== undefined
+      const showsBilled = billedBytes !== undefined && billedBytes !== sizeBytes
+
+      assert.equal(html.includes('file-upload-size'), showsSize)
+      assert.equal(html.includes('file-upload-billed-size'), showsBilled)
+      if (showsSize) assert.ok(html.includes(`Size: ${sizeBytes} bytes`))
+      if (showsBilled) assert.ok(html.includes(`Billed size: ${billedBytes} bytes`))
+    }
+  })
+})

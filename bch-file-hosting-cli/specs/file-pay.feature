@@ -1,3 +1,8 @@
+# mutation-stamp: sha256=ecf146a89f537c26dc347516a234033abff422721b9f899baa797ca9b17bdaca
+# acceptance-mutation-manifest-begin
+# {"version":1,"tested_at":"2026-10-09T13:45:39.925687595Z","feature_name":"File Pay","feature_path":"/home/trout/work/psf/code/ipfs/bch-file-hosting/.worktrees/architect/bch-file-hosting-cli/specs/file-pay.feature","background_hash":"6f13ed01ae78503f4ed08a4a0d4b38d760444214b8b894ca738fe2e58d37ec2d","implementation_hash":"unknown","scenarios":[{"index":0,"name":"File Pay - 1 paying an unpaid invoice sends the outstanding satoshis","scenario_hash":"73c8766994f134ef77069cd138a2d6da96ae97bbea630944174dc33a8c3cadff","mutation_count":18,"result":{"Total":18,"Killed":18,"Survived":0,"Errors":0},"tested_at":"2026-10-09T13:45:39.925687595Z"},{"index":5,"name":"File Pay - 6 an unknown wallet is a runtime error","scenario_hash":"0ed41c26376a2beb75cf4d06b7065ddfc333155c3319752106dcee1047c9f9c8","mutation_count":4,"result":{"Total":4,"Killed":4,"Survived":0,"Errors":0},"tested_at":"2026-10-09T13:45:39.925687595Z"},{"index":6,"name":"File Pay - 7 an API error is reported and the command fails","scenario_hash":"35f825a7f3482c76610138ae490d31a1bea5e31b9249c7284ee71af64adbeb76","mutation_count":4,"result":{"Total":4,"Killed":4,"Survived":0,"Errors":0},"tested_at":"2026-10-09T13:45:39.925687595Z"},{"index":7,"name":"File Pay - 8 JSON output prints one JSON object","scenario_hash":"11293b0ed915fd3a8c23d5399d7f9bf7bc9fc26132e20a771d0b0c77c53e15ef","mutation_count":10,"result":{"Total":10,"Killed":10,"Survived":0,"Errors":0},"tested_at":"2026-10-09T13:45:39.925687595Z"}]}
+# acceptance-mutation-manifest-end
+
 # File Pay - 1, File Pay - 2, File Pay - 3, File Pay - 4, File Pay - 5, File Pay - 6, File Pay - 7, File Pay - 8
 
 Feature: File Pay

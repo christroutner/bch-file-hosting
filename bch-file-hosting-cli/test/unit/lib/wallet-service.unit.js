@@ -113,6 +113,21 @@ describe('#wallet-service', () => {
       ])
     })
 
+    it('should broadcast the smallest positive integer amount (1 satoshi)', async () => {
+      const uut = new WalletService({ config, BchWallet: FakeBchWallet })
+
+      const txid = await uut.sendSats({
+        wallet: { mnemonic: 'test mnemonic', cashAddress: 'bitcoincash:qpayer' },
+        toAddress: 'bitcoincash:qinvoice',
+        amountSats: 1
+      })
+
+      assert.equal(txid, 'fake-txid')
+      assert.deepEqual(FakeBchWallet.lastInstance.sentOutputs, [
+        { address: 'bitcoincash:qinvoice', amountSat: 1 }
+      ])
+    })
+
     it('should throw when the backend returns no transaction id', async () => {
       FakeBchWallet.txid = ''
       const uut = new WalletService({ config, BchWallet: FakeBchWallet })

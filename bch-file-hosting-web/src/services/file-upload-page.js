@@ -153,6 +153,22 @@ class FileUploadPage {
     }
   }
 
+  // One poll of check-payment. Resolves to a terminal state when the check
+  // reports paid or expired, or rejects, and to null when the payment is not
+  // visible yet.
+  async pollOnce () {
+    let result
+    try {
+      result = await this.hostingApi.checkPayment({ paymentAddress: this.quote.paymentAddress })
+    } catch (err) {
+      return errorState(err, this.quote.filename)
+    }
+
+    if (result.status === 'paid') return paidState(result, this.txid)
+    if (result.status === 'expired') return { status: 'expired', message: EXPIRED_MESSAGE }
+    return null
+  }
+
   // Poll check-payment until it reports paid or expired. A rejected check (an
   // HTTP or network error) shows the API error and stops polling. If the
   // payment never confirms within the polling window, the page shows the
@@ -161,21 +177,9 @@ class FileUploadPage {
     if (!this.quote) throw new Error('There is no open quote to confirm')
 
     for (let attempt = 0; attempt < this.maxConfirmations; attempt++) {
-      let result
-      try {
-        result = await this.hostingApi.checkPayment({ paymentAddress: this.quote.paymentAddress })
-      } catch (err) {
-        this.state = errorState(err, this.quote.filename)
-        return this.state
-      }
-
-      if (result.status === 'paid') {
-        this.state = paidState(result, this.txid)
-        return this.state
-      }
-
-      if (result.status === 'expired') {
-        this.state = { status: 'expired', message: EXPIRED_MESSAGE }
+      const terminal = await this.pollOnce()
+      if (terminal) {
+        this.state = terminal
         return this.state
       }
 

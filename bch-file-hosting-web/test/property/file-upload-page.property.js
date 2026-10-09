@@ -387,6 +387,42 @@ test('property: an unconfirmed payment polls the full window then reports pendin
   })
 })
 
+test('property: a rejected payment check stops polling with the API error', async () => {
+  await forAllAsync({
+    seed: 13,
+    runs: 200,
+    generate: (random) => ({
+      unpaidBeforeError: integerBetween(random, 0, 4),
+      message: randomString(random, 1, 60, TEXT_ALPHABET)
+    }),
+    property: async ({ unpaidBeforeError, message }) => {
+      let checks = 0
+      const sleeps = []
+      const page = new FileUploadPage({
+        hostingApi: {
+          upload: async () => ({ alreadyHosted: false, priceSats: 2000, paymentAddress: 'bitcoincash:qinvoice' }),
+          checkPayment: async () => {
+            checks++
+            if (checks > unpaidBeforeError) throw new Error(message)
+            return { status: 'unpaid' }
+          }
+        },
+        wallet: { send: async () => 'txid' },
+        sleep: async (ms) => sleeps.push(ms),
+        maxConfirmations: 10
+      })
+      await page.upload({ name: 'photo.jpg' })
+      await page.payFromWallet()
+
+      const state = await page.waitForConfirmation()
+
+      assert.deepEqual(state, { status: 'error', filename: 'photo.jpg', message })
+      assert.equal(checks, unpaidBeforeError + 1)
+      assert.equal(sleeps.length, unpaidBeforeError)
+    }
+  })
+})
+
 test('property: paying requires a wallet and an open quote', async () => {
   await assert.rejects(
     () => new FileUploadPage({ hostingApi: { upload: async () => ({}) } }).payFromWallet(),

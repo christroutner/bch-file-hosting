@@ -21,7 +21,10 @@ function Dashboard () {
   // One page instance keeps the feed cursor across refresh and load-more.
   const getPage = useCallback(() => {
     if (!pageRef.current) {
-      pageRef.current = new DashboardPage({ hostingApi: new HostingApi({ config }) })
+      pageRef.current = new DashboardPage({
+        hostingApi: new HostingApi({ config }),
+        downloadBaseUrl: config.apiUrl
+      })
     }
     return pageRef.current
   }, [])

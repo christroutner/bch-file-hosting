@@ -4,7 +4,8 @@
 
   The service loads the public feed through the injected hosting API adapter
   and owns the dashboard display state: the feed in order (with Refresh and
-  Load more), the empty-feed state, or the API error. No network is touched.
+  Load more), each file's download URL, the empty-feed state, or the API
+  error. No network is touched.
 */
 
 'use strict'
@@ -14,6 +15,8 @@ const assert = require('node:assert/strict')
 
 const DashboardPage = require('../../src/services/dashboard-page')
 const { EMPTY_MESSAGE, DEFAULT_PAGE_SIZE } = DashboardPage
+
+const BASE = 'http://localhost:5050'
 
 function file (overrides = {}) {
   return {
@@ -47,7 +50,7 @@ test('requires a hosting API adapter', () => {
 
 test('loads the first page in feed order and reduces each file to its public fields', async () => {
   const api = apiReturning([{ files: [file(), file({ cid: 'bafy-b', filename: 'notes.txt' })], nextCursor: 'cursor-1' }])
-  const page = new DashboardPage({ hostingApi: api })
+  const page = new DashboardPage({ hostingApi: api, downloadBaseUrl: BASE })
 
   const state = await page.load()
 
@@ -63,13 +66,23 @@ test('loads the first page in feed order and reduces each file to its public fie
     paymentAddress: 'bitcoincash:qfeed',
     paidAt: '2026-01-02T00:00:00.000Z',
     hostedUntil: '2027-01-02T00:00:00.000Z',
+    downloadUrl: `${BASE}/download/bafy-a`,
     pins: [{ provider: 'local-helia', status: 'pinned' }]
   })
   assert.deepEqual(page.getViewModel(), state)
 })
 
+test('builds each download URL from the configured base and trims a trailing slash', async () => {
+  const api = apiReturning([{ files: [file({ cid: 'bafy-a' })], nextCursor: null }])
+  const page = new DashboardPage({ hostingApi: api, downloadBaseUrl: `${BASE}/` })
+
+  const state = await page.load()
+
+  assert.equal(state.files[0].downloadUrl, `${BASE}/download/bafy-a`)
+})
+
 test('shows an empty feed as a loaded page with no files', async () => {
-  const page = new DashboardPage({ hostingApi: apiReturning([{ files: [], nextCursor: null }]) })
+  const page = new DashboardPage({ hostingApi: apiReturning([{ files: [], nextCursor: null }]), downloadBaseUrl: BASE })
 
   const state = await page.load()
 
@@ -79,7 +92,8 @@ test('shows an empty feed as a loaded page with no files', async () => {
 
 test('shows the API error when the feed fails to load', async () => {
   const page = new DashboardPage({
-    hostingApi: { getFeed: async () => { throw new Error('Hosting API down') } }
+    hostingApi: { getFeed: async () => { throw new Error('Hosting API down') } },
+    downloadBaseUrl: BASE
   })
 
   const state = await page.load()
@@ -89,7 +103,8 @@ test('shows the API error when the feed fails to load', async () => {
 
 test('reports a generic message when the feed failure has no message', async () => {
   const page = new DashboardPage({
-    hostingApi: { getFeed: async () => { throw new Error() } }
+    hostingApi: { getFeed: async () => { throw new Error() } },
+    downloadBaseUrl: BASE
   })
 
   const state = await page.load()
@@ -103,7 +118,7 @@ test('loadMore appends the next page and follows its cursor', async () => {
     { files: [file()], nextCursor: 'cursor-1' },
     { files: [file({ cid: 'bafy-b', filename: 'notes.txt' })], nextCursor: null }
   ])
-  const page = new DashboardPage({ hostingApi: api })
+  const page = new DashboardPage({ hostingApi: api, downloadBaseUrl: BASE })
   await page.load()
 
   const state = await page.loadMore()
@@ -119,7 +134,7 @@ test('loadMore follows the cursor from the next page', async () => {
     { files: [file({ cid: 'bafy-b', filename: 'notes.txt' })], nextCursor: 'cursor-2' },
     { files: [file({ cid: 'bafy-c', filename: 'third.txt' })], nextCursor: null }
   ])
-  const page = new DashboardPage({ hostingApi: api })
+  const page = new DashboardPage({ hostingApi: api, downloadBaseUrl: BASE })
   await page.load()
   await page.loadMore()
   await page.loadMore()
@@ -129,7 +144,7 @@ test('loadMore follows the cursor from the next page', async () => {
 
 test('loadMore does nothing when the feed has no next page', async () => {
   const api = apiReturning([{ files: [file()], nextCursor: null }])
-  const page = new DashboardPage({ hostingApi: api })
+  const page = new DashboardPage({ hostingApi: api, downloadBaseUrl: BASE })
   await page.load()
 
   const state = await page.loadMore()
@@ -140,7 +155,7 @@ test('loadMore does nothing when the feed has no next page', async () => {
 
 test('loadMore does nothing while no feed has been loaded', async () => {
   const api = apiReturning([{ files: [file()], nextCursor: null }])
-  const page = new DashboardPage({ hostingApi: api })
+  const page = new DashboardPage({ hostingApi: api, downloadBaseUrl: BASE })
 
   const state = await page.loadMore()
 
@@ -156,7 +171,8 @@ test('loadMore shows the API error when the next page fails', async () => {
         if (call++ === 0) return { files: [file()], nextCursor: 'cursor-1' }
         throw new Error('Feed unavailable')
       }
-    }
+    },
+    downloadBaseUrl: BASE
   })
   await page.load()
 
@@ -170,7 +186,7 @@ test('refresh reloads the first page and drops the previous files', async () => 
     { files: [file()], nextCursor: null },
     { files: [file({ cid: 'bafy-b', filename: 'notes.txt' })], nextCursor: null }
   ])
-  const page = new DashboardPage({ hostingApi: api })
+  const page = new DashboardPage({ hostingApi: api, downloadBaseUrl: BASE })
   await page.load()
 
   const state = await page.load()
@@ -180,7 +196,7 @@ test('refresh reloads the first page and drops the previous files', async () => 
 
 test('uses the configured page size', async () => {
   const api = apiReturning([{ files: [], nextCursor: null }])
-  const page = new DashboardPage({ hostingApi: api, pageSize: 2 })
+  const page = new DashboardPage({ hostingApi: api, pageSize: 2, downloadBaseUrl: BASE })
 
   await page.load()
 

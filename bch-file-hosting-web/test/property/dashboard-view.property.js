@@ -2,10 +2,11 @@
   Property tests for the dashboard view
   (src/components/app-body/dashboard/dashboard-view.js).
 
-  Invariants: a loaded state renders one card per file, in order, with every
-  public detail and exactly one line per pin; an empty feed shows the empty
-  message; an error state shows its message; an unknown or idle status renders
-  the empty container without throwing; and rendering is deterministic.
+  Invariants: a loaded state renders one table row per file, in order, with
+  the required columns, the truncated CID and full download link, and one pin
+  entry per pin; an empty feed shows the empty message without a table; an
+  error state shows its message; an unknown or idle status renders the empty
+  container without throwing; and rendering is deterministic.
 
   Kept separate from the unit suite. Per the constitution, property tests do
   not contribute to unit coverage, CRAP, Gherkin acceptance, or mutation runs.
@@ -24,6 +25,12 @@ const { forAll, integerBetween, randomString } = require('./lib/harness')
 
 const TEXT_ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .-_'
 const STATUSES = ['pinning', 'pinned', 'pinFailed']
+const COLUMNS = ['File Name', 'Size', 'Status', 'Pins', 'Paid', 'Hosted Until', 'CID', 'Download']
+const BASE = 'http://localhost:5050'
+
+function truncateCid (cid) {
+  return cid.length <= 16 ? cid : `${cid.slice(0, 8)}...${cid.slice(-8)}`
+}
 
 function render (state) {
   return ReactDOMServer.renderToStaticMarkup(React.createElement(DashboardView, { state }))
@@ -38,19 +45,21 @@ function randomFile (random, index) {
       status: randomString(random, 1, 8, TEXT_ALPHABET)
     })
   }
+  const cid = `bafy${String(index).padStart(4, '0')}${randomString(random, 4, 8)}`
   return {
-    cid: `bafy${String(index).padStart(4, '0')}${randomString(random, 4, 8)}`,
+    cid,
     filename: `${randomString(random, 1, 12, TEXT_ALPHABET)}.bin`,
     sizeBytes: integerBetween(random, 0, 100000000),
     status: STATUSES[integerBetween(random, 0, STATUSES.length - 1)],
     paymentAddress: `bitcoincash:q${randomString(random, 10, 30)}`,
     paidAt: '2026-01-02T00:00:00.000Z',
     hostedUntil: '2027-01-02T00:00:00.000Z',
+    downloadUrl: `${BASE}/download/${cid}`,
     pins
   }
 }
 
-test('property: a loaded feed renders one card per file with every detail and pin', () => {
+test('property: a loaded feed renders one table row per file with its CID, download link, and pins', () => {
   forAll({
     seed: 1,
     runs: 200,
@@ -63,28 +72,21 @@ test('property: a loaded feed renders one card per file with every detail and pi
     property: ({ files }) => {
       const html = render({ status: 'loaded', hasMore: false, files })
 
-      assert.equal((html.match(/dashboard-file-name"/g) || []).length, files.length)
-      assert.equal(
-        (html.match(/dashboard-pin"/g) || []).length,
-        files.reduce((total, file) => total + file.pins.length, 0)
-      )
+      assert.equal((html.match(/dashboard-row/g) || []).length, files.length)
+      for (const column of COLUMNS) {
+        assert.ok(html.includes(`>${column}</th>`), `missing column ${column}`)
+      }
       for (const file of files) {
         assert.ok(html.includes(file.filename))
-        assert.ok(html.includes(`CID: ${file.cid}`))
-        assert.ok(html.includes(`${file.sizeBytes} bytes`))
-        assert.ok(html.includes(`Status: ${file.status}`))
-        assert.ok(html.includes(`Paid: ${file.paidAt}`))
-        assert.ok(html.includes(`Hosting window: ${file.hostedUntil}`))
-        assert.ok(html.includes(`Address: ${file.paymentAddress}`))
-        for (const pin of file.pins) {
-          assert.ok(html.includes(`Pin: ${pin.provider} ${pin.status}`))
-        }
+        assert.ok(html.includes(truncateCid(file.cid)))
+        assert.ok(html.includes(`href="${file.downloadUrl}"`))
+        assert.ok(html.includes(file.pins.map((pin) => `${pin.provider}: ${pin.status}`).join(', ') || ''))
       }
     }
   })
 })
 
-test('property: an empty loaded feed shows the empty message', () => {
+test('property: an empty loaded feed shows the empty message and no table', () => {
   forAll({
     seed: 2,
     runs: 100,
@@ -93,7 +95,8 @@ test('property: an empty loaded feed shows the empty message', () => {
       const html = render({ status: 'loaded', hasMore, files: [] })
 
       assert.ok(html.includes(EMPTY_MESSAGE))
-      assert.ok(!html.includes('dashboard-file-name'))
+      assert.ok(!html.includes('dashboard-table'))
+      assert.ok(!html.includes('dashboard-row'))
     }
   })
 })
@@ -123,7 +126,7 @@ test('property: an unknown or idle status renders the empty container', () => {
       const html = render({ status })
 
       assert.ok(html.includes('dashboard'))
-      assert.ok(!html.includes('dashboard-file-name'))
+      assert.ok(!html.includes('dashboard-row'))
       assert.ok(!html.includes('dashboard-error'))
     }
   })

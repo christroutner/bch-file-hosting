@@ -172,21 +172,35 @@ function visibleText (html) {
   return html.replace(/<[^>]+>/g, '')
 }
 
-// Find one file in the rendered dashboard state.
-function findDashboardFile (world, cid) {
-  const file = ((world.state && world.state.files) || []).find((f) => f.cid === cid)
-  if (!file) throw new Error(`The dashboard does not show the file ${cid}.`)
-  return file
+// Escape a literal string for use inside a RegExp.
+function escapeRegExp (value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function assertDashboardField (world, cid, field, expected, rendered) {
-  const file = findDashboardFile(world, cid)
-  if (String(file[field]) !== String(expected)) {
-    throw new Error(`Expected the dashboard file ${cid} ${field} ${expected}, got ${file[field]}.`)
-  }
-  if (!renderPage(world).includes(rendered === undefined ? String(expected) : rendered)) {
-    throw new Error(`Rendered dashboard does not show ${rendered === undefined ? expected : rendered}.`)
-  }
+// The rendered HTML of the dashboard row for one CID.
+function dashboardRow (world, cid) {
+  const pattern = new RegExp(`<tr[^>]*data-cid="${escapeRegExp(cid)}"[^>]*>([\\s\\S]*?)</tr>`)
+  const match = pattern.exec(renderPage(world))
+  if (!match) throw new Error(`The dashboard does not show a row for ${cid}.`)
+  return match[1]
+}
+
+// The rendered HTML of one class-named cell inside a dashboard row.
+function rowCell (rowHtml, cellClass) {
+  const pattern = new RegExp(`<td[^>]*class="[^"]*${cellClass}[^"]*"[^>]*>([\\s\\S]*?)</td>`)
+  const match = pattern.exec(rowHtml)
+  if (!match) throw new Error(`The dashboard row has no ${cellClass} cell.`)
+  return match[1]
+}
+
+// The visible text of one class-named cell inside a dashboard row.
+function rowCellText (rowHtml, cellClass) {
+  return visibleText(rowCell(rowHtml, cellClass)).trim()
+}
+
+// Build a complete feed file record from the fields a scenario configures.
+function feedRecord ({ status, cid, filename = '', sizeBytes = 0, paidAt = '2026-01-02T00:00:00.000Z', hostedUntil = '2027-01-02T00:00:00.000Z', paymentAddress = 'bitcoincash:qfeed' }) {
+  return { status, cid, filename, sizeBytes: Number(sizeBytes), paidAt, hostedUntil, paymentAddress, pins: [] }
 }
 
 // Apply an async page transition and invalidate the cached render.
@@ -210,7 +224,7 @@ const handlers = [
         maxConfirmations: 10
       })
       world.statusPage = new FileStatusPage({ hostingApi })
-      world.dashboardPage = new DashboardPage({ hostingApi })
+      world.dashboardPage = new DashboardPage({ hostingApi, downloadBaseUrl: 'http://localhost:5050' })
     }
   },
   {
@@ -737,35 +751,39 @@ const handlers = [
     }
   },
   {
-    name: 'the hosting API feed lists a file by placeholders',
-    pattern: /^the hosting API feed lists a <([A-Za-z0-9_]+)> file <([A-Za-z0-9_]+)> named <([A-Za-z0-9_]+)> of <([A-Za-z0-9_]+)> bytes paid at <([A-Za-z0-9_]+)> until <([A-Za-z0-9_]+)> at address <([A-Za-z0-9_]+)>$/,
+    name: 'the hosting API feed lists a status file by name',
+    pattern: /^the hosting API feed lists a (\S+) file (\S+) named (\S+)$/,
     run (m, example, world) {
-      world.feedFiles.push({
-        status: exampleValue(example, m[1]),
-        cid: exampleValue(example, m[2]),
-        filename: exampleValue(example, m[3]),
-        sizeBytes: Number(exampleValue(example, m[4])),
-        paidAt: exampleValue(example, m[5]),
-        hostedUntil: exampleValue(example, m[6]),
-        paymentAddress: exampleValue(example, m[7]),
-        pins: []
-      })
+      world.feedFiles.push(feedRecord({
+        status: resolveParam(m[1], example),
+        cid: resolveParam(m[2], example),
+        filename: resolveParam(m[3], example)
+      }))
     }
   },
   {
-    name: 'the hosting API feed lists a literal file',
-    pattern: /^the hosting API feed lists a ([A-Za-z]+) file (\S+) named (\S+) of (\d+) bytes paid at (\S+) until (\S+) at address (\S+)$/,
-    run (m, _example, world) {
-      world.feedFiles.push({
-        status: m[1],
-        cid: m[2],
-        filename: m[3],
-        sizeBytes: Number(m[4]),
-        paidAt: m[5],
-        hostedUntil: m[6],
-        paymentAddress: m[7],
-        pins: []
-      })
+    name: 'the hosting API feed lists a status file with size and dates',
+    pattern: /^the hosting API feed lists a (\S+) file (\S+) named (\S+) of (<[A-Za-z0-9_]+>) bytes paid at (<[A-Za-z0-9_]+>) until (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.feedFiles.push(feedRecord({
+        status: resolveParam(m[1], example),
+        cid: resolveParam(m[2], example),
+        filename: resolveParam(m[3], example),
+        sizeBytes: resolveParam(m[4], example),
+        paidAt: resolveParam(m[5], example),
+        hostedUntil: resolveParam(m[6], example)
+      }))
+    }
+  },
+  {
+    name: 'the hosting API feed lists a file with a status',
+    pattern: /^the hosting API feed lists a file (<[A-Za-z0-9_]+>) with status (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.feedFiles.push(feedRecord({
+        status: resolveParam(m[2], example),
+        cid: resolveParam(m[1], example),
+        filename: 'file.bin'
+      }))
     }
   },
   {
@@ -777,34 +795,24 @@ const handlers = [
   },
   {
     name: "the hosting API feed's next page lists a file",
-    pattern: /^the hosting API feed's next page lists a ([A-Za-z]+) file (\S+) named (\S+) of (\d+) bytes paid at (\S+) until (\S+) at address (\S+)$/,
-    run (m, _example, world) {
-      world.feedNextPageFiles.push({
-        status: m[1],
-        cid: m[2],
-        filename: m[3],
-        sizeBytes: Number(m[4]),
-        paidAt: m[5],
-        hostedUntil: m[6],
-        paymentAddress: m[7],
-        pins: []
-      })
+    pattern: /^the hosting API feed's next page lists a (\S+) file (\S+) named (\S+)$/,
+    run (m, example, world) {
+      world.feedNextPageFiles.push(feedRecord({
+        status: resolveParam(m[1], example),
+        cid: resolveParam(m[2], example),
+        filename: resolveParam(m[3], example)
+      }))
     }
   },
   {
     name: 'the hosting API feed is replaced with a file',
-    pattern: /^the hosting API feed is replaced with a ([A-Za-z]+) file (\S+) named (\S+) of (\d+) bytes paid at (\S+) until (\S+) at address (\S+)$/,
-    run (m, _example, world) {
-      world.feedFiles = [{
-        status: m[1],
-        cid: m[2],
-        filename: m[3],
-        sizeBytes: Number(m[4]),
-        paidAt: m[5],
-        hostedUntil: m[6],
-        paymentAddress: m[7],
-        pins: []
-      }]
+    pattern: /^the hosting API feed is replaced with a (\S+) file (\S+) named (\S+)$/,
+    run (m, example, world) {
+      world.feedFiles = [feedRecord({
+        status: resolveParam(m[1], example),
+        cid: resolveParam(m[2], example),
+        filename: resolveParam(m[3], example)
+      })]
       world.feedNextCursor = null
       world.feedNextPageFiles = []
       world.feedNextPageCursor = null
@@ -869,60 +877,109 @@ const handlers = [
     }
   },
   {
-    name: 'the dashboard shows the file name',
-    pattern: /^the dashboard shows the file (<[A-Za-z0-9_]+>) named (<[A-Za-z0-9_]+>)$/,
+    name: 'the dashboard shows a table with the columns',
+    pattern: /^the dashboard shows a table with the columns (.+)$/,
     run (m, example, world) {
-      assertDashboardField(world, resolveParam(m[1], example), 'filename', resolveParam(m[2], example))
+      const expected = resolveParam(m[1], example).split(',').map((s) => s.trim()).filter(Boolean)
+      const thead = /<thead>([\s\S]*?)<\/thead>/.exec(renderPage(world))
+      if (!thead) throw new Error('The dashboard does not show a table header.')
+      const headers = [...thead[1].matchAll(/<th[^>]*>([\s\S]*?)<\/th>/g)].map((cell) => visibleText(cell[1]).trim())
+      if (JSON.stringify(headers) !== JSON.stringify(expected)) {
+        throw new Error(`Expected the dashboard columns ${expected.join(', ')}, got ${headers.join(', ')}.`)
+      }
     }
   },
   {
-    name: 'the dashboard shows the file size',
-    pattern: /^the dashboard shows the file (<[A-Za-z0-9_]+>) of (<[A-Za-z0-9_]+>) bytes$/,
+    name: 'the status cell of a dashboard row',
+    pattern: /^the status cell of row (\S+) reads (<[A-Za-z0-9_]+>)$/,
     run (m, example, world) {
-      const size = resolveParam(m[2], example)
-      assertDashboardField(world, resolveParam(m[1], example), 'sizeBytes', size, `${size} bytes`)
+      const cid = resolveParam(m[1], example)
+      const expected = resolveParam(m[2], example)
+      const actual = rowCellText(dashboardRow(world, cid), 'dashboard-file-status')
+      if (actual !== expected) {
+        throw new Error(`Expected the status cell of row ${cid} to read ${expected}, got ${actual}.`)
+      }
     }
   },
   {
-    name: 'the dashboard shows the file status',
-    pattern: /^the dashboard shows the file (<[A-Za-z0-9_]+>) with status (<[A-Za-z0-9_]+>)$/,
+    name: 'a dashboard row lists the pins',
+    pattern: /^row (\S+) lists the pins (<[A-Za-z0-9_]+>)$/,
     run (m, example, world) {
-      assertDashboardField(world, resolveParam(m[1], example), 'status', resolveParam(m[2], example))
+      const cid = resolveParam(m[1], example)
+      const expected = resolveParam(m[2], example)
+      const actual = rowCellText(dashboardRow(world, cid), 'dashboard-file-pins')
+      if (!actual.includes(expected)) {
+        throw new Error(`Expected row ${cid} to list the pins ${expected}, got ${actual}.`)
+      }
     }
   },
   {
-    name: 'the dashboard shows the file paid time',
-    pattern: /^the dashboard shows the file (<[A-Za-z0-9_]+>) paid at (<[A-Za-z0-9_]+>)$/,
+    name: 'the CID cell of a dashboard row',
+    pattern: /^the CID cell of row (\S+) holds (<[A-Za-z0-9_]+>)$/,
     run (m, example, world) {
-      assertDashboardField(world, resolveParam(m[1], example), 'paidAt', resolveParam(m[2], example))
+      const cid = resolveParam(m[1], example)
+      const expected = resolveParam(m[2], example)
+      const actual = rowCellText(dashboardRow(world, cid), 'dashboard-file-cid')
+      if (!actual.includes(expected)) {
+        throw new Error(`Expected the CID cell of row ${cid} to hold ${expected}, got ${actual}.`)
+      }
     }
   },
   {
-    name: 'the dashboard shows the file hosting window',
-    pattern: /^the dashboard shows the file (<[A-Za-z0-9_]+>) until (<[A-Za-z0-9_]+>)$/,
+    name: 'a dashboard row offers a copy control',
+    pattern: /^row (\S+) offers a copy control$/,
     run (m, example, world) {
-      assertDashboardField(world, resolveParam(m[1], example), 'hostedUntil', resolveParam(m[2], example))
+      const cid = resolveParam(m[1], example)
+      if (!/class="[^"]*dashboard-copy[^"]*"/.test(dashboardRow(world, cid))) {
+        throw new Error(`Expected row ${cid} to offer a copy control.`)
+      }
     }
   },
   {
-    name: 'the dashboard shows the file payment address',
-    pattern: /^the dashboard shows the file (<[A-Za-z0-9_]+>) at address (<[A-Za-z0-9_]+>)$/,
+    name: 'the download cell of a dashboard row',
+    pattern: /^the download cell of row (\S+) links (<[A-Za-z0-9_]+>)$/,
     run (m, example, world) {
-      assertDashboardField(world, resolveParam(m[1], example), 'paymentAddress', resolveParam(m[2], example))
+      const cid = resolveParam(m[1], example)
+      const expected = resolveParam(m[2], example)
+      const cell = rowCell(dashboardRow(world, cid), 'dashboard-file-download')
+      if (!cell.includes(`href="${expected}"`)) {
+        throw new Error(`Expected the download cell of row ${cid} to link ${expected}, got ${cell}.`)
+      }
     }
   },
   {
-    name: 'the dashboard shows the pin',
-    pattern: /^the dashboard shows the pin (<[A-Za-z0-9_]+>) (<[A-Za-z0-9_]+>)$/,
+    name: 'the size cell of a dashboard row',
+    pattern: /^the size cell of row (\S+) measures (.+)$/,
     run (m, example, world) {
-      const provider = resolveParam(m[1], example)
-      const pinStatus = resolveParam(m[2], example)
-      const files = (world.state && world.state.files) || []
-      const found = files.some((f) => (f.pins || []).some((p) => p.provider === provider && p.status === pinStatus))
-      if (!found) throw new Error(`Expected the dashboard to show a ${provider} pin with status ${pinStatus}.`)
-      const html = renderPage(world)
-      if (!html.includes(provider) || !html.includes(pinStatus)) {
-        throw new Error(`Rendered dashboard does not show the ${provider} pin with status ${pinStatus}.`)
+      const cid = resolveParam(m[1], example)
+      const expected = resolveParam(m[2], example)
+      const actual = rowCellText(dashboardRow(world, cid), 'dashboard-file-size')
+      if (actual !== expected) {
+        throw new Error(`Expected the size cell of row ${cid} to measure ${expected}, got ${actual}.`)
+      }
+    }
+  },
+  {
+    name: 'a dashboard row shows the paid time',
+    pattern: /^row (\S+) shows the paid time (.+)$/,
+    run (m, example, world) {
+      const cid = resolveParam(m[1], example)
+      const expected = resolveParam(m[2], example)
+      const actual = rowCellText(dashboardRow(world, cid), 'dashboard-file-paid')
+      if (actual !== expected) {
+        throw new Error(`Expected row ${cid} to show the paid time ${expected}, got ${actual}.`)
+      }
+    }
+  },
+  {
+    name: 'a dashboard row shows the hosting end',
+    pattern: /^row (\S+) shows the hosting end (.+)$/,
+    run (m, example, world) {
+      const cid = resolveParam(m[1], example)
+      const expected = resolveParam(m[2], example)
+      const actual = rowCellText(dashboardRow(world, cid), 'dashboard-file-until')
+      if (actual !== expected) {
+        throw new Error(`Expected row ${cid} to show the hosting end ${expected}, got ${actual}.`)
       }
     }
   },

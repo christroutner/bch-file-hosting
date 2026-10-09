@@ -16,8 +16,13 @@ const DEFAULT_PAGE_SIZE = 20
 const GENERIC_ERROR_MESSAGE = 'Could not load the hosted files'
 const EMPTY_MESSAGE = 'No files are hosted yet.'
 
+// Build the download URL for a file from the API base URL.
+function downloadUrl (base, cid) {
+  return `${String(base).replace(/\/+$/, '')}/download/${cid}`
+}
+
 // Keep only the fields the dashboard shows.
-function toDashboardFile (file) {
+function toDashboardFile (file, downloadBaseUrl) {
   return {
     cid: file.cid,
     filename: file.filename,
@@ -26,6 +31,7 @@ function toDashboardFile (file) {
     paymentAddress: file.paymentAddress,
     paidAt: file.paidAt,
     hostedUntil: file.hostedUntil,
+    downloadUrl: downloadUrl(downloadBaseUrl, file.cid),
     pins: (file.pins || []).map((pin) => ({ provider: pin.provider, status: pin.status }))
   }
 }
@@ -39,11 +45,12 @@ function pageState (files, nextCursor) {
 }
 
 class DashboardPage {
-  constructor ({ hostingApi, pageSize = DEFAULT_PAGE_SIZE } = {}) {
+  constructor ({ hostingApi, pageSize = DEFAULT_PAGE_SIZE, downloadBaseUrl = '' } = {}) {
     if (!hostingApi) throw new Error('DashboardPage requires a hosting API adapter')
 
     this.hostingApi = hostingApi
     this.pageSize = pageSize
+    this.downloadBaseUrl = downloadBaseUrl
     this.state = { status: 'idle' }
     this.cursor = null
 
@@ -57,7 +64,10 @@ class DashboardPage {
     try {
       const page = await this.hostingApi.getFeed({ limit: this.pageSize })
       this.cursor = page.nextCursor || null
-      this.state = pageState((page.files || []).map(toDashboardFile), this.cursor)
+      this.state = pageState(
+        (page.files || []).map((file) => toDashboardFile(file, this.downloadBaseUrl)),
+        this.cursor
+      )
     } catch (err) {
       this.cursor = null
       this.state = { status: 'error', message: failureMessage(err, GENERIC_ERROR_MESSAGE) }
@@ -74,7 +84,10 @@ class DashboardPage {
       const page = await this.hostingApi.getFeed({ limit: this.pageSize, cursor: this.cursor })
       this.cursor = page.nextCursor || null
       this.state = pageState(
-        [...this.state.files, ...(page.files || []).map(toDashboardFile)],
+        [
+          ...this.state.files,
+          ...(page.files || []).map((file) => toDashboardFile(file, this.downloadBaseUrl))
+        ],
         this.cursor
       )
     } catch (err) {

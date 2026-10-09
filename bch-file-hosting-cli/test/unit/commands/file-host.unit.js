@@ -240,6 +240,29 @@ describe('#file-host', () => {
       assert.equal(parsed.downloadUrl, DOWNLOAD_URL)
       assert.equal(parsed.txid, TXID)
     })
+
+    it('should default gateway URLs to an empty list when the API omits them', async () => {
+      hostingApi.checkPayment.resolves({
+        success: true,
+        status: 'paid',
+        cid: CID,
+        downloadUrl: DOWNLOAD_URL
+      })
+
+      const result = await uut.run({ file: './photo.jpg', name: 'payer', json: true })
+
+      assert.equal(result, 0)
+      assert.deepEqual(JSON.parse(output[0]).gatewayUrls, [])
+    })
+  })
+
+  describe('#report', () => {
+    it('should print no gateway URLs when the result has none', () => {
+      uut.report({ status: 'paid', cid: CID, downloadUrl: DOWNLOAD_URL }, {})
+
+      assert.include(output.join('\n'), `Download URL: ${DOWNLOAD_URL}`)
+      assert.notInclude(output.join('\n'), 'Gateway URL')
+    })
   })
 
   describe('#constructor', () => {
@@ -249,6 +272,14 @@ describe('#file-host', () => {
       assert.instanceOf(defaultUut.hostingApi, HostingApi)
       assert.instanceOf(defaultUut.walletStore, WalletStore)
       assert.instanceOf(defaultUut.walletService, WalletService)
+    })
+
+    it('should fall back to a real timer for the payment poll delay', async () => {
+      const defaultUut = new FileHost({ config })
+
+      await defaultUut.sleep(0)
+
+      assert.isFunction(defaultUut.sleep)
     })
   })
 })

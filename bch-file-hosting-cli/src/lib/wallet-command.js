@@ -11,13 +11,33 @@ import Command, { UsageError } from './command.js'
 import WalletStore, { isValidWalletName } from './wallet-store.js'
 import WalletService from './wallet-service.js'
 
+// Attach the default wallet store and service to a command unless injected.
+function attachWallet (command, deps = {}) {
+  command.walletStore = deps.walletStore || new WalletStore()
+  command.walletService = deps.walletService || new WalletService({ config: command.config })
+}
+
+// Throw the shared usage error for a missing or unsafe wallet name.
+function validateWalletName (name) {
+  if (!name) {
+    throw new UsageError('You must specify a wallet name with the -n flag.')
+  }
+
+  if (!isValidWalletName(name)) {
+    throw new UsageError(
+      `Invalid wallet name "${name}". Use only letters, digits, hyphens, and underscores.`
+    )
+  }
+
+  return true
+}
+
 class WalletCommand extends Command {
   constructor (deps = {}) {
     super(deps)
 
     // Encapsulate wallet dependencies so tests can replace them.
-    this.walletStore = deps.walletStore || new WalletStore()
-    this.walletService = deps.walletService || new WalletService({ config: this.config })
+    attachWallet(this, deps)
 
     // Bind 'this' object to all subfunctions.
     this.validateFlags = this.validateFlags.bind(this)
@@ -26,21 +46,11 @@ class WalletCommand extends Command {
   }
 
   validateFlags (flags = {}) {
-    if (!flags.name) {
-      throw new UsageError('You must specify a wallet name with the -n flag.')
-    }
-
-    if (!isValidWalletName(flags.name)) {
-      throw new UsageError(
-        `Invalid wallet name "${flags.name}". Use only letters, digits, hyphens, and underscores.`
-      )
-    }
-
-    return true
+    return validateWalletName(flags.name)
   }
 }
 
-export { UsageError }
+export { UsageError, attachWallet, validateWalletName }
 export default WalletCommand
 
 // mutate4javascript-manifest-begin

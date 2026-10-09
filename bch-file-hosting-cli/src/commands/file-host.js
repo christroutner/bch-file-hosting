@@ -9,18 +9,14 @@
 
 // Local libraries
 import FileUpload, { UsageError } from './file-upload.js'
-import WalletStore, { isValidWalletName } from '../lib/wallet-store.js'
-import WalletService from '../lib/wallet-service.js'
-
-const MISSING_WALLET_MESSAGE = 'You must specify a wallet name with the -n flag.'
+import { attachWallet, validateWalletName } from '../lib/wallet-command.js'
 
 class FileHost extends FileUpload {
   constructor (deps = {}) {
     super(deps)
 
     // Encapsulate wallet and polling dependencies so tests can replace them.
-    this.walletStore = deps.walletStore || new WalletStore()
-    this.walletService = deps.walletService || new WalletService({ config: this.config })
+    attachWallet(this, deps)
     this.sleep = deps.sleep || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)))
     this.paymentCheckAttempts = deps.paymentCheckAttempts ?? 10
     this.paymentCheckDelayMs = deps.paymentCheckDelayMs ?? 3000
@@ -32,17 +28,7 @@ class FileHost extends FileUpload {
   validateFlags (flags = {}) {
     super.validateFlags(flags)
 
-    if (!flags.name) {
-      throw new UsageError(MISSING_WALLET_MESSAGE)
-    }
-
-    if (!isValidWalletName(flags.name)) {
-      throw new UsageError(
-        `Invalid wallet name "${flags.name}". Use only letters, digits, hyphens, and underscores.`
-      )
-    }
-
-    return true
+    return validateWalletName(flags.name)
   }
 
   async execute (flags = {}) {

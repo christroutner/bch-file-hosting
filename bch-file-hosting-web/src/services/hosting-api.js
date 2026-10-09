@@ -31,6 +31,7 @@ class HostingApi {
 
     this.upload = this.upload.bind(this)
     this.checkPayment = this.checkPayment.bind(this)
+    this.getStatus = this.getStatus.bind(this)
   }
 
   // Upload a browser File to POST /files and return the parsed quote response.
@@ -58,6 +59,23 @@ class HostingApi {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ paymentAddress })
+    })
+    const body = await readJson(response)
+
+    if (!response.ok) {
+      throw new HostingApiError(errorMessage(response, body))
+    }
+
+    return body
+  }
+
+  // Look up a file record at GET /files/:cid. The CID is a single path
+  // segment, so it is percent-encoded: an unencoded value such as
+  // `../admin/invoices` would be normalized by the URL parser and change the
+  // requested endpoint.
+  async getStatus ({ cid } = {}) {
+    const response = await this.fetch(`${this.config.apiUrl}/files/${encodeURIComponent(cid)}`, {
+      method: 'GET'
     })
     const body = await readJson(response)
 

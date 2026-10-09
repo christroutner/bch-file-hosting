@@ -24,6 +24,7 @@ import SignMessage from './sign/index.js'
 import ServerSelectView from './configuration/select-server-view'
 import UserDataReview from './user-data-review'
 import FileHosting from './file-hosting'
+import FileStatus from './file-status'
 
 function AppBody (props) {
   // Dependency injection through props
@@ -43,6 +44,7 @@ function AppBody (props) {
         <Route path='/sweep' element={<SweepWif appData={appData} />} />
         <Route path='/sign' element={<SignMessage appData={appData} />} />
         <Route path='/host' element={<FileHosting appData={appData} />} />
+        <Route path='/status' element={<FileStatus />} />
         <Route path='/configuration' element={<ServerSelectView appData={appData} />} />
         <Route path='/user-data/:tokenId' element={<UserDataReview appData={appData} />} />
       </Routes>

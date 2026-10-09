@@ -131,3 +131,40 @@ test('maps a check-payment rejection to HostingApiError', async () => {
     }
   )
 })
+
+test('gets a file status with the CID encoded as one path segment', async () => {
+  const calls = []
+  const fakeFetch = async (url, options) => {
+    calls.push({ url, options })
+    return jsonResponse(200, { success: true, cid: 'bafy', status: 'pinned' })
+  }
+  const api = new HostingApi({
+    config: { apiUrl: 'http://localhost:5050' },
+    fetch: fakeFetch,
+    FormData: FakeFormData
+  })
+
+  const body = await api.getStatus({ cid: 'bafy/../admin' })
+
+  assert.equal(calls[0].url, 'http://localhost:5050/files/bafy%2F..%2Fadmin')
+  assert.equal(calls[0].options.method, 'GET')
+  assert.equal(body.cid, 'bafy')
+})
+
+test('maps a status rejection to HostingApiError', async () => {
+  const fakeFetch = async () => jsonResponse(404, { error: 'File not found' })
+  const api = new HostingApi({
+    config: { apiUrl: 'http://localhost:5050' },
+    fetch: fakeFetch,
+    FormData: FakeFormData
+  })
+
+  await assert.rejects(
+    () => api.getStatus({ cid: 'bafymissing' }),
+    (err) => {
+      assert.ok(err instanceof HostingApiError)
+      assert.equal(err.message, 'File not found')
+      return true
+    }
+  )
+})

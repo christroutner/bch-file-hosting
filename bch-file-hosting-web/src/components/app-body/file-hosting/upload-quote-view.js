@@ -63,6 +63,13 @@ function paidChildren (state) {
   children.push(
     React.createElement('p', { key: 'txid', className: 'file-upload-txid' }, `Payment: ${state.txid}`)
   )
+  children.push(
+    React.createElement(
+      'p',
+      { key: 'status-link', className: 'file-upload-status-link' },
+      React.createElement('a', { href: `/status?cid=${encodeURIComponent(state.cid)}` }, 'Check hosting status')
+    )
+  )
 
   return children
 }

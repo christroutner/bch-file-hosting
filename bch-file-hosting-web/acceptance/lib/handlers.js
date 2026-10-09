@@ -20,7 +20,9 @@ const React = require('react')
 const ReactDOMServer = require('react-dom/server')
 
 const FileUploadPage = require('../../src/services/file-upload-page')
+const FileStatusPage = require('../../src/services/file-status-page')
 const UploadQuoteView = require('../../src/components/app-body/file-hosting/upload-quote-view')
+const FileStatusView = require('../../src/components/app-body/file-status/file-status-view')
 
 const MINUTE_MS = 60 * 1000
 
@@ -45,11 +47,15 @@ function resolveParam (value, example) {
 function createWorld () {
   return {
     now: () => FIXED_NOW,
+    view: 'upload',
     page: null,
+    statusPage: null,
     response: null,
     error: null,
     state: null,
     html: null,
+    statusFile: null,
+    statusError: null,
     walletSends: [],
     walletTxid: null,
     walletError: null,
@@ -76,6 +82,10 @@ function makeHostingApi (world) {
       const index = Math.min(checkIndex, world.checkResults.length - 1)
       checkIndex++
       return world.checkResults[index]
+    },
+    getStatus: async () => {
+      if (world.statusError) throw new Error(world.statusError)
+      return world.statusFile
     }
   }
 }
@@ -96,11 +106,12 @@ function makeWallet (world) {
 // uses, and cache the static HTML.
 function renderPage (world) {
   if (world.state === null) {
-    throw new Error('No upload or payment has happened yet.')
+    throw new Error('No upload, payment, or lookup has happened yet.')
   }
   if (world.html === null) {
+    const Component = world.view === 'status' ? FileStatusView : UploadQuoteView
     world.html = ReactDOMServer.renderToStaticMarkup(
-      React.createElement(UploadQuoteView, { state: world.state })
+      React.createElement(Component, { state: world.state })
     )
   }
   return world.html
@@ -123,13 +134,15 @@ const handlers = [
     name: 'a fresh file hosting web page',
     pattern: /^a fresh file hosting web page$/,
     run (m, example, world) {
+      const hostingApi = makeHostingApi(world)
       world.page = new FileUploadPage({
-        hostingApi: makeHostingApi(world),
+        hostingApi,
         wallet: makeWallet(world),
         now: world.now,
         sleep: async () => {},
         maxConfirmations: 10
       })
+      world.statusPage = new FileStatusPage({ hostingApi })
     }
   },
   {
@@ -285,6 +298,74 @@ const handlers = [
     }
   },
   {
+    name: 'the hosting API reports a file with a CID',
+    pattern: /^the hosting API reports a file with CID (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.statusFile = { cid: resolveParam(m[1], example), pins: [] }
+    }
+  },
+  {
+    name: 'the hosting API reports the file name',
+    pattern: /^the hosting API reports the file name (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.statusFile.filename = resolveParam(m[1], example)
+    }
+  },
+  {
+    name: 'the hosting API reports the file size',
+    pattern: /^the hosting API reports the file size (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.statusFile.sizeBytes = Number(resolveParam(m[1], example))
+    }
+  },
+  {
+    name: 'the hosting API reports the file status',
+    pattern: /^the hosting API reports the file status (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.statusFile.status = resolveParam(m[1], example)
+    }
+  },
+  {
+    name: 'the hosting API reports the hosting window',
+    pattern: /^the hosting API reports the hosting window (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.statusFile.hostedUntil = resolveParam(m[1], example)
+    }
+  },
+  {
+    name: 'the hosting API reports a pin for a provider',
+    pattern: /^the hosting API reports a pin for provider (<[A-Za-z0-9_]+>) with status (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.statusFile.pins.push({
+        provider: resolveParam(m[1], example),
+        status: resolveParam(m[2], example)
+      })
+    }
+  },
+  {
+    name: 'the hosting API rejects the status',
+    pattern: /^the hosting API rejects the status with error (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.statusError = resolveParam(m[1], example)
+    }
+  },
+  {
+    name: 'the visitor looks up a CID',
+    pattern: /^the visitor looks up the CID (.+)$/,
+    async run (m, example, world) {
+      world.view = 'status'
+      await transition(world, () => world.statusPage.lookup(m[1]))
+    }
+  },
+  {
+    name: 'the visitor looks up no CID',
+    pattern: /^the visitor looks up no CID$/,
+    async run (m, example, world) {
+      world.view = 'status'
+      await transition(world, () => world.statusPage.lookup(''))
+    }
+  },
+  {
     name: 'the wallet paid an amount to an address',
     pattern: /^the wallet paid (<[A-Za-z0-9_]+>) satoshis to (<[A-Za-z0-9_]+>)$/,
     run (m, example, world) {
@@ -413,6 +494,61 @@ const handlers = [
       }
       if (!renderPage(world).includes(expected)) {
         throw new Error(`Rendered page does not show the payment transaction ${expected}.`)
+      }
+    }
+  },
+  {
+    name: 'the page shows the file status',
+    pattern: /^the page shows the file status (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      const expected = resolveParam(m[1], example)
+      if (world.state.fileStatus !== expected) {
+        throw new Error(`Expected the page to show the file status ${expected}, got "${world.state.fileStatus}".`)
+      }
+      if (!renderPage(world).includes(expected)) {
+        throw new Error(`Rendered page does not show the file status ${expected}.`)
+      }
+    }
+  },
+  {
+    name: 'the page shows the size',
+    pattern: /^the page shows the size (<[A-Za-z0-9_]+>) bytes$/,
+    run (m, example, world) {
+      const expected = resolveParam(m[1], example)
+      if (String(world.state.sizeBytes) !== String(expected)) {
+        throw new Error(`Expected the page to show the size ${expected} bytes, got "${world.state.sizeBytes}".`)
+      }
+      if (!renderPage(world).includes(`${expected} bytes`)) {
+        throw new Error(`Rendered page does not show the size ${expected} bytes.`)
+      }
+    }
+  },
+  {
+    name: 'the page shows the hosting window',
+    pattern: /^the page shows the hosting window (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      const expected = resolveParam(m[1], example)
+      if (world.state.hostedUntil !== expected) {
+        throw new Error(`Expected the page to show the hosting window "${expected}", got "${world.state.hostedUntil}".`)
+      }
+      if (!renderPage(world).includes(expected)) {
+        throw new Error(`Rendered page does not show the hosting window "${expected}".`)
+      }
+    }
+  },
+  {
+    name: 'the page shows the pin',
+    pattern: /^the page shows the pin (<[A-Za-z0-9_]+>) (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      const provider = resolveParam(m[1], example)
+      const pinStatus = resolveParam(m[2], example)
+      const found = (world.state.pins || []).some((pin) => pin.provider === provider && pin.status === pinStatus)
+      if (!found) {
+        throw new Error(`Expected the page to show a ${provider} pin with status ${pinStatus}.`)
+      }
+      const html = renderPage(world)
+      if (!html.includes(provider) || !html.includes(pinStatus)) {
+        throw new Error(`Rendered page does not show the ${provider} pin with status ${pinStatus}.`)
       }
     }
   },

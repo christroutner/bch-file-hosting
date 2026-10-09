@@ -98,6 +98,13 @@ function NavMenu (props) {
             >
               Host File
             </NavLink>
+            <NavLink
+              className={currentPath === '/status' ? 'nav-link-active' : 'nav-link-inactive'}
+              to='/status'
+              onClick={handleClickEvent}
+            >
+              Status
+            </NavLink>
           </Nav>
         </Navbar.Collapse>
       </Navbar>

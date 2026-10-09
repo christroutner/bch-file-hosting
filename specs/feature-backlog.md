@@ -36,17 +36,13 @@ at `f579aafd67`. P6.6 `file-host` is complete and merged at `8a93edf5f7`, so
 `f2e3615e99`, P7.2 `web-payment` (plus the `web-payment-poll-error` hardening)
 and P7.3 `web-file-status` followed, so **roadmap phase 7 (web UI) is complete**
 as of `5ed6759239`. The `web-upload-transport` hardening (browser `fetch`
-receiver in the web API adapter) is complete and merged at `279e8a77ba`.
+receiver in the web API adapter) is complete and merged at `279e8a77ba`. The
+`web-upload-size` hardening (file and billed sizes on the web quote) is
+complete and merged at `dba049d435`.
 
 ## In progress
 
-- **`web-upload-size` — show the uploaded and billed sizes on the web quote
-  (2026-10-09):** the `/host` quote view omits the file size. Add scenarios
-  `Web Upload - 5` (the billed size differs, e.g. a file below the 100 KB
-  minimum) and `Web Upload - 6` (the billed size equals the file size, so no
-  separate billed line) to `bch-file-hosting-web/specs/web-upload.feature`. The
-  API already returns `sizeBytes` and `billedBytes` in the quote; the web
-  `quoteState` currently drops both. Awaiting coder.
+- None.
 
 ## Up next (in order)
 
@@ -55,8 +51,11 @@ receiver in the web API adapter) is complete and merged at `279e8a77ba`.
 - **Spec-quality follow-ups:** the CLI `upload_path` cells (file-upload,
   file-host) and the file-host non-JSON `api_txid` cells survive soft mutation
   because no assertion depends on them; either anchor them with a `Then` or
-  prune the columns. The wallet mnemonic-hygiene scenarios remain
-  mutation-inert.
+  prune the columns. The same applies to `web-upload.feature` scenarios 5 and 6
+  (`api_sats`, `api_address`, `upload_name`; 12 soft-mutation survivors) — add
+  the corresponding `Then ... shows the price / payment address / file name`
+  assertions or move the setup to fixed values. The wallet mnemonic-hygiene
+  scenarios remain mutation-inert.
 
 ## Needs a decision from the user
 
@@ -65,6 +64,24 @@ receiver in the web API adapter) is complete and merged at `279e8a77ba`.
   (D26–D29); none needs new Gherkin.
 
 ## Recently completed
+
+- **`web-upload-size` — show the file and billed sizes on the web quote
+  (2026-10-09):** the `/host` quote view now shows `Size: <n> bytes` whenever
+  the API reports a size, plus a separate `Billed size: <n> bytes` line only
+  when the billed size differs from the selected size (a file below the 100 KB
+  minimum). `quoteState` carries `sizeBytes`/`billedBytes` through an
+  `optionalNumber` helper; the view renders the billed line on the presence and
+  inequality rule. Spec `web-upload.feature` gained scenarios `Web Upload - 5`
+  and `Web Upload - 6`. Pipeline commits: specifier `c848678`, coder `f101108`,
+  refactorer `1ccf906`, architect `e9593f7` (verification `git_sha`), docs
+  `dba049d`, merged to `master` at `dba049d435` (fast-forward). `verify.sh web`
+  pass 4/4 (unit 62, property 57, acceptance all 4 suites, lint ok); language
+  mutation 17/17 killed / 0 uncovered across the two changed modules; DRY
+  clean; CRAP <= 5.0. Independent post-merge acceptance check: web-upload
+  12/12. Architect summary: `docs/reviews/web-upload-size-summary.md`. Soft
+  Gherkin: 14/26 killed, 12 survivors — the `api_sats`, `api_address`, and
+  `upload_name` setup columns in scenarios 5 and 6 are unasserted (see the
+  spec-quality follow-up below).
 
 - **`web-upload-transport` — send web uploads through the browser `fetch`
   transport (2026-10-09):** fixed the reported `/host` upload failure

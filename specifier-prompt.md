@@ -361,26 +361,26 @@ At the end of each session, update this file:
 - Note the current `master` HEAD commit.
 - State the next feature to work on.
 
-Latest session (2026-10-09): completed the **`web-upload-transport`**
-hardening in `bch-file-hosting-web`. A reported `/host` upload failure
-(`'fetch' called on an object that does not implement interface Window.`) came
-from `HostingApi` storing the bare global `fetch` and calling it as
-`this.fetch(...)`; the adapter now binds the transport once
-(`(fetchImpl || fetch).bind(globalThis)`). The new spec
-`web-upload-transport.feature` drives the real adapter over a browser-like
-global fetch. Pipeline commits — specifier `d926571`, coder `4621cb7`,
-refactorer `4fe1ce0`, architect `6fdbdf3` (verification `git_sha`), docs
-`279e8a7`. Merged to `master` (fast-forward) at `279e8a77ba`. `verify.sh web`
-pass 4/4 (unit 57, property 55, acceptance all 4 suites, lint ok); language
-mutation of `hosting-api.js` 4/4 killed; soft Gherkin 14/14 killed; independent
-post-merge acceptance check 2/2. Roadmap phases 3–7 remain complete. Prior
-cycles (Q1, P5.1-P5.3, P6.1-P6.6, P7.1-P7.3, web-payment-poll-error,
-wallet-name-validation) are in the backlog. Open follow-ups: the CLI
+Latest session (2026-10-09): completed **`web-upload-size`** in
+`bch-file-hosting-web`. The `/host` quote now shows the selected file size and
+a separate `Billed size` line only when billing rounds the size up (below the
+100 KB minimum); `quoteState` carries `sizeBytes`/`billedBytes` through an
+`optionalNumber` helper. Spec `web-upload.feature` gained scenarios `Web
+Upload - 5` and `Web Upload - 6`. Pipeline commits — specifier `c848678`, coder
+`f101108`, refactorer `1ccf906`, architect `e9593f7` (verification `git_sha`),
+docs `dba049d`. Merged to `master` (fast-forward) at `dba049d435`. `verify.sh
+web` pass 4/4 (unit 62, property 57, acceptance all 4 suites, lint ok); language
+mutation 17/17 killed; independent post-merge acceptance check 12/12. Soft
+Gherkin: 12 of the new scenario columns (`api_sats`, `api_address`,
+`upload_name` in scenarios 5 and 6) are unasserted — carried as a spec-quality
+follow-up. Roadmap phases 3–7 remain complete. Prior cycles (Q1, P5.1-P5.3,
+P6.1-P6.6, P7.1-P7.3, web-payment-poll-error, wallet-name-validation,
+web-upload-transport) are in the backlog. Open follow-ups: the CLI
 `upload_path`/`api_txid` columns and the mutation-inert mnemonic-hygiene
-scenarios.
+scenarios, plus the `web-upload` scenarios 5–6 unasserted setup columns.
 
-Current `master` HEAD: `279e8a77ba` (Record web-upload-transport architect review
-and verification).
+Current `master` HEAD: `dba049d435` (Record web-upload-size architect review and
+verification).
 
 Next action: scope **roadmap phase 8 (x402-bch)** with the user (dynamic-price
 x402 middleware, `POST /x402/files`, facilitator notes), or tackle the CLI

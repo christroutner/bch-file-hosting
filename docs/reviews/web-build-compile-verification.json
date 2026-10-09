@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "task": "web-build-compile",
+  "component": "bch-file-hosting-web",
+  "git_sha": "1d77386af1b013b76cf4d2452b81021c46a315fc",
+  "branch": "swarmforge-architect",
+  "timestamp": "2026-10-09T20:23:36.002Z",
+  "commands": [
+    {
+      "name": "unit",
+      "command": "npm test",
+      "exit": 0,
+      "duration_ms": 223,
+      "summary": "83 pass / 0 fail"
+    },
+    {
+      "name": "property",
+      "command": "npm run test:property",
+      "exit": 0,
+      "duration_ms": 685,
+      "summary": "73 pass / 0 fail"
+    },
+    {
+      "name": "build",
+      "command": "npm run build",
+      "exit": 0,
+      "duration_ms": 10908,
+      "summary": "ok"
+    },
+    {
+      "name": "acceptance",
+      "command": "npm run test:acceptance",
+      "exit": 0,
+      "duration_ms": 651,
+      "summary": "all 5 acceptance suites passed"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "exit": 0,
+      "duration_ms": 984,
+      "summary": "ok"
+    }
+  ],
+  "result": "pass"
+}

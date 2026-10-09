@@ -293,6 +293,11 @@ Specific to bch-file-hosting (found while building the core port):
     `wallet-name-validation` hardening put the grammar in `WalletStore`
     (`isValidWalletName`) and enforces it at `filePath` as well as in the
     command layer.
+22. **Encode user input interpolated into a request path.** `file-status`
+    originally built `GET /files/<cid>` from the raw `-c` value, so a CID such
+    as `../admin/invoices?x=1` was normalized by the URL parser into a different
+    endpoint. `HostingApi.getStatus` now wraps the CID in `encodeURIComponent`;
+    do the same for any user value that becomes a URL path segment.
 
 ---
 
@@ -331,19 +336,20 @@ At the end of each session, update this file:
 - Note the current `master` HEAD commit.
 - State the next feature to work on.
 
-Latest session (2026-10-09): completed the follow-up hardening
-**`wallet-name-validation`** and merged it into `master` at `08c2cd88dc`.
-`WalletCommand.validateFlags` rejects names outside `[A-Za-z0-9_-]+` with exit
-code 2, and `WalletStore.filePath` enforces the same grammar as defense in
-depth. `docs/reviews/wallet-name-validation-verification.json` reports
-`verify.sh cli` pass 4/4 (record `git_sha` `4cc6844`, docs-only behind the tip)
-and the independent post-merge acceptance check passed all 4 suites, including
-the 12 new scenario-5 executions. The mutation-inert mnemonic-hygiene scenarios
-(scenario 4 in both wallet specs) remain a follow-up. Prior cycles (Q1,
+Latest session (2026-10-09): completed **`file-status`** (P6.4) after the
+`wallet-name-validation` hardening earlier the same day. `file-status -c <cid>
+[--json]` calls `GET /files/:cid` and prints the CID, name, size, status,
+hosting window, and pins; `HostingApi.getStatus` encodes the CID path segment.
+`docs/reviews/file-status-verification.json` reports `verify.sh cli` pass 4/4
+(record `git_sha` `9446cb9`, docs-only behind the tip) and the independent
+post-merge acceptance check passed all 5 suites, including the 8 file-status
+executions. The `wallet-name-validation` hardening merged at `08c2cd88dc`.
+Open follow-ups: the mutation-inert mnemonic-hygiene scenarios (scenario 4 in
+both wallet specs) and the file-upload `upload_path` column. Prior cycles (Q1,
 P5.1-P5.3, P6.1-P6.3) are in the backlog.
 
-Current `master` HEAD: `08c2cd88dc` (Record wallet-name-validation architect
-review and verification).
+Current `master` HEAD: `faabc07d8e` (Record file-status architect review and
+verification).
 
 Next action: ask the user which phase-6 CLI command to specify next
-(`file-pay`, `file-status`, `file-host`).
+(`file-pay`, `file-host`).

@@ -28,7 +28,8 @@ pin-retry timer and admin file listing. P6.1, the CLI skeleton, is complete
 and merged to `master` at `cde36aef70`. P6.2 `file-check` is complete and
 merged to `master` at `55c3ddc714`. P6.3 `wallet-create`/`wallet-balance` is
 complete and merged to `master` at `d3e54d4cf2`. The `wallet-name-validation`
-follow-up hardening is complete and merged at `08c2cd88dc`.
+follow-up hardening is complete and merged at `08c2cd88dc`. P6.4 `file-status`
+is complete and merged at `faabc07d8e`.
 
 ## In progress
 
@@ -36,8 +37,8 @@ follow-up hardening is complete and merged at `08c2cd88dc`.
 
 ## Up next (in order)
 
-- Remaining phase-6 CLI commands (`file-pay`, `file-status`, `file-host`);
-  scope them with the user.
+- Remaining phase-6 CLI commands (`file-pay`, `file-host`); scope them with
+  the user.
 
 ## Needs a decision from the user
 
@@ -50,6 +51,23 @@ them until the user decides.
 - **Late payments and refunds (Q9).**
 
 ## Recently completed
+
+- **P6.4 `file-status` — look up a file and print its status and pins
+  (2026-10-09):** `file-status -c <cid> [--json]` calls `GET /files/:cid` and
+  prints the CID, file name, size, status, hosting window (`not paid` when
+  unpaid), and each pin (`Pin: <provider> <status>`); exit 0/1/2 for
+  success/runtime/usage. `HostingApi.getStatus` encodes the CID as a single path
+  segment. The refactorer moved the shared subcommand-hook bindings into
+  `FileCommand` and added property coverage. Spec `file-status.feature` (five
+  scenarios). Pipeline commits: specifier `d919ea5`, coder `7806bd9`,
+  refactorer `1698d15`, architect `9446cb9` (verification `git_sha`), docs
+  `faabc07`, merged to `master` at `faabc07d8e` (fast-forward). `verify.sh cli`
+  pass 4/4 (unit 73, property 41, acceptance all 5 suites, lint ok); unit
+  coverage 100%; language mutation 0 survived / 0 uncovered across the five
+  changed `src/` files; DRY clean; CRAP <= 6.0; soft Gherkin file-status 53/53
+  killed. Independent acceptance check after merge: all 5 suites passed,
+  including the 8 file-status executions. Architect summary:
+  `docs/reviews/file-status-summary.md`.
 
 - **Follow-up hardening `wallet-name-validation` — reject unsafe wallet names
   (2026-10-09):** both local wallet commands now reject a name outside

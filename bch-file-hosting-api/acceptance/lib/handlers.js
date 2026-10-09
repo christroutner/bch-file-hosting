@@ -8,6 +8,9 @@
 
 import { calculatePrice } from '../../src/use-cases/pricing.js'
 import FileUseCases from '../../src/use-cases/file-use-cases.js'
+import PaymentUseCases from '../../src/use-cases/payment-use-cases.js'
+import PinningRegistry from '../../src/adapters/pinning/index.js'
+import LighthouseProvider from '../../src/adapters/pinning/lighthouse.js'
 
 const UPLOAD_FILENAME = 'upload.bin'
 const UPLOAD_ADDRESS = 'bitcoincash:qpuploadaddress000000000000000000000000000'
@@ -39,8 +42,15 @@ function sameUsd (actual, expected) {
   return Math.round(actual * 1e8) === Math.round(expected * 1e8)
 }
 
+function jsonResponse (body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' }
+  })
+}
+
 function createWorld () {
-  return {
+  const world = {
     cfg: {
       usdPerMbYear: 0.01,
       minBilledBytes: 100000,
@@ -49,8 +59,27 @@ function createWorld () {
     usdPerBch: null,
     quote: null,
     rejection: null,
-    addressIssued: false
+    addressIssued: false,
+    // Lighthouse pinning state. `lighthouseFetch` is the injected HTTP client;
+    // each scenario queues the responses the fake API should return.
+    pinningConfig: {
+      pinningProviders: [],
+      lighthouseApiKey: 'test-lighthouse-key',
+      lighthouseApiUrl: 'https://api.lighthouse.storage',
+      lighthouseGateway: 'https://gateway.lighthouse.storage/ipfs/'
+    },
+    ipfs: { pin: async () => true, unpin: async () => true, isPinned: async () => true },
+    lighthouseResponses: [],
+    lighthouseRequests: [],
+    file: null
   }
+  world.lighthouseFetch = async (url, options) => {
+    world.lighthouseRequests.push({ url, options })
+    const next = world.lighthouseResponses.shift()
+    if (!next) throw new Error('No Lighthouse response configured')
+    return next()
+  }
+  return world
 }
 
 // Build the real upload use-case with deterministic offline adapters, so the
@@ -189,6 +218,111 @@ const handlers = [
       }
       if (world.addressIssued) {
         throw new Error('a payment address was issued for a rejected upload')
+      }
+    }
+  },
+  {
+    pattern: /^the hosting API is configured to pin with Lighthouse$/,
+    run (_match, _example, world) {
+      world.pinningConfig.pinningProviders = ['lighthouse']
+    }
+  },
+  {
+    pattern: /^the Lighthouse gateway is (.+)$/,
+    run (match, _example, world) {
+      world.pinningConfig.lighthouseGateway = match[1]
+    }
+  },
+  {
+    pattern: /^a file with CID ([A-Za-z0-9]+) and filename ([^ ]+)$/,
+    run (match, _example, world) {
+      world.file = { cid: match[1], filename: match[2], sizeBytes: 1024, status: 'staged', pins: [] }
+    }
+  },
+  {
+    pattern: /^the Lighthouse API reports CID <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const cid = exampleValue(example, match[1])
+      world.lighthouseResponses = [() => jsonResponse({ data: { cid } })]
+    }
+  },
+  {
+    pattern: /^the Lighthouse API returns HTTP <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const status = asInt(exampleValue(example, match[1]), match[1])
+      world.lighthouseResponses = [() => jsonResponse({ error: 'Lighthouse error' }, status)]
+    }
+  },
+  {
+    pattern: /^I ask Lighthouse to pin the file$/,
+    async run (_match, _example, world) {
+      // Exercise the real registry and pinning use-case with an injected
+      // Lighthouse HTTP client, so the file status and recorded pins come from
+      // production code rather than the test.
+      const registry = new PinningRegistry({
+        ipfs: world.ipfs,
+        config: world.pinningConfig,
+        factories: {
+          lighthouse: ({ config }) => new LighthouseProvider({ config, fetch: world.lighthouseFetch })
+        }
+      })
+      const useCases = new PaymentUseCases({
+        adapters: {
+          config: world.pinningConfig,
+          localdb: {
+            files: {
+              update: async (cid, changes) => {
+                world.file = { ...world.file, ...changes }
+                return world.file
+              }
+            }
+          },
+          pinning: registry,
+          logger: { info: () => {}, error: () => {} }
+        }
+      })
+      world.file = await useCases.pinFile(world.file)
+    }
+  },
+  {
+    pattern: /^the file status is <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.file.status !== expected) {
+        throw new Error(`expected file status ${expected}, got ${world.file.status}`)
+      }
+    }
+  },
+  {
+    pattern: /^the recorded Lighthouse pin state is <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      const pin = (world.file.pins || []).find(p => p.provider === 'lighthouse')
+      if (!pin) throw new Error('no Lighthouse pin was recorded')
+      if (pin.status !== expected) {
+        throw new Error(`expected Lighthouse pin state ${expected}, got ${pin.status}`)
+      }
+    }
+  },
+  {
+    pattern: /^the Lighthouse gateway URL for CID <([A-Za-z0-9_]+)> is <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const cid = exampleValue(example, match[1])
+      const expected = exampleValue(example, match[2])
+      const provider = new LighthouseProvider({ config: world.pinningConfig, fetch: world.lighthouseFetch })
+      const actual = provider.gatewayUrl(cid)
+      if (actual !== expected) {
+        throw new Error(`expected Lighthouse gateway URL ${expected}, got ${actual}`)
+      }
+    }
+  },
+  {
+    pattern: /^the configured pinning providers include <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const name = exampleValue(example, match[1])
+      const registry = new PinningRegistry({ ipfs: world.ipfs, config: world.pinningConfig })
+      if (!registry.getProvider(name)) {
+        throw new Error(`configured pinning providers do not include ${name}`)
       }
     }
   }

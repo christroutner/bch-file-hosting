@@ -73,6 +73,9 @@ describe('#config', () => {
       assert.equal(config.coordName, 'bch-file-hosting')
       assert.equal(config.adminApiKey, '')
       assert.isFalse(config.trustProxy)
+      assert.equal(config.lighthouseApiKey, '')
+      assert.equal(config.lighthouseApiUrl, 'https://api.lighthouse.storage')
+      assert.equal(config.lighthouseGateway, 'https://gateway.lighthouse.storage/ipfs/')
     })
   })
 

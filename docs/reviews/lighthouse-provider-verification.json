@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "task": "lighthouse-provider",
+  "component": "bch-file-hosting-api",
+  "git_sha": "912da2bc749967d61c27dbaeb0ec1bf5db8b01fd",
+  "branch": "swarmforge-architect",
+  "timestamp": "2026-10-09T02:58:25.877Z",
+  "commands": [
+    {
+      "name": "unit",
+      "command": "npm test",
+      "exit": 0,
+      "duration_ms": 1916,
+      "summary": "381 passing"
+    },
+    {
+      "name": "property",
+      "command": "npm run test:property",
+      "exit": 0,
+      "duration_ms": 233,
+      "summary": "13 passing"
+    },
+    {
+      "name": "acceptance",
+      "command": "npm run test:acceptance",
+      "exit": 0,
+      "duration_ms": 241,
+      "summary": "all 3 acceptance suites passed"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "exit": 0,
+      "duration_ms": 991,
+      "summary": "ok"
+    }
+  ],
+  "result": "pass"
+}

@@ -37,16 +37,19 @@ merged at `f2e3615e99`.
 
 ## In progress
 
-- None.
+- **P7.2 `web-payment` — pay the quote and confirm (started 2026-10-09):**
+  extend the `bch-file-hosting-web` quote view with the payment-address QR code
+  and a quote-expiry countdown, add a "Pay now" action that pays the quote's
+  `priceSats` from the loaded in-browser `minimal-slp-wallet` (keeping the
+  2,000-sat PSF donation, consistent with the CLI), poll
+  `POST /files/check-payment` (unpaid / expired / paid) with an injected sleep,
+  and render the result (CID, download URL, gateway URLs, payment transaction)
+  or the expired/pending/error message. Spec
+  `bch-file-hosting-web/specs/web-payment.feature` (six scenarios). Handed to
+  the coder as task `web-payment`.
 
 ## Up next (in order)
 
-- **P7.2 `web-payment` — pay the quote and confirm (next):** extend the
-  `bch-file-hosting-web` quote view with the payment-address QR code and a
-  quote-expiry countdown, offer "Pay now" from the in-browser
-  `minimal-slp-wallet` in addition to the QR for a mobile wallet, poll
-  `POST /files/check-payment` (unpaid / expired / paid), and render the result
-  (CID, download URL, gateway links). Spec `bch-file-hosting-web/specs/`.
 - **P7.3 `web-file-status` — look up a CID and show its status and pins.**
 - **CLI spec-quality follow-ups:** the `upload_path` cells (file-upload,
   file-host) and the file-host non-JSON `api_txid` cells survive soft mutation

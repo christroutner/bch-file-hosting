@@ -2,7 +2,7 @@
 # {"version":1,"tested_at":"2026-10-09T04:09:30.678672500Z","feature_name":"Wallet Create","feature_path":"/home/trout/work/psf/code/ipfs/bch-file-hosting/.worktrees/architect/bch-file-hosting-cli/specs/wallet-create.feature","background_hash":"0d286cc79e537b4d0e285296a1fdeb6624e635117aed4bc9b8bb5934815a86ea","implementation_hash":"unknown","scenarios":[{"index":0,"name":"Wallet Create - 1 creating a wallet stores it and prints its address","scenario_hash":"e87dcb52c8c0a4b9ab6448f8a4da1493ce9264c48543b124f6083d2dcefd64d2","mutation_count":8,"result":{"Total":8,"Killed":8,"Survived":0,"Errors":0},"tested_at":"2026-10-09T04:09:30.678672500Z"},{"index":2,"name":"Wallet Create - 3 an existing wallet name is rejected","scenario_hash":"f4c1793801a1531ef83266bfc14824d25da84b7fabdc77b02073d42bfd320dcc","mutation_count":4,"result":{"Total":4,"Killed":4,"Survived":0,"Errors":0},"tested_at":"2026-10-09T04:09:30.678672500Z"}]}
 # acceptance-mutation-manifest-end
 
-# Wallet Create - 1, Wallet Create - 2, Wallet Create - 3, Wallet Create - 4
+# Wallet Create - 1, Wallet Create - 2, Wallet Create - 3, Wallet Create - 4, Wallet Create - 5
 
 Feature: Wallet Create
 
@@ -47,3 +47,17 @@ Feature: Wallet Create
       | wallet_name | new_mnemonic                                                                                | hidden_mnemonic                                                                             |
       | payer       | abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about | abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about |
       | savings     | legal winner thank year wave sausage worth useful legal winner thank yellow                 | legal winner thank year wave sausage worth useful legal winner thank yellow                 |
+
+  Scenario Outline: Wallet Create - 5 an unsafe wallet name is a usage error
+    When I run wallet-create for the name <wallet_name>
+    Then the exit code is 2
+    And stderr contains "<printed_error>"
+
+    Examples:
+      | wallet_name | printed_error                                                                        |
+      | ../escape   | Invalid wallet name "../escape". Use only letters, digits, hyphens, and underscores. |
+      | dir/name    | Invalid wallet name "dir/name". Use only letters, digits, hyphens, and underscores.  |
+      | dir\name    | Invalid wallet name "dir\name". Use only letters, digits, hyphens, and underscores.  |
+      | ..          | Invalid wallet name "..". Use only letters, digits, hyphens, and underscores.        |
+      | has space   | Invalid wallet name "has space". Use only letters, digits, hyphens, and underscores. |
+      | name.ext    | Invalid wallet name "name.ext". Use only letters, digits, hyphens, and underscores.  |

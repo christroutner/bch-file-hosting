@@ -29,5 +29,5 @@ function formatCountdown (ms) {
 module.exports = { formatCountdown }
 
 // mutate4javascript-manifest-begin
-// {"version":1,"tested_at":"2026-10-09T15:19:39.235Z","module_hash":"a93c79e54c308c2766330c0f1403a129663f53b5b0817fd4a30d330838479484","functions":[{"id":"func/plural","name":"plural","line":13,"end_line":15,"hash":"f629612b67e15063de31d69f84ee41b847f1fe69107ed3fc8652ca00efabf97d"},{"id":"func/formatCountdown","name":"formatCountdown","line":19,"end_line":29,"hash":"954db78cef80bbe7baf001c656b92f7554e207860b1dfaee4e2fa3ae668bf5c2"}]}
+// {"version":1,"tested_at":"2026-10-09T20:23:04.628Z","module_hash":"f40430acdcc0d79d68b1c97416a2cc40b88bd48e6eccf2e4b9e17b286ef2dd89","functions":[{"id":"func/plural","name":"plural","line":11,"end_line":13,"hash":"f629612b67e15063de31d69f84ee41b847f1fe69107ed3fc8652ca00efabf97d"},{"id":"func/formatCountdown","name":"formatCountdown","line":17,"end_line":27,"hash":"954db78cef80bbe7baf001c656b92f7554e207860b1dfaee4e2fa3ae668bf5c2"}]}
 // mutate4javascript-manifest-end

@@ -34,7 +34,9 @@ class PinningProvider {
   }
 
   // Returns a public URL for the content, or null if the provider has none.
-  gatewayUrl (cid) {
+  // CIDs are wrapping directories, so a provider that serves the file itself
+  // should use the filename.
+  gatewayUrl (cid, filename) {
     return null
   }
 }

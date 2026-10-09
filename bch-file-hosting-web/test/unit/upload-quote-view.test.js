@@ -161,6 +161,32 @@ test('renders exactly one gateway link per gateway URL', () => {
   assert.ok(!html.includes('Gateway: <a></a>'))
 })
 
+test('opens an image gateway link in a new tab', () => {
+  const html = render({
+    status: 'paid',
+    filename: 'photo.jpg',
+    cid: 'bafy123',
+    downloadUrl: 'http://localhost:5050/download/bafy123',
+    gatewayUrls: ['https://gateway.lighthouse.storage/ipfs/bafy123/photo.jpg'],
+    txid: 'abc123'
+  })
+
+  assert.ok(html.includes('target="_blank"'))
+})
+
+test('keeps a non-image gateway link in the current tab', () => {
+  const html = render({
+    status: 'paid',
+    filename: 'archive.tar',
+    cid: 'bafy123',
+    downloadUrl: 'http://localhost:5050/download/bafy123',
+    gatewayUrls: ['https://gateway.lighthouse.storage/ipfs/bafy123/archive.tar'],
+    txid: 'abc123'
+  })
+
+  assert.ok(!html.includes('target="_blank"'))
+})
+
 test('renders the expired and pending messages', () => {
   const expired = render({ status: 'expired', message: 'This quote has expired.' })
   const pending = render({ status: 'pending', message: 'Payment not confirmed.' })

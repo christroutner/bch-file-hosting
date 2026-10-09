@@ -302,6 +302,13 @@ const handlers = [
     }
   },
   {
+    name: 'the hosting API reports the paid file name',
+    pattern: /^the hosting API reports the paid file name (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.pendingPaid.filename = resolveParam(m[1], example)
+    }
+  },
+  {
     name: 'the hosting API reports a gateway URL of the paid invoice',
     pattern: /^the hosting API reports the gateway URL (<[A-Za-z0-9_]+>)$/,
     run (m, example, world) {
@@ -571,6 +578,26 @@ const handlers = [
       }
       if (!renderPage(world).includes(expected)) {
         throw new Error(`Rendered page does not show the gateway URL ${expected}.`)
+      }
+    }
+  },
+  {
+    name: 'the gateway URL has a link target',
+    pattern: /^the gateway URL (<[A-Za-z0-9_]+>) has link target (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      const url = resolveParam(m[1], example)
+      const expected = resolveParam(m[2], example)
+      const anchors = renderPage(world).match(/<a [^>]*>/g) || []
+      const anchor = anchors.find((tag) => tag.includes(`href="${url}"`))
+      if (!anchor) {
+        throw new Error(`Rendered page does not link the gateway URL ${url}.`)
+      }
+      const opensInNewTab = anchor.includes('target="_blank"')
+      if (expected === '_blank' && !opensInNewTab) {
+        throw new Error(`Expected the gateway link ${url} to open in a new tab.`)
+      }
+      if (expected !== '_blank' && opensInNewTab) {
+        throw new Error(`Expected the gateway link ${url} to keep the default target.`)
       }
     }
   },

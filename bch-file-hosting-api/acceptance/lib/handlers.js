@@ -349,12 +349,13 @@ const handlers = [
     }
   },
   {
-    pattern: /^the Lighthouse gateway URL for CID <([A-Za-z0-9_]+)> is <([A-Za-z0-9_]+)>$/,
+    pattern: /^the Lighthouse gateway URL for CID <([A-Za-z0-9_]+)> and filename <([A-Za-z0-9_]+)> is <([A-Za-z0-9_]+)>$/,
     run (match, example, world) {
       const cid = exampleValue(example, match[1])
-      const expected = exampleValue(example, match[2])
+      const filename = exampleValue(example, match[2])
+      const expected = exampleValue(example, match[3])
       const provider = new LighthouseProvider({ config: world.pinningConfig, fetch: world.lighthouseFetch })
-      const actual = provider.gatewayUrl(cid)
+      const actual = provider.gatewayUrl(cid, filename)
       if (actual !== expected) {
         throw new Error(`expected Lighthouse gateway URL ${expected}, got ${actual}`)
       }

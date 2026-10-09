@@ -54,6 +54,21 @@ describe('#use-case helpers', () => {
 
       assert.deepEqual(result.gatewayUrls, ['https://ipfs.io/ipfs/bafy/a.txt', 'https://gw.example/ipfs/bafy'])
     })
+
+    it('should pass the file name to provider gateway URLs', () => {
+      const providers = [
+        { gatewayUrl: (cid, filename) => `https://gw.example/ipfs/${cid}/${encodeURIComponent(filename)}` }
+      ]
+
+      const result = buildLinks({
+        cid: 'bafy',
+        filename: 'my photo.jpg',
+        config: makeConfig({ publicGateways: [] }),
+        providers
+      })
+
+      assert.deepEqual(result.gatewayUrls, ['https://gw.example/ipfs/bafy/my%20photo.jpg'])
+    })
   })
 
   describe('#KeyedLock', () => {

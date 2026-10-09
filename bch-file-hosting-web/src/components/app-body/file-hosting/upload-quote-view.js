@@ -13,13 +13,23 @@ const React = require('react')
 const { QRCodeSVG } = require('qrcode.react')
 const { buildChildren, selectChildren, messageChildren } = require('../shared/status-view')
 
-function linkLine (key, className, label, url) {
+function linkLine (key, className, label, url, target) {
+  const linkProps = { href: url }
+  if (target) linkProps.target = target
   return React.createElement(
     'p',
     { key, className },
     label,
-    React.createElement('a', { href: url }, url)
+    React.createElement('a', linkProps, url)
   )
+}
+
+// Gateway links for images open in a new tab so the browser does not navigate
+// away from the hosting result; other files keep the default target.
+const IMAGE_NAME = /\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i
+
+function isImageName (filename) {
+  return IMAGE_NAME.test(filename || '')
 }
 
 function quoteChildren (state) {
@@ -73,8 +83,9 @@ function paidChildren (state) {
   ]
 
   const gateways = state.gatewayUrls || []
+  const gatewayTarget = isImageName(state.filename) ? '_blank' : undefined
   for (let i = 0; i < gateways.length; i++) {
-    children.push(linkLine(`gateway-${i}`, 'file-upload-gateway', 'Gateway: ', gateways[i]))
+    children.push(linkLine(`gateway-${i}`, 'file-upload-gateway', 'Gateway: ', gateways[i], gatewayTarget))
   }
 
   children.push(

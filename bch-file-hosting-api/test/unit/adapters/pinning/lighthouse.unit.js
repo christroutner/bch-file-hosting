@@ -176,6 +176,11 @@ describe('#lighthouse', () => {
     )
   })
 
+  it('should append the URL-encoded file name for a wrapping-directory CID', () => {
+    assert.equal(build().gatewayUrl(CID, 'photo.jpg'), `${GATEWAY}${CID}/photo.jpg`)
+    assert.equal(build().gatewayUrl(CID, 'my photo.jpg'), `${GATEWAY}${CID}/my%20photo.jpg`)
+  })
+
   describe('#status', () => {
     function listWith (entry) {
       fetch.resolves(jsonResponse({ fileList: entry ? [entry] : [] }))

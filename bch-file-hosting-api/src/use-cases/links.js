@@ -9,7 +9,7 @@ export function buildLinks ({ cid, filename, config, providers = [] }) {
 
   const gatewayUrls = config.publicGateways.map(prefix => `${prefix}${cid}/${encodedName}`)
   for (const provider of providers) {
-    const url = provider.gatewayUrl(cid)
+    const url = provider.gatewayUrl(cid, filename)
     if (url) gatewayUrls.push(url)
   }
 

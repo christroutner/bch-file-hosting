@@ -127,8 +127,9 @@ class LighthouseProvider extends PinningProvider {
     return true
   }
 
-  gatewayUrl (cid) {
-    return `${this.gatewayBase}${cid}`
+  gatewayUrl (cid, filename) {
+    if (!filename) return `${this.gatewayBase}${cid}`
+    return `${this.gatewayBase}${cid}/${encodeURIComponent(filename)}`
   }
 
   async findUpload (cid) {

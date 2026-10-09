@@ -232,3 +232,39 @@ test('property: a quote shows a size line only when a size is reported and a bil
     }
   })
 })
+
+test('property: gateway links open in a new tab exactly for image file names', () => {
+  const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'avif']
+  const otherExtensions = ['txt', 'tar', 'bin', 'pdf', 'jpg.txt', 'png.js', 'jpeg.html']
+
+  forAll({
+    seed: 11,
+    runs: 300,
+    generate: (random) => {
+      const image = random() < 0.5
+      const extension = image
+        ? imageExtensions[integerBetween(random, 0, imageExtensions.length - 1)]
+        : otherExtensions[integerBetween(random, 0, otherExtensions.length - 1)]
+      const filename = `${randomString(random, 1, 12, TEXT_ALPHABET)}.${extension}`
+      const gatewayCount = integerBetween(random, 1, 3)
+      const gatewayUrls = []
+      for (let i = 0; i < gatewayCount; i++) {
+        gatewayUrls.push(`https://gw${i}.test/ipfs/bafy/${encodeURIComponent(filename)}`)
+      }
+      return { filename, gatewayUrls, image }
+    },
+    property: ({ filename, gatewayUrls, image }) => {
+      const html = render({
+        status: 'paid',
+        filename,
+        cid: 'bafy',
+        downloadUrl: 'http://localhost:5050/download/bafy',
+        gatewayUrls,
+        txid: 'tx'
+      })
+
+      const blankTargets = (html.match(/target="_blank"/g) || []).length
+      assert.equal(blankTargets, image ? gatewayUrls.length : 0)
+    }
+  })
+})

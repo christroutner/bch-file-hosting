@@ -21,11 +21,19 @@ const GATEWAY = 'https://gateway.lighthouse.storage/ipfs/'
 const KNOWN_STATUSES = ['pinned', 'pinning', 'failed']
 
 const TOKEN_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789'
+const FILENAME_CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .-_#?%&'
 
 function randomToken (random, length) {
   let token = ''
   for (let i = 0; i < length; i++) token += TOKEN_CHARS[integerBetween(random, 0, TOKEN_CHARS.length - 1)]
   return token
+}
+
+function randomFilename (random) {
+  let name = ''
+  const length = integerBetween(random, 1, 20)
+  for (let i = 0; i < length; i++) name += FILENAME_CHARS[integerBetween(random, 0, FILENAME_CHARS.length - 1)]
+  return name
 }
 
 function jsonResponse (body, status = 200) {
@@ -64,6 +72,26 @@ describe('#lighthouse.property.js', () => {
         }),
         property: ({ cid, base }) => {
           assert.equal(build({ lighthouseGateway: base }).gatewayUrl(cid), `https://gateway.example/ipfs/${cid}`)
+        }
+      })
+    })
+
+    it('should append the URL-encoded file name and fall back to the bare CID without one', () => {
+      forAll({
+        seed: 5,
+        runs: 200,
+        generate: (random) => ({
+          cid: randomToken(random, 46),
+          filename: randomFilename(random)
+        }),
+        property: ({ cid, filename }) => {
+          assert.equal(
+            build().gatewayUrl(cid, filename),
+            `${GATEWAY}${cid}/${encodeURIComponent(filename)}`
+          )
+          for (const missing of [undefined, '', null]) {
+            assert.equal(build().gatewayUrl(cid, missing), `${GATEWAY}${cid}`)
+          }
         }
       })
     })

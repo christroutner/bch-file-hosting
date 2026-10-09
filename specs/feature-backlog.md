@@ -22,20 +22,22 @@ pluggable third-party pinning services.
 
 The core port (roadmap phase 3) is complete and verified on mainnet. SwarmForge
 was integrated in phase 4, and the pipeline smoke test (S0) completed the first
-full four-role cycle. Q1 set the language-quality baseline and P5.1 finished
-the pinning-provider study. P5.2 added the Lighthouse provider. Next is P5.3,
-the pin-retry timer.
+full four-role cycle. Q1 set the language-quality baseline, P5.1 finished the
+pinning-provider study, and P5.2 added the Lighthouse provider. P5.3 (pin
+retry) is in progress.
 
 ## In progress
 
-- None.
-
-## Up next (in order)
-
 ### P5.3. `pin-retry` — retry failed pins (api)
+
+Specs: `bch-file-hosting-api/specs/pin-retry.feature` and
+`bch-file-hosting-api/specs/admin-file-listing.feature`. Status: specs
+committed and handed to the coder.
 
 - A timer retries pinning for files in `pinFailed` status.
 - `GET /admin/files?status=pinFailed` lists them (admin API key).
+
+## Up next (in order)
 
 ### P6.1. `cli-skeleton` — first CLI command (new component)
 

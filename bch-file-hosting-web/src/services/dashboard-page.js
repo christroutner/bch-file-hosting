@@ -94,3 +94,7 @@ class DashboardPage {
 module.exports = DashboardPage
 module.exports.DEFAULT_PAGE_SIZE = DEFAULT_PAGE_SIZE
 module.exports.EMPTY_MESSAGE = EMPTY_MESSAGE
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T20:07:07.178Z","module_hash":"166a6267b4100078cdeb4f06dd660d3b5167e20784e9348f16ab0e896e3fc834","functions":[{"id":"func/toDashboardFile","name":"toDashboardFile","line":22,"end_line":33,"hash":"6e99d76f2389a6c65da0c581135ce0343cf155fcf47f735161b7e60f802e00f2"},{"id":"func/pageState","name":"pageState","line":35,"end_line":41,"hash":"52a12d4cbc460683dcd79787de9802aa33fe3c9a3c9b0db2efbd263baf9f69f9"},{"id":"func/DashboardPage.constructor","name":"DashboardPage.constructor","line":44,"end_line":55,"hash":"e2680021b329ba7f8327b98d5987768bff01135f8e1fb89dd5de67a4d994a371"},{"id":"func/DashboardPage.load","name":"DashboardPage.load","line":58,"end_line":69,"hash":"474e19d9efb3a0f666cb7fa0ff903b5851e78a1dfc06df0ad76cd78fbd19078a"},{"id":"func/DashboardPage.loadMore","name":"DashboardPage.loadMore","line":72,"end_line":87,"hash":"dc88f54b57edf5d69e0bd1f06079032bae8b69a0df5281527dbd9cccb70aa93a"},{"id":"func/DashboardPage.getViewModel","name":"DashboardPage.getViewModel","line":89,"end_line":91,"hash":"d79cf84c13b8df722e7d9e622b42f98158c05ad037c02781acf9f39ea3011a95"}]}
+// mutate4javascript-manifest-end

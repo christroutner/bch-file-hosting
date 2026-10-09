@@ -69,3 +69,7 @@ function DashboardView ({ state = { status: 'idle' } } = {}) {
 
 module.exports = DashboardView
 module.exports.EMPTY_MESSAGE = EMPTY_MESSAGE
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T20:06:30.834Z","module_hash":"e8ad7982591750cf8bcd591a05e628139f7c36a2ef2b1380c2a6f7ceb7ff4168","functions":[{"id":"func/pinLines","name":"pinLines","line":17,"end_line":27,"hash":"c50544e1beaddfd3d0125fae1bb90813e770f3c9ca3910944cc6731bf0c1766e"},{"id":"func/fileChildren","name":"fileChildren","line":29,"end_line":40,"hash":"ee46e5162efd341b32618014f44747232b431766ca191229fee1c8ec73ed7c1d"},{"id":"func/fileCard","name":"fileCard","line":42,"end_line":48,"hash":"61274a1fe9e0b853d37bee27736af42e1b02e3b3714fd28b7d528fad4bfa7356"},{"id":"func/loadedChildren","name":"loadedChildren","line":50,"end_line":56,"hash":"fba64b4456a39e889ca5db99eb246a16f61a4f354bf4fc24949470512d0781ab"},{"id":"func/DashboardView","name":"DashboardView","line":66,"end_line":68,"hash":"db81742ac5522641ee77b0c216dfa115b7c108f56144186e0949fb232814b612"}]}
+// mutate4javascript-manifest-end

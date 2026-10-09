@@ -113,6 +113,20 @@ test('loadMore appends the next page and follows its cursor', async () => {
   assert.equal(state.hasMore, false)
 })
 
+test('loadMore follows the cursor from the next page', async () => {
+  const api = apiReturning([
+    { files: [file()], nextCursor: 'cursor-1' },
+    { files: [file({ cid: 'bafy-b', filename: 'notes.txt' })], nextCursor: 'cursor-2' },
+    { files: [file({ cid: 'bafy-c', filename: 'third.txt' })], nextCursor: null }
+  ])
+  const page = new DashboardPage({ hostingApi: api })
+  await page.load()
+  await page.loadMore()
+  await page.loadMore()
+
+  assert.deepEqual(api.calls[2], { limit: DEFAULT_PAGE_SIZE, cursor: 'cursor-2' })
+})
+
 test('loadMore does nothing when the feed has no next page', async () => {
   const api = apiReturning([{ files: [file()], nextCursor: null }])
   const page = new DashboardPage({ hostingApi: api })

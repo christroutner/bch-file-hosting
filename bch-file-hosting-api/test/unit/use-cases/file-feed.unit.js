@@ -171,6 +171,31 @@ describe('#file-feed.js', () => {
       assert.deepEqual(result.files.map(f => f.cid), ['bafy-old'])
     })
 
+    it('should page within files that share a paid time', () => {
+      const sameTime = '2026-01-02T00:00:00.000Z'
+      const files = [
+        file({ cid: 'bafy-b', paidAt: sameTime }),
+        file({ cid: 'bafy-a', paidAt: sameTime })
+      ]
+
+      const first = paginateFeed(files, { limit: 1 })
+      const second = paginateFeed(files, { limit: 1, cursor: first.nextCursor })
+
+      assert.deepEqual(first.files.map(f => f.cid), ['bafy-a'])
+      assert.deepEqual(second.files.map(f => f.cid), ['bafy-b'])
+    })
+
+    it('should continue after a file whose paid time differs by one millisecond', () => {
+      const earlier = file({ cid: 'bafy-a', paidAt: '2026-01-02T00:00:00.000Z' })
+      const later = file({ cid: 'bafy-b', paidAt: '2026-01-02T00:00:00.001Z' })
+
+      const first = paginateFeed([earlier, later], { limit: 1 })
+      const second = paginateFeed([earlier, later], { limit: 1, cursor: first.nextCursor })
+
+      assert.deepEqual(first.files.map(f => f.cid), ['bafy-b'])
+      assert.deepEqual(second.files.map(f => f.cid), ['bafy-a'])
+    })
+
     it('should order files that share a paid time by CID', () => {
       const sameTime = '2026-01-02T00:00:00.000Z'
       const result = paginateFeed([

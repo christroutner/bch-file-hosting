@@ -67,10 +67,11 @@ function byPaidNewestFirst (a, b) {
 
 // True when `file` sorts strictly after the cursor position: an older paid
 // time, or the same paid time with a larger CID.
+// True when `file` sorts strictly after the cursor position in the same
+// newest-paid-first order as byPaidNewestFirst, so pagination can never
+// disagree with the sort.
 function isAfterCursor (file, cursor) {
-  const paidDiff = Date.parse(file.paidAt) - Date.parse(cursor.paidAt)
-  if (paidDiff !== 0) return paidDiff < 0
-  return file.cid > cursor.cid
+  return byPaidNewestFirst(file, cursor) > 0
 }
 
 // The public fields of one hosted file. Private fields (HD index, invoice
@@ -109,3 +110,7 @@ export function paginateFeed (files, { limit, cursor } = {}) {
     nextCursor: hasMore ? encodeCursor(page[page.length - 1]) : null
   }
 }
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T20:07:56.138Z","module_hash":"49be253396e494df8fc50914236e89e838d6e4404ac5bd61c792cf8fdda45a18","functions":[{"id":"func/parsePageLimit","name":"parsePageLimit","line":18,"end_line":26,"hash":"980aa05439df5e8697c07c54bba8140bdc31f3f5b57b48670ded4fae4972d879"},{"id":"func/isMissingCursor","name":"isMissingCursor","line":29,"end_line":31,"hash":"3afe6e15abb027f2f611702ef2457a48443fae89779629b0db22fc23f7c5685b"},{"id":"func/decodeCursor","name":"decodeCursor","line":35,"end_line":41,"hash":"3e3bb1133562ff43d279d5f7038676c863384cc16db3e0362b9cf8dfbd4e5043"},{"id":"func/parseCursor","name":"parseCursor","line":45,"end_line":53,"hash":"c3d69a8c5fc213006ffb7ad3bead55eb5e5cc83919285612025efa98bfe247ce"},{"id":"func/encodeCursor","name":"encodeCursor","line":55,"end_line":57,"hash":"4abb126df149a8dfac2463afec1d0771d1b70553e5d072cf8f11e8db97e4790c"},{"id":"func/byPaidNewestFirst","name":"byPaidNewestFirst","line":62,"end_line":66,"hash":"eaac071f7ca292575cbfb0eaf7248aec2b5b707f943febc349a7787853ecebf2"},{"id":"func/isAfterCursor","name":"isAfterCursor","line":73,"end_line":75,"hash":"3f05dc4274d88a7f05c3e849af7f3549b0ebd7e36c607d96b669203ea79beef9"},{"id":"func/toFeedFile","name":"toFeedFile","line":79,"end_line":91,"hash":"05667462caa6c2c81b34243e047c396fca5c8c7c71a73e917211ddfae512c851"},{"id":"func/paginateFeed","name":"paginateFeed","line":95,"end_line":112,"hash":"b5956da46e17e04c89e34288fbec35f0b5d5d96ab6cd2decff04abe12378c85a"}]}
+// mutate4javascript-manifest-end

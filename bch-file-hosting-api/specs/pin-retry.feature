@@ -1,3 +1,7 @@
+# acceptance-mutation-manifest-begin
+# {"version":1,"tested_at":"2026-10-09T03:18:52.708562692Z","feature_name":"Pin Retry","feature_path":"/home/trout/work/psf/code/ipfs/bch-file-hosting/.worktrees/architect/bch-file-hosting-api/specs/pin-retry.feature","background_hash":"502e9748ecef081cc85a7726939e145adee233651f6ad4f8b10bb87ff98fc4dc","implementation_hash":"unknown","scenarios":[]}
+# acceptance-mutation-manifest-end
+
 # Pin Retry - 1, Pin Retry - 2, Pin Retry - 3
 
 Feature: Pin Retry

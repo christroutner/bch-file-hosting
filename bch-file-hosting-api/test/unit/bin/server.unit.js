@@ -74,9 +74,22 @@ describe('#bin/server.js', () => {
       await sigintHandler()
 
       assert.isTrue(controllers.stopTimers.calledOnce)
-      assert.isFalse(uut.httpServer.listening)
+      assert.isNull(uut.httpServer)
       assert.isTrue(adapters.stop.calledOnce)
       assert.isTrue(proc.exit.calledWith(0))
+    })
+
+    it('should stop without exiting so it can be started again', async () => {
+      await uut.start()
+      const httpServer = uut.httpServer
+
+      assert.isTrue(await uut.stop())
+
+      assert.isFalse(httpServer.listening)
+      assert.isTrue(proc.exit.notCalled)
+
+      await uut.start()
+      assert.isTrue(uut.httpServer.listening)
     })
 
     it('should pass startup errors to the caller', async () => {

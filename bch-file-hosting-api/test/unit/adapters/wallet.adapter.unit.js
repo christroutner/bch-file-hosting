@@ -15,10 +15,48 @@ describe('#wallet.adapter.js', () => {
   let uut
   let config
   let instances
+  let builders
+  let invoiceUtxos
+
+  // Fake bch-js pieces used by sweep(). The transaction builder records what
+  // it was given so tests can check the transaction that would be broadcast.
+  function makeFakeBchjs () {
+    return {
+      Address: {
+        toCashAddress: sandbox.stub().callsFake((addr) => {
+          if (!addr.startsWith('bitcoincash:')) throw new Error('Unsupported address format')
+          return addr
+        })
+      },
+      BitcoinCash: {
+        getByteCount: sandbox.stub().callsFake((ins, outs) => 10 + 148 * ins.P2PKH + 34 * outs.P2PKH)
+      },
+      ECPair: { fromWIF: sandbox.stub().callsFake((wif) => ({ wif })) },
+      TransactionBuilder: class FakeTxBuilder {
+        constructor () {
+          this.inputs = []
+          this.outputs = []
+          this.signed = []
+          this.hashTypes = { SIGHASH_ALL: 1 }
+          builders.push(this)
+        }
+
+        addInput (txid, vout) { this.inputs.push({ txid, vout }) }
+        addOutput (address, sats) { this.outputs.push({ address, sats }) }
+        sign (i, keyPair, redeemScript, hashType, value) { this.signed.push({ i, wif: keyPair.wif, value }) }
+        build () { return { toHex: () => 'signed-tx-hex' } }
+      }
+    }
+  }
 
   beforeEach(() => {
     sandbox = sinon.createSandbox()
     instances = []
+    builders = []
+    invoiceUtxos = [
+      { tx_hash: 'txa', tx_pos: 0, value: 2000 },
+      { tx_hash: 'txb', tx_pos: 1, value: 3000 }
+    ]
 
     config = {
       mnemonic: 'test mnemonic words',
@@ -44,7 +82,9 @@ describe('#wallet.adapter.js', () => {
         this.getBalance = sandbox.stub().resolves(2500)
         this.getUsd = sandbox.stub().resolves(400.5)
         this.initialize = sandbox.stub().resolves(true)
-        this.sendAll = sandbox.stub().resolves('sweep-txid')
+        this.broadcast = sandbox.stub().resolves('sweep-txid')
+        this.bchjs = makeFakeBchjs()
+        this.utxos = { utxoStore: { bchUtxos: invoiceUtxos } }
         instances.push(this)
       }
     }
@@ -115,6 +155,16 @@ describe('#wallet.adapter.js', () => {
         assert.fail('Unexpected result')
       } catch (err) {
         assert.include(err.message, 'MNEMONIC is required')
+      }
+    })
+
+    it('should throw if the treasury address is not a valid BCH address', async () => {
+      config.treasuryAddress = 'not-an-address'
+      try {
+        await uut.init()
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.include(err.message, 'TREASURY_ADDRESS is not a valid BCH address')
       }
     })
 
@@ -202,7 +252,7 @@ describe('#wallet.adapter.js', () => {
   })
 
   describe('#sweep', () => {
-    it('should send everything from the invoice address to the treasury', async () => {
+    it('should spend every UTXO to a single treasury output and broadcast it', async () => {
       await uut.init()
 
       const txid = await uut.sweep(4)
@@ -211,15 +261,63 @@ describe('#wallet.adapter.js', () => {
       const invoiceWallet = instances[1]
       assert.equal(invoiceWallet.secret, 'wif4')
       assert.isTrue(invoiceWallet.initialize.calledOnce)
-      assert.isTrue(invoiceWallet.sendAll.calledWith(TREASURY))
+
+      const txb = builders[0]
+      assert.deepEqual(txb.inputs, [{ txid: 'txa', vout: 0 }, { txid: 'txb', vout: 1 }])
+      assert.deepEqual(txb.signed, [{ i: 0, wif: 'wif4', value: 2000 }, { i: 1, wif: 'wif4', value: 3000 }])
+      assert.isTrue(invoiceWallet.broadcast.calledWith({ hex: 'signed-tx-hex' }))
     })
 
-    it('should pass errors from the send through', async () => {
+    it('should pay only the miner fee, with no donation output', async () => {
+      await uut.init()
+
+      await uut.sweep(4)
+
+      // 2 inputs, 1 output: (10 + 296 + 34) bytes * 1.2 sats/byte = 408 sats
+      assert.deepEqual(builders[0].outputs, [{ address: TREASURY, sats: 5000 - 408 }])
+    })
+
+    it('should sweep a single minimum invoice', async () => {
+      invoiceUtxos.splice(0, invoiceUtxos.length, { tx_hash: 'txa', tx_pos: 0, value: 2000 })
+      await uut.init()
+
+      await uut.sweep(4)
+
+      // (10 + 148 + 34) * 1.2 = 230.4 -> 231 sats
+      assert.deepEqual(builders[0].outputs, [{ address: TREASURY, sats: 2000 - 231 }])
+    })
+
+    it('should refuse to sweep when nothing would be left above the dust limit', async () => {
+      invoiceUtxos.splice(0, invoiceUtxos.length, { tx_hash: 'txa', tx_pos: 0, value: 700 })
+      await uut.init()
+
+      try {
+        await uut.sweep(4)
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.include(err.message, 'too small to sweep')
+      }
+      assert.isTrue(instances[1].broadcast.notCalled)
+    })
+
+    it('should throw when the invoice address has no UTXOs', async () => {
+      invoiceUtxos.splice(0, invoiceUtxos.length)
+      await uut.init()
+
+      try {
+        await uut.sweep(4)
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.include(err.message, 'No BCH UTXOs to sweep')
+      }
+    })
+
+    it('should treat a missing UTXO list as empty', async () => {
       await uut.init()
       const origCreate = uut.createWallet.bind(uut)
       sandbox.stub(uut, 'createWallet').callsFake(async (secret) => {
         const wallet = await origCreate(secret)
-        wallet.sendAll.rejects(new Error('insufficient funds'))
+        wallet.utxos.utxoStore = {}
         return wallet
       })
 
@@ -227,7 +325,24 @@ describe('#wallet.adapter.js', () => {
         await uut.sweep(4)
         assert.fail('Unexpected result')
       } catch (err) {
-        assert.include(err.message, 'insufficient funds')
+        assert.include(err.message, 'No BCH UTXOs to sweep')
+      }
+    })
+
+    it('should pass broadcast errors through', async () => {
+      await uut.init()
+      const origCreate = uut.createWallet.bind(uut)
+      sandbox.stub(uut, 'createWallet').callsFake(async (secret) => {
+        const wallet = await origCreate(secret)
+        wallet.broadcast.rejects(new Error('txn-mempool-conflict'))
+        return wallet
+      })
+
+      try {
+        await uut.sweep(4)
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.include(err.message, 'txn-mempool-conflict')
       }
     })
   })

@@ -8,6 +8,9 @@
 
 import BchWallet from 'minimal-slp-wallet'
 
+const SWEEP_SATS_PER_BYTE = 1.2
+const DUST_LIMIT_SATS = 546
+
 const INTERFACES = {
   web3: 'consumer-api',
   web2: 'rest-api',
@@ -55,6 +58,12 @@ class WalletAdapter {
     if (!this.config.treasuryAddress) throw new Error('TREASURY_ADDRESS is required')
 
     this.bchWallet = await this.createWallet(this.config.mnemonic)
+
+    try {
+      this.bchWallet.bchjs.Address.toCashAddress(this.config.treasuryAddress)
+    } catch (err) {
+      throw new Error(`TREASURY_ADDRESS is not a valid BCH address: ${this.config.treasuryAddress}`)
+    }
     return true
   }
 
@@ -90,14 +99,44 @@ class WalletAdapter {
     return balance
   }
 
-  // Send everything at an invoice address to the treasury. Returns the txid.
+  // Send every BCH UTXO at an invoice address to the treasury in one output,
+  // minus only the miner fee. Returns the txid.
+  //
+  // minimal-slp-wallet's sendAll() is not used because it always adds a
+  // 2000 sat donation output, which consumes an entire minimum invoice.
   async sweep (hdIndex) {
     const { wif } = await this.getKeyPair(hdIndex)
 
     const invoiceWallet = await this.createWallet(wif)
     await invoiceWallet.initialize()
 
-    return invoiceWallet.sendAll(this.config.treasuryAddress)
+    const utxos = invoiceWallet.utxos.utxoStore.bchUtxos || []
+    if (!utxos.length) throw new Error('No BCH UTXOs to sweep')
+
+    const { bchjs } = invoiceWallet
+    const txb = new bchjs.TransactionBuilder()
+
+    let totalSats = 0
+    for (const utxo of utxos) {
+      txb.addInput(utxo.tx_hash, utxo.tx_pos)
+      totalSats += utxo.value
+    }
+
+    const byteCount = bchjs.BitcoinCash.getByteCount({ P2PKH: utxos.length }, { P2PKH: 1 })
+    const feeSats = Math.ceil(byteCount * SWEEP_SATS_PER_BYTE)
+    const sweepSats = totalSats - feeSats
+    if (sweepSats < DUST_LIMIT_SATS) {
+      throw new Error(`Balance of ${totalSats} sats is too small to sweep after a ${feeSats} sat fee`)
+    }
+
+    txb.addOutput(this.config.treasuryAddress, sweepSats)
+
+    const keyPair = bchjs.ECPair.fromWIF(wif)
+    utxos.forEach((utxo, i) => {
+      txb.sign(i, keyPair, undefined, txb.hashTypes.SIGHASH_ALL, utxo.value)
+    })
+
+    return invoiceWallet.broadcast({ hex: txb.build().toHex() })
   }
 
   async getUsdPerBch () {

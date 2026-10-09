@@ -115,8 +115,11 @@ bch-file-hosting-api/
     `{ cashAddress, wif, hdIndex }`. The WIF is used in memory only.
   - `getBalanceSats(address)`: `wallet.getBalance({ bchAddress })` (confirmed +
     unconfirmed satoshis, D8).
-  - `sweep(hdIndex)`: build a temporary wallet from the derived WIF and
-    `sendAll(TREASURY_ADDRESS)`; return the txid.
+  - `sweep(hdIndex)`: build a temporary wallet from the derived WIF, then
+    build and broadcast a transaction spending all its BCH UTXOs to one
+    `TREASURY_ADDRESS` output, minus only the miner fee; return the txid.
+    minimal-slp-wallet's `sendAll()` is not used because it always adds a
+    2000 sat PSF donation output, which consumes an entire minimum invoice.
   - `getUsdPerBch()`: `wallet.getUsd()`.
 - [ ] **ipfs/** (port from ipfs-file-stager `src/adapters/ipfs/`):
   - Start Helia via `helia-coord/create-helia-node`, then `IpfsCoord`.

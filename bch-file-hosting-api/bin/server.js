@@ -71,6 +71,15 @@ class Server {
     })
   }
 
+  // Stop timers, then HTTP, then the adapters, without exiting the process.
+  async stop () {
+    if (this.controllers) this.controllers.stopTimers()
+    await this.closeHttpServer()
+    this.httpServer = null
+    await this.adapters.stop()
+    return true
+  }
+
   async shutdown (signal) {
     if (this.isShuttingDown) return
     this.isShuttingDown = true
@@ -79,9 +88,7 @@ class Server {
     logger.info(`Received ${signal}, shutting down`)
 
     try {
-      if (this.controllers) this.controllers.stopTimers()
-      await this.closeHttpServer()
-      await this.adapters.stop()
+      await this.stop()
       logger.info('Shutdown complete')
       this.process.exit(0)
     } catch (err) {

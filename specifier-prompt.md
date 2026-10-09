@@ -330,6 +330,19 @@ Specific to bch-file-hosting (found while building the core port):
     datastore persists). So the best-effort `provide` on pin is safe: a failed
     or aborted initial announce is retried by the DHT, not lost. No explicit
     re-provide timer is needed (this closed the `ipfs-reprovide` follow-up).
+27. **Lighthouse's pin-by-CID cannot work for a NAT'd node; upload the bytes.**
+    `POST /api/lighthouse/pin` is asynchronous — it returns a `requestID` and
+    then has to *fetch* the CID from the public network. Our node never
+    completes `provide` (the 180 s kad-dht timeout), so nothing is announced and
+    Lighthouse never gets the bytes (`file_info` 404; the gateway says "no
+    providers found"). Upload the bytes instead to the IPFS-compatible
+    `upload.lighthouse.storage/api/v0/add?wrap-with-directory=true&cid-version=1&raw-leaves=true&pin=true`;
+    those exact parameters reproduce our Helia wrapping-directory CID
+    byte-for-byte (verified at 1.5 KB and 3 MB multi-chunk), so links stay
+    valid. The free dedicated gateway is
+    `https://open-sheep-fwyxe.lighthouseweb3.xyz/ipfs/`
+    (`gateway.lighthouse.storage` is paid-only, HTTP 402), and
+    `LIGHTHOUSE_GATEWAY` must be set or the paid default is used.
 
 ---
 
@@ -368,35 +381,46 @@ At the end of each session, update this file:
 - Note the current `master` HEAD commit.
 - State the next feature to work on.
 
-Latest session (2026-10-09): completed **`ipfs-provide-best-effort`** in
-`bch-file-hosting-api`, on top of **`ipfs-public-node`** (public Amino DHT +
-CID provide). `IpfsAdapter.pin` now fires `provideInBackground` (logged, not
-awaited), so a slow or failing DHT `provide` no longer stalls
-`POST /files/check-payment` for the kad-dht `DEFAULT_QUERY_TIMEOUT` (180 s) or
-marks a durable local pin as `pinFailed`. Also hotfixed
-`uPnPNAT({ autoConfirmAddress: true })` — it required an absent `@libp2p/autonat`
-service, which broke startup — and recorded it as `UPNP_AUTO_CONFIRM_ADDRESS`.
-Spec `ipfs-public-node.feature` scenarios 1–5. Pipeline commits — specifier
-`1a5463c`/`079370b` plus the hotfix `bb0e811`, coder `2ccc8e2`/`b248136`,
-refactorer `02eddc5`/`bde9a22`, architect `2d4493d`/`55f04b7` (verification
-`git_sha`), docs `e2b9f57`/`4fe4d5b`. Merged to `master` (fast-forward) at
-`4fe4d5b010`. `verify.sh api` 4/4 (unit 410, property 26, acceptance all 6
-suites, lint ok); language mutation 22/22 killed; soft Gherkin 8/8 killed;
-independent post-merge checks ipfs-public-node 6/6 then 10/10. The
-`ipfs-public-node` real-network verification (restart the API, check public
-routing + Lighthouse) is still pending. Roadmap phases 3–7 remain complete.
-Prior cycles (Q1, P5.1-P5.3, P6.1-P6.6, P7.1-P7.3, web-payment-poll-error,
-wallet-name-validation, web-upload-transport, web-upload-size,
-web-upload-quote-columns, lighthouse-file-link, ipfs-public-node) are in the
-backlog. Open follow-ups: the CLI `upload_path`/`api_txid` columns, the
-`web-payment` scenario-8 `paid_cid`/`paid_name` survivors, the image-link `rel`
-hardening, the mutation-inert mnemonic-hygiene scenarios, and the
-`ipfs-service-dependencies` regression test. (`ipfs-reprovide` is closed —
-Helia's DHT `Reprovider` re-announces stored provider entries; see gotcha #26.)
+Latest session (2026-10-09): completed **`lighthouse-upload-verify`** in
+`bch-file-hosting-api`, on top of `ipfs-public-node` and
+`ipfs-provide-best-effort`. Hosted files were not retrievable: the provide
+never completes, so the CID is never announced, and Lighthouse's asynchronous
+pin-by-CID never fetches the bytes. `LighthouseProvider.pin` now **uploads the
+file bytes** to Lighthouse's IPFS-compatible
+`upload.lighthouse.storage/api/v0/add?wrap-with-directory=true&cid-version=1&raw-leaves=true&pin=true`
+endpoint (reproducing our exact CID), then verifies retrieval with `HEAD
+<gateway>/<cid>/<filename>`. `completePayment` records the payment, sets a new
+`pinning` status, and runs pin+announce off the request path. Providers carry
+`authoritative` in their capabilities: the file is `pinned` when every
+authoritative provider succeeded, and `local-helia` is best-effort, so a failed
+local pin is recorded but does not fail the file; `retryPins` now also recovers a
+failed local pin and never re-uploads (already-pinned providers are skipped).
+Specs: `lighthouse-pinning.feature` (1, 2, 5), new
+`background-pinning.feature` (1–4), `pin-retry.feature` (1–5). Pipeline
+commits — specifier `e931b78`, coder `0388fe7`, refactorer `96fa16e`, architect
+`f6f10f5` (verification `git_sha`), docs `641bf94`. Merged to `master`
+(fast-forward) at `641bf94`. `verify.sh api` 4/4 (unit 428, property 28,
+acceptance all 7 suites, lint ok); language mutation `lighthouse.js` 22 killed /
+1 equivalent, four other modules 0 survivors; soft Gherkin
+`background-pinning` 9/9, `lighthouse-pinning` 16/19, `pin-retry` 17/22
+(documented equivalents); independent post-merge acceptance check all 7 suites.
+Real-network verification is still pending: restart the API with
+`LIGHTHOUSE_GATEWAY=https://open-sheep-fwyxe.lighthouseweb3.xyz/ipfs/` and
+confirm the dedicated gateway serves an uploaded file. Roadmap phases 3–7 remain
+complete. Prior cycles (Q1, P5.1-P5.3, P6.1-P6.6, P7.1-P7.3,
+web-payment-poll-error, wallet-name-validation, web-upload-transport,
+web-upload-size, web-upload-quote-columns, lighthouse-file-link,
+ipfs-public-node, ipfs-provide-best-effort) are in the backlog. Open follow-ups:
+the CLI `upload_path`/`api_txid` columns, the `web-payment` scenario-8
+`paid_cid`/`paid_name` survivors, the `lighthouse-pinning`/`pin-retry`
+echoed-input survivors, the image-link `rel` hardening, the mutation-inert
+mnemonic-hygiene scenarios, the `ipfs-service-dependencies` regression test, and
+the new `pin-recovery`, `shutdown-drain`, and `lighthouse-verify-content-length`
+items.
 
-Current `master` HEAD: `4fe4d5b010` (Record ipfs-provide-best-effort architect
+Current `master` HEAD: `641bf94` (Record lighthouse-upload-verify architect
 review and verification).
 
-Next action: scope **roadmap phase 8 (x402-bch)** with the user (dynamic-price
-x402 middleware, `POST /x402/files`, facilitator notes), or tackle the CLI
-spec-quality follow-ups.
+Next action: spec **`web-dashboard`** (the web UI that shows upload and
+pin/verification progress), or scope **roadmap phase 8 (x402-bch)** with the
+user.

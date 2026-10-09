@@ -49,21 +49,12 @@ test then showed hosted files are still not retrievable: the provide never
 completes (180 s kad-dht timeout) so the CID is never announced, and Lighthouse's
 asynchronous pin-by-CID never fetches the bytes. The fix is to upload the file
 bytes to Lighthouse's IPFS-compatible endpoint (`lighthouse-upload-verify`), in
-the background, plus a web dashboard to watch progress (`web-dashboard`).
+the background, plus a web dashboard to watch progress (`web-dashboard`). The
+`lighthouse-upload-verify` feature is complete and merged at `641bf94`.
 
 ## In progress
 
-- **`lighthouse-upload-verify` (2026-10-09):** replace Lighthouse's
-  asynchronous pin-by-CID with an upload of the file bytes, verify the gateway,
-  and run it in the background. Specs: `lighthouse-pinning.feature` (1 upload
-  records the reported CID; 2 upload error; 5 uploaded file not retrievable),
-  new `background-pinning.feature` (1 checking payment returns without waiting;
-  2 the background pin settles `pinned`; 3 a failed Lighthouse pin → `pinFailed`;
-  4 a failed local pin still `pinned`), and `pin-retry.feature` (4 retries a
-  failed local pin without re-uploading; 5 keeps `pinned` when the local retry
-  fails again). Decided: the verified Lighthouse copy is the success criterion;
-  the local pin is best-effort and retried by `retryPins`, which now retries only
-  the providers that failed. Awaiting coder.
+- None.
 
 ## Up next (in order)
 
@@ -74,6 +65,21 @@ the background, plus a web dashboard to watch progress (`web-dashboard`).
   web records uploaded CIDs client-side (`localStorage`) and polls
   `GET /files/:cid` for each — a server-side list keyed by wallet is the
   alternative if cross-device is wanted.
+- **`pin-recovery`:** a crash mid-pin can strand a file in `pinning` —
+  `needsPinRetry` recovers `pinFailed` or a file with a failed pin, but not a
+  `pinning` record left by a killed process (all recorded pins `pinned`, status
+  not yet updated). Treat `pinning` as needing recovery. Flagged by the
+  `lighthouse-upload-verify` architect.
+- **`shutdown-drain`:** `PaymentUseCases.whenBackgroundIdle()` exists but is not
+  wired into `Server.stop()`, so SIGINT exits without draining background pins.
+  A naive drain could hang if the Lighthouse HTTP call hangs (no request
+  timeout), so add a bounded drain (or an HTTP timeout). Flagged by the
+  `lighthouse-upload-verify` architect.
+- **`lighthouse-verify-content-length`:** `verifyOnce` requires a
+  `content-length` and treats a chunked (headerless) response as 0 ≠ sizeBytes,
+  failing verification. Acceptable for Lighthouse today; accept chunked
+  responses if a gateway changes. Flagged by the `lighthouse-upload-verify`
+  architect.
 - **Roadmap phase 8: x402-bch** — dynamic-price x402 middleware, `POST
   /x402/files`, and a facilitator deployment note; scope it with the user.
 - **`ipfs-public-node` manual verification (pending):** restart the API with the
@@ -87,7 +93,12 @@ the background, plus a web dashboard to watch progress (`web-dashboard`).
   prune the columns. The same applies to `web-payment.feature` scenario 8
   (`paid_cid` and `paid_name`; 4 survivors) — add `Then the page shows the CID`
   / `the paid file name` assertions and their `shown_*` columns. The wallet
-  mnemonic-hygiene scenarios remain mutation-inert.
+  mnemonic-hygiene scenarios remain mutation-inert. The
+  `lighthouse-upload-verify` architect added equivalents: `lighthouse-pinning`
+  1/5 `upload_cid` and `pin-retry` 1/2 `cid` are echoed-input equivalents (any
+  mismatch fails the pin), and `http_status 500` is any-error (any 4xx/5xx
+  fails). Anchor them (for example assert the error message carries the reported
+  CID) or accept them as documented equivalents.
 - **Hardening follow-up (`web-image-link-rel`):** the image gateway link sets
   `target="_blank"` without `rel`; every other `_blank` anchor in
   `bch-file-hosting-web` uses `rel="noreferrer"`. Add `rel="noreferrer"` (with
@@ -111,6 +122,33 @@ the background, plus a web dashboard to watch progress (`web-dashboard`).
   pin), and the upload+verify runs in the background.
 
 ## Recently completed
+
+- **`lighthouse-upload-verify` — upload bytes to Lighthouse and pin in the
+  background (2026-10-09):** `LighthouseProvider.pin` now uploads the file bytes
+  to the IPFS-compatible `upload.lighthouse.storage/api/v0/add` endpoint
+  (`wrap-with-directory=true&cid-version=1&raw-leaves=true&pin=true`), fails on a
+  reported-CID mismatch, then verifies retrieval with
+  `HEAD <gateway>/<cid>/<filename>` (bounded retries). The endpoint reproduces
+  our exact wrapping-directory CID (verified byte-for-byte at 1.5 KB and 3 MB
+  multi-chunk). `completePayment` records the payment, sets a new `pinning`
+  status, and runs pin+announce off the request path (`runInBackground`, tracked
+  `background` Set, `whenBackgroundIdle()` for tests/shutdown). Providers carry
+  `authoritative` in their capabilities: the file is `pinned` when every
+  authoritative provider succeeded, and `local-helia` is best-effort, so a failed
+  local pin is recorded but does not fail the file. `pinFile` skips
+  already-pinned providers, so `retryPins` (which now also recovers a failed
+  local pin) never re-uploads. Config: `LIGHTHOUSE_UPLOAD_URL`,
+  `LIGHTHOUSE_VERIFY_ATTEMPTS`, `LIGHTHOUSE_VERIFY_DELAY_MS`. Pipeline commits:
+  specifier `e931b78`, coder `0388fe7`, refactorer `96fa16e`, architect `f6f10f5`
+  (verification `git_sha`), docs `641bf94`, merged to `master` at `641bf94`
+  (fast-forward). `verify.sh api` pass 4/4 (unit 428, property 28, acceptance
+  all 7 suites, lint ok); language mutation `lighthouse.js` 22 killed / 1
+  equivalent (0 uncovered) and four other modules 0 survivors; soft Gherkin
+  `background-pinning` 9/9, `lighthouse-pinning` 16/19, `pin-retry` 17/22
+  (survivors are documented equivalents); DRY clean; CRAP ≤ 6.0. Independent
+  post-merge acceptance check: all 7 suites. Architect summary:
+  `docs/reviews/lighthouse-upload-verify-summary.md`. Follow-ups: `pin-recovery`,
+  `shutdown-drain`, `lighthouse-verify-content-length`.
 
 - **`ipfs-provide-best-effort` — do not block or fail the pin on content-routing
   provide (2026-10-09):** `IpfsAdapter.pin` now fires `provideInBackground`

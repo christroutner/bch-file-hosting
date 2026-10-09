@@ -29,7 +29,8 @@ and merged to `master` at `cde36aef70`. P6.2 `file-check` is complete and
 merged to `master` at `55c3ddc714`. P6.3 `wallet-create`/`wallet-balance` is
 complete and merged to `master` at `d3e54d4cf2`. The `wallet-name-validation`
 follow-up hardening is complete and merged at `08c2cd88dc`. P6.4 `file-status`
-is complete and merged at `faabc07d8e`.
+is complete and merged at `faabc07d8e`. P6.5 `file-pay` is complete and merged
+at `f579aafd67`.
 
 ## In progress
 
@@ -37,20 +38,47 @@ is complete and merged at `faabc07d8e`.
 
 ## Up next (in order)
 
-- Remaining phase-6 CLI commands (`file-pay`, `file-host`); scope them with
-  the user.
+- Remaining phase-6 CLI command (`file-host`); scope it with the user after the
+  CLI PSF donation decision below.
 
 ## Needs a decision from the user
 
-These come from the long-term plan's open questions (section 14). Do not spec
-them until the user decides.
+These come from the long-term plan's open questions (section 14) unless noted.
+Do not spec them until the user decides.
 
+- **CLI PSF donation (pipeline follow-up):** `WalletService.sendSats` uses
+  `minimal-slp-wallet.send()`, which appends a 2,000-sat PSF donation, so every
+  `file-pay` costs `amountSats + 2,000 + fee` and a minimum invoice roughly
+  doubles. Decide whether to build a donation-free send (mirroring
+  `WalletAdapter.sweep`) or explicitly accept/document the donation. This also
+  affects `file-host`.
 - **Expiry policy (Q1):** what happens when a file's year of hosting ends.
 - **Renewals / multi-year (Q2).**
 - **OP_RETURN announcement format (Q3)** for the stubbed announcer.
 - **Late payments and refunds (Q9).**
 
 ## Recently completed
+
+- **P6.5 `file-pay` — pay an invoice from a local wallet (2026-10-09):**
+  `file-pay -a <address> -n <name> [--json]` looks up the invoice via
+  `POST /files/check-payment`; a paid invoice is a no-op success (`Already
+  paid`), while an expired invoice, unknown wallet, or API error fails with exit
+  1, and an unpaid invoice sends `requiredSats - receivedSats` from the named
+  local wallet and prints the amount and txid. `FilePay` extends
+  `WalletCommand`; `WalletService.sendSats` sends one `{ address, amountSat }`
+  output. Spec `file-pay.feature` (eight scenarios). Pipeline commits: specifier
+  `4d6457c`, coder `e8a0dab`, refactorer `485cad8`, architect `1a7d74b`
+  (verification `git_sha`), docs `f579aaf`, merged to `master` at `f579aafd67`
+  (fast-forward). `verify.sh cli` pass 4/4 (unit 90, property 52, acceptance all
+  6 suites, lint ok); unit coverage 100%; language mutation 0 survived / 0
+  uncovered across `file-pay.js` and `wallet-service.js`; DRY clean; CRAP <=
+  6.0; soft Gherkin file-pay 36/36 killed. Independent acceptance check after
+  merge: all 6 suites passed, including the 12 file-pay executions. Architect
+  summary: `docs/reviews/file-pay-summary.md`.
+  - **Open follow-up (product decision):** every CLI payment adds a 2,000-sat
+    PSF donation because `sendSats` uses `minimal-slp-wallet.send()`. Decide
+    whether to build a donation-free send or accept/document the donation; a
+    minimum invoice roughly doubles for the payer.
 
 - **P6.4 `file-status` — look up a file and print its status and pins
   (2026-10-09):** `file-status -c <cid> [--json]` calls `GET /files/:cid` and

@@ -52,17 +52,13 @@ bytes to Lighthouse's IPFS-compatible endpoint (`lighthouse-upload-verify`), in
 the background, plus a web dashboard to watch progress (`web-dashboard`). The
 `lighthouse-upload-verify` feature is complete and merged at `641bf94`. The
 `web-dashboard` feature (a public server-wide file feed at `GET /files` plus the
-web `/dashboard` view) is complete and merged at `76ec973e1c`.
+web `/dashboard` view) is complete and merged at `76ec973e1c`. The
+`web-build-compile` hardening (fix the CRA production build and add it to
+`verify.sh web`) is complete and merged at `2740d45`.
 
 ## In progress
 
-- **`web-build-compile` (web build + verification):** the CRA production build
-  fails on merged code (`globalThis` is not defined in
-  `src/services/hosting-api.js`, plus `'use strict'` warnings), and
-  `verify.sh web` never runs the CRA build so it was not caught. Fix the CRA
-  ESLint configuration at its source and add a CRA build/lint command to the
-  `web` component in `swarmforge/scripts/verify.mjs`. Spec:
-  `dev-docs/web-build-compile.md`. No Gherkin (build/verification deliverable).
+- None.
 
 ## Up next (in order)
 
@@ -131,6 +127,27 @@ web `/dashboard` view) is complete and merged at `76ec973e1c`.
   pin), and the upload+verify runs in the background.
 
 ## Recently completed
+
+- **`web-build-compile` — fix the CRA production build and verify it
+  (2026-10-09):** the merged web app failed `react-scripts build` because
+  `eslint-config-react-app` runs an ES2015 environment, so `globalThis` (the
+  `web-upload-transport` fetch receiver) was a `no-undef` error; the 11 CommonJS
+  service/view modules also warned `'use strict' is unnecessary inside of
+  modules`. `package.json` now sets `eslintConfig.env.es2020` and the redundant
+  `'use strict'` directives are removed. `swarmforge/scripts/verify.mjs` adds a
+  `build` command to the `web` component, so `verify.sh web` now runs
+  `npm run build` and a reintroduced config regression fails verification (the
+  architect confirmed this by temporarily reverting the env). Spec
+  `dev-docs/web-build-compile.md` (no Gherkin). Pipeline commits: specifier
+  `cc8e73e`, refactorer `13394db`, architect `1d77386` (verification `git_sha`)
+  and `2740d45` (docs), merged to `master` at `2740d45` (fast-forward).
+  `verify.sh web` pass 5/5 (unit 83, property 73, build ok, acceptance all 5
+  suites, lint ok); language mutation 0 survived / 0 uncovered across the 11
+  changed modules (function hashes unchanged by the directive removal); DRY
+  clean; CRAP unchanged. Independent post-merge check: `npm run build` exit 0
+  and all 5 acceptance suites. Architect summary:
+  `docs/reviews/web-build-compile-summary.md`. Note: any future `eslintConfig`
+  simplification must keep an ES2020+ environment so the build stays green.
 
 - **`web-dashboard` — public file feed and hosted-files dashboard (2026-10-09):**
   new public `GET /files` endpoint returns only paid files (`pinning`, `pinned`,

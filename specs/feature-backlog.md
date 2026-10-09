@@ -43,19 +43,12 @@ cleanup (anchor the size-scenario setup columns) is complete and merged at
 `959cf421e5`. The `lighthouse-file-link` feature (Lighthouse link opens the
 file; image links open in a new tab) is complete and merged at `a0685a12e1`.
 The `ipfs-public-node` feature (public Amino DHT + CID provide) is complete and
-merged at `e2b9f571d1`.
+merged at `e2b9f571d1`. The `ipfs-provide-best-effort` fix (best-effort
+content-routing provide) is complete and merged at `4fe4d5b010`.
 
 ## In progress
 
-- **`ipfs-provide-best-effort` — do not block or fail the pin on content-routing
-  provide (2026-10-09):** `IpfsAdapter.pin` awaits `helia.routing.provide`, and
-  the kad-dht `DEFAULT_QUERY_TIMEOUT` is 180 s, so a node that cannot complete
-  the provider query stalls `POST /files/check-payment` for ~3 minutes and
-  records the local pin as `pinFailed`. Make `provide` best-effort and off the
-  request path (fire-and-forget or bounded and logged), and let the local
-  `pins.add` alone decide pin success. Spec `ipfs-public-node.feature` gained
-  scenarios 4 (a failing provide does not fail the pin) and 5 (pinning does not
-  wait for the provide). Awaiting coder.
+- None.
 
 ## Up next (in order)
 
@@ -77,22 +70,45 @@ merged at `e2b9f571d1`.
   `target="_blank"` without `rel`; every other `_blank` anchor in
   `bch-file-hosting-web` uses `rel="noreferrer"`. Add `rel="noreferrer"` (with
   a unit assertion). Flagged by the `lighthouse-file-link` architect.
-- **Hardening follow-up (`ipfs-service-dependencies`):** `Ipfs Public Node - 2`
-  only inspects the `natServices` metadata, so it missed that `uPnPNAT()`
-  requires the `@libp2p/autonat` capability and the API failed to start. Hotfixed
-  on `master` with `uPnPNAT({ autoConfirmAddress: true })`. Add a regression test
-  that builds the public-network service set and asserts every
-  `serviceDependencies` capability is provided, so the next added service cannot
-  break startup silently.
+- **Hardening follow-up (`ipfs-service-dependencies`):** the general regression
+  test is still missing. `Ipfs Public Node - 2` only inspects the `natServices`
+  metadata, so it missed that `uPnPNAT()` requires the `@libp2p/autonat`
+  capability (the API failed to start) — hotfixed with `autoConfirmAddress:
+  true` and now covered by a flag test. Add a test that builds the public-network
+  service set and asserts every `serviceDependencies` capability is provided, so
+  the next added service cannot break startup silently.
+- **Hardening follow-up (`ipfs-reprovide`):** with best-effort provide, a file
+  whose local pin succeeds but whose provide fails is `pinned`, so the hourly
+  `retryPins` (which only re-pins `pinFailed`) never re-provides it. Add a
+  re-provide timer or a `provided` flag on the pin record. Flagged by the
+  `ipfs-provide-best-effort` architect.
 
 ## Needs a decision from the user
 
 - None open. Q1 (expiry), Q2 (renewals), Q3 (OP_RETURN), and Q9 (late
   payments/refunds) are decided in the long-term plan's Decisions Log
   (D26–D29); none needs new Gherkin. The `ipfs-public-node` provide-failure
-  question is decided: `provide` becomes best-effort (`ipfs-provide-best-effort`).
+  question is decided and implemented: `provide` is best-effort
+  (`ipfs-provide-best-effort`, merged).
 
 ## Recently completed
+
+- **`ipfs-provide-best-effort` — do not block or fail the pin on content-routing
+  provide (2026-10-09):** `IpfsAdapter.pin` now fires `provideInBackground`
+  (logged, not awaited), so a slow or failing DHT `provide` no longer stalls
+  `POST /files/check-payment` for the kad-dht `DEFAULT_QUERY_TIMEOUT` (180 s) or
+  marks a durable local pin as `pinFailed`; `pins.add` alone decides pin
+  success. The `upnpNAT({ autoConfirmAddress: true })` hotfix is now
+  test-covered and extracted as `UPNP_AUTO_CONFIRM_ADDRESS`. Spec
+  `ipfs-public-node.feature` gained scenarios 4 and 5. Pipeline commits:
+  specifier hotfix `bb0e811`, specifier `079370b`, coder `b248136`, refactorer
+  `bde9a22`, architect `55f04b7` (verification `git_sha`), docs `4fe4d5b`,
+  merged to `master` at `4fe4d5b010` (fast-forward). `verify.sh api` pass 4/4
+  (unit 410, property 26, acceptance all 6 suites, lint ok); language mutation
+  22/22 killed / 0 uncovered; soft Gherkin 8/8 killed; DRY clean; CRAP <= 6.0.
+  Independent post-merge acceptance check: ipfs-public-node 10/10. Architect
+  summary: `docs/reviews/ipfs-provide-best-effort-summary.md`. Follow-up: no
+  re-provide for a failed initial provide (`ipfs-reprovide`).
 
 - **`ipfs-public-node` — join the public IPFS network and provide hosted CIDs
   (2026-10-09):** the Helia node now runs a project-owned `PublicHeliaNode`

@@ -24,25 +24,17 @@ The core port (roadmap phase 3) is complete and verified on mainnet. SwarmForge
 was integrated in phase 4, and the pipeline smoke test (S0) completed the first
 full four-role cycle. Q1 set the language-quality baseline, P5.1 finished the
 pinning-provider study, P5.2 added the Lighthouse provider, and P5.3 added the
-pin-retry timer and admin file listing. P6.1, the CLI skeleton, is now
-specified and handed off.
+pin-retry timer and admin file listing. P6.1, the CLI skeleton, is complete
+and merged to `master` at `cde36aef70`.
 
 ## In progress
 
-- **P6.1 `cli-skeleton` — first CLI command (new component):** spec
-  `bch-file-hosting-cli/specs/file-upload.feature` written and handed to the
-  coder. Creates `bch-file-hosting-cli/` following
-  `/home/trout/work/llm/prompt/cli/README.md`, adds it to `verify.mjs`,
-  `monorepo.prompt`, `clean-builds.sh`, and `architect-startup.sh`, and
-  implements `file-upload -f <path>` printing the quote. Six scenarios: quote on
-  success, already-hosted links, missing `-f` usage error, API rejection,
-  missing local file, and `--json` output.
+- None.
 
 ## Up next (in order)
 
 - Remaining phase-6 CLI commands (`file-pay`, `file-check`, `file-status`,
-  `file-host`, `wallet-*`); scope them with the user after `cli-skeleton`
-  merges.
+  `file-host`, `wallet-*`); scope them with the user.
 
 ## Needs a decision from the user
 
@@ -56,6 +48,27 @@ them until the user decides.
 
 ## Recently completed
 
+- **P6.1 `cli-skeleton` — first CLI command (2026-10-09):** new
+  `bch-file-hosting-cli/` component (Commander, ESM) with `file-upload -f <path>
+  [--json]`: reads a local file, POSTs multipart to `POST /files`, and prints
+  the quote (price + payment address), an already-hosted download link, or an
+  error; exit codes 0/1/2 (success/runtime/usage). API boundary
+  `src/lib/hosting-api.js`; `HOSTING_API_URL` comes from the environment.
+  Registers the component in `verify.mjs`, `monorepo.prompt`, `clean-builds.sh`,
+  and `architect-startup.sh`, and gives it its own Gherkin acceptance pipeline.
+  Spec `bch-file-hosting-cli/specs/file-upload.feature` (six scenarios).
+  Pipeline commits: coder `bd7b173`, refactorer `10d1a0c`, architect `1ecb9f7`
+  (verification `git_sha`), docs `0ea5f11`, merged to `master` at `cde36aef70`.
+  `verify.sh cli` pass 4/4 (unit 12, property 9, acceptance 11 executions, lint
+  ok); `verify.sh api` regression pass 4/4 (unit 391, property 18, acceptance
+  all 5 suites, lint ok); language mutation 0 survived / 0 uncovered; DRY clean;
+  CRAP <= 4.0; soft Gherkin 26/35 killed with 9 documented intrinsic
+  `upload_path` survivors. Independent acceptance check after merge:
+  file-upload 11/11. Architect summary: `docs/reviews/cli-skeleton-summary.md`.
+  - Follow-up prune: `upload_path` is not load-bearing (no assertion depends on
+    it). Either move a fixed path into the `Background` or add a `Then` that
+    ties the uploaded filename to the example; the pin-retry `cid` column has
+    the same smell.
 - **P5.3 `pin-retry` — retry failed pins and admin file listing (2026-10-09):**
   `PaymentUseCases.retryPins()` re-pins `pinFailed` files (leaving `pinned` and
   `staged` alone) with an hourly `retryPins` timer job; `AdminUseCases.listFiles`

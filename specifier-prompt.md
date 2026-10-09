@@ -278,6 +278,11 @@ Specific to bch-file-hosting (found while building the core port):
     steps that share tokens such as "USD price" or "invoice" even when they
     mean different things. Use distinct nouns (quoted USD amount vs BCH worth,
     quoted price vs minimum invoice).
+19. **Unasserted example columns survive mutation.** An example cell no `Then`
+    assertion depends on (for example the `upload_path` column in the first CLI
+    spec, or the `cid` column in pin-retry) cannot be killed. Make each column
+    load-bearing or move a single fixed value into the `Background`; APS has no
+    project mutation-filter hook.
 
 ---
 
@@ -316,16 +321,14 @@ At the end of each session, update this file:
 - Note the current `master` HEAD commit.
 - State the next feature to work on.
 
-Latest session (2026-10-09): specified **P6.1 `cli-skeleton`** — the first CLI
-command and the new `bch-file-hosting-cli/` component. Spec
-`bch-file-hosting-cli/specs/file-upload.feature` has six scenarios (quote on
-success, already-hosted links, missing `-f` usage error, API rejection, missing
-local file, `--json` output), was committed and handed off to the coder at
-`c005915802`. Prior cycles (Q1, P5.1-P5.3) are recorded in the backlog.
+Latest session (2026-10-09): merged **P6.1 `cli-skeleton`** into `master` at
+`cde36aef70`. The new `bch-file-hosting-cli/` component implements
+`file-upload -f <path> [--json]`; `docs/reviews/cli-skeleton-verification.json`
+reports `verify.sh cli` pass 4/4 (record `git_sha` `1ecb9f7`, docs-only behind
+the tip) and the independent post-merge acceptance check passed 11/11. Prior
+cycles (Q1, P5.1-P5.3) are recorded in the backlog.
 
-Current `master` HEAD: `c005915802` (Specify cli-skeleton file-upload behavior;
-this briefing update is the following docs-only commit).
+Current `master` HEAD: `cde36aef70` (Merge cli-skeleton into master).
 
-Next action: when the architect's end-of-chain `git_handoff` arrives, merge
-`swarmforge-architect` into `master` and verify per §10, then mark P6.1 complete
-in `specs/feature-backlog.md`.
+Next action: ask the user which phase-6 CLI command to specify next
+(`file-pay`, `file-check`, `file-status`, `file-host`, `wallet-*`).

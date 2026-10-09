@@ -5,23 +5,19 @@
 
 import Invoice, { INVOICE_STATUS, SWEEP_STATUS } from '../entities/invoice.js'
 import { FILE_STATUS } from '../entities/file-upload.js'
+import UseCase from './use-case.js'
 import { buildLinks } from './links.js'
 import KeyedLock from './keyed-lock.js'
 import { NotFoundError, ValidationError } from './errors.js'
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
-class PaymentUseCases {
+class PaymentUseCases extends UseCase {
   constructor ({ adapters } = {}) {
-    if (!adapters) throw new Error('PaymentUseCases requires the adapters')
-    this.adapters = adapters
-    this.config = adapters.config
+    super({ adapters, name: 'PaymentUseCases' })
 
     this.invoice = new Invoice()
     this.lock = new KeyedLock()
-
-    // Encapsulated for unit tests.
-    this.now = () => new Date()
 
     this.checkPayment = this.checkPayment.bind(this)
     this.retrySweeps = this.retrySweeps.bind(this)
@@ -40,12 +36,7 @@ class PaymentUseCases {
     const invoice = await localdb.invoices.get(paymentAddress)
     if (!invoice) throw new NotFoundError(`Invoice not found: ${paymentAddress}`)
 
-    if (invoice.status === INVOICE_STATUS.PAID) {
-      // Idempotent: never sweep again, but finish pinning if it did not complete.
-      let file = await localdb.files.get(invoice.cid)
-      if (file.status !== FILE_STATUS.PINNED) file = await this.pinFile(file)
-      return this.paidResult(invoice, file)
-    }
+    if (invoice.status === INVOICE_STATUS.PAID) return this.repayPaidInvoice(invoice)
 
     if (invoice.status === INVOICE_STATUS.DELETED) {
       return { status: 'expired', quoteExpiresAt: invoice.quoteExpiresAt }
@@ -59,21 +50,29 @@ class PaymentUseCases {
       receivedSats,
       toleranceSats: this.config.underpayToleranceSats
     })
-
-    if (!isPaid) {
-      const now = this.now()
-      if (this.invoice.isQuoteExpired({ quoteExpiresAt: invoice.quoteExpiresAt, now })) {
-        return { status: 'expired', quoteExpiresAt: invoice.quoteExpiresAt }
-      }
-      return {
-        status: 'unpaid',
-        receivedSats,
-        requiredSats: invoice.priceSats,
-        quoteExpiresAt: invoice.quoteExpiresAt
-      }
-    }
+    if (!isPaid) return this.unpaidResult(invoice, receivedSats)
 
     return this.completePayment(invoice, receivedSats)
+  }
+
+  // Idempotent: never sweep again, but finish pinning if it did not complete.
+  async repayPaidInvoice (invoice) {
+    let file = await this.adapters.localdb.files.get(invoice.cid)
+    if (file.status !== FILE_STATUS.PINNED) file = await this.pinFile(file)
+    return this.paidResult(invoice, file)
+  }
+
+  unpaidResult (invoice, receivedSats) {
+    const now = this.now()
+    if (this.invoice.isQuoteExpired({ quoteExpiresAt: invoice.quoteExpiresAt, now })) {
+      return { status: 'expired', quoteExpiresAt: invoice.quoteExpiresAt }
+    }
+    return {
+      status: 'unpaid',
+      receivedSats,
+      requiredSats: invoice.priceSats,
+      quoteExpiresAt: invoice.quoteExpiresAt
+    }
   }
 
   async completePayment (invoice, receivedSats) {

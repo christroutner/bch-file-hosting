@@ -5,15 +5,12 @@
 
 import { FILE_STATUS } from '../entities/file-upload.js'
 import { INVOICE_STATUS, SWEEP_STATUS } from '../entities/invoice.js'
+import UseCase from './use-case.js'
 import { NotFoundError, ValidationError } from './errors.js'
 
-class AdminUseCases {
+class AdminUseCases extends UseCase {
   constructor ({ adapters } = {}) {
-    if (!adapters) throw new Error('AdminUseCases requires the adapters')
-    this.adapters = adapters
-
-    // Encapsulated for unit tests.
-    this.now = () => new Date()
+    super({ adapters, name: 'AdminUseCases' })
 
     this.listInvoices = this.listInvoices.bind(this)
     this.removeFile = this.removeFile.bind(this)

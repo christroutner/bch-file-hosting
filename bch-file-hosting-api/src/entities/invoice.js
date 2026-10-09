@@ -37,6 +37,45 @@ function assertIsoDate (value, name) {
   }
 }
 
+function assertAddress (paymentAddress) {
+  if (typeof paymentAddress !== 'string' || !CASH_ADDRESS_REGEX.test(paymentAddress)) {
+    throw new Error("Property 'paymentAddress' must be a bitcoincash: cash address")
+  }
+}
+
+function assertIdentity ({ hdIndex, cid, filename }) {
+  // Index 0 is the server's main wallet, so invoices start at 1.
+  assertPositiveInteger(hdIndex, 'hdIndex')
+
+  if (!cid || typeof cid !== 'string') {
+    throw new Error("Property 'cid' must be a non-empty string")
+  }
+  if (!filename || typeof filename !== 'string') {
+    throw new Error("Property 'filename' must be a non-empty string")
+  }
+}
+
+function assertAmounts ({ sizeBytes, billedBytes, priceSats, usdPrice, usdPerBch }) {
+  assertNonNegativeInteger(sizeBytes, 'sizeBytes')
+  assertPositiveInteger(billedBytes, 'billedBytes')
+  assertPositiveInteger(priceSats, 'priceSats')
+
+  if (typeof usdPrice !== 'number' || !(usdPrice > 0)) {
+    throw new Error("Property 'usdPrice' must be a positive number")
+  }
+  if (typeof usdPerBch !== 'number' || !(usdPerBch > 0)) {
+    throw new Error("Property 'usdPerBch' must be a positive number")
+  }
+}
+
+function assertDates ({ createdAt, quoteExpiresAt }) {
+  assertIsoDate(createdAt, 'createdAt')
+  assertIsoDate(quoteExpiresAt, 'quoteExpiresAt')
+  if (Date.parse(quoteExpiresAt) <= Date.parse(createdAt)) {
+    throw new Error("Property 'quoteExpiresAt' must be after 'createdAt'")
+  }
+}
+
 class Invoice {
   // Validate the data for a new invoice and return it with its initial status.
   validate (data = {}) {
@@ -45,36 +84,10 @@ class Invoice {
       priceSats, usdPrice, usdPerBch, createdAt, quoteExpiresAt
     } = data
 
-    if (typeof paymentAddress !== 'string' || !CASH_ADDRESS_REGEX.test(paymentAddress)) {
-      throw new Error("Property 'paymentAddress' must be a bitcoincash: cash address")
-    }
-
-    // Index 0 is the server's main wallet, so invoices start at 1.
-    assertPositiveInteger(hdIndex, 'hdIndex')
-
-    if (!cid || typeof cid !== 'string') {
-      throw new Error("Property 'cid' must be a non-empty string")
-    }
-    if (!filename || typeof filename !== 'string') {
-      throw new Error("Property 'filename' must be a non-empty string")
-    }
-
-    assertNonNegativeInteger(sizeBytes, 'sizeBytes')
-    assertPositiveInteger(billedBytes, 'billedBytes')
-    assertPositiveInteger(priceSats, 'priceSats')
-
-    if (typeof usdPrice !== 'number' || !(usdPrice > 0)) {
-      throw new Error("Property 'usdPrice' must be a positive number")
-    }
-    if (typeof usdPerBch !== 'number' || !(usdPerBch > 0)) {
-      throw new Error("Property 'usdPerBch' must be a positive number")
-    }
-
-    assertIsoDate(createdAt, 'createdAt')
-    assertIsoDate(quoteExpiresAt, 'quoteExpiresAt')
-    if (Date.parse(quoteExpiresAt) <= Date.parse(createdAt)) {
-      throw new Error("Property 'quoteExpiresAt' must be after 'createdAt'")
-    }
+    assertAddress(paymentAddress)
+    assertIdentity({ hdIndex, cid, filename })
+    assertAmounts({ sizeBytes, billedBytes, priceSats, usdPrice, usdPerBch })
+    assertDates({ createdAt, quoteExpiresAt })
 
     return {
       paymentAddress,

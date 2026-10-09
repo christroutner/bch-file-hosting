@@ -4,6 +4,8 @@
   so the cleanup timer can range-scan invoices by age.
 */
 
+import RecordStore from './record-store.js'
+
 const INVOICE_PREFIX = 'invoice:'
 const CREATED_PREFIX = 'idx:created:'
 
@@ -12,14 +14,9 @@ function prefixRange (prefix) {
   return { gte: prefix, lt: prefix.slice(0, -1) + ';' }
 }
 
-class InvoiceStore {
+class InvoiceStore extends RecordStore {
   constructor ({ db } = {}) {
-    if (!db) throw new Error('InvoiceStore requires a db instance')
-    this.db = db
-  }
-
-  invoiceKey (paymentAddress) {
-    return `${INVOICE_PREFIX}${paymentAddress}`
+    super({ db, prefix: INVOICE_PREFIX, label: 'Invoice', idField: 'paymentAddress' })
   }
 
   createdKey (createdAt, paymentAddress) {
@@ -29,25 +26,10 @@ class InvoiceStore {
   // Save a new invoice and its cleanup index entry atomically.
   async create (invoice) {
     await this.db.batch([
-      { type: 'put', key: this.invoiceKey(invoice.paymentAddress), value: invoice },
+      { type: 'put', key: this.recordKey(invoice.paymentAddress), value: invoice },
       { type: 'put', key: this.createdKey(invoice.createdAt, invoice.paymentAddress), value: invoice.paymentAddress }
     ])
     return invoice
-  }
-
-  async get (paymentAddress) {
-    const invoice = await this.db.get(this.invoiceKey(paymentAddress))
-    return invoice === undefined ? null : invoice
-  }
-
-  // Merge changes into an existing invoice. Returns the updated invoice.
-  async update (paymentAddress, changes) {
-    const invoice = await this.get(paymentAddress)
-    if (!invoice) throw new Error(`Invoice not found: ${paymentAddress}`)
-
-    const updated = { ...invoice, ...changes, paymentAddress }
-    await this.db.put(this.invoiceKey(paymentAddress), updated)
-    return updated
   }
 
   // Return the payment addresses of invoices created before the given ISO time.

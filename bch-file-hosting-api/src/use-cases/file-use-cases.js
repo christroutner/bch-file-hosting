@@ -7,24 +7,22 @@ import { unlink } from 'fs/promises'
 
 import FileUpload, { FILE_STATUS, isPaidFileStatus } from '../entities/file-upload.js'
 import Invoice, { INVOICE_STATUS } from '../entities/invoice.js'
+import UseCase from './use-case.js'
 import { calculatePrice } from './pricing.js'
 import { buildLinks } from './links.js'
 import { NotFoundError, ValidationError } from './errors.js'
 
 const MS_PER_HOUR = 60 * 60 * 1000
 
-class FileUseCases {
+class FileUseCases extends UseCase {
   constructor ({ adapters } = {}) {
-    if (!adapters) throw new Error('FileUseCases requires the adapters')
-    this.adapters = adapters
-    this.config = adapters.config
+    super({ adapters, name: 'FileUseCases' })
 
     this.fileUpload = new FileUpload()
     this.invoice = new Invoice()
 
     // Encapsulated for unit tests.
     this.unlink = unlink
-    this.now = () => new Date()
 
     this.uploadAndQuote = this.uploadAndQuote.bind(this)
     this.getFileStatus = this.getFileStatus.bind(this)
@@ -49,14 +47,8 @@ class FileUseCases {
       const { ipfs, localdb, wallet } = this.adapters
       const cid = await ipfs.addFile({ filePath, filename: file.filename })
 
-      const existing = await localdb.files.get(cid)
-      if (existing && isPaidFileStatus(existing.status)) {
-        return this.alreadyHosted(existing)
-      }
-      if (existing && existing.status === FILE_STATUS.STAGED) {
-        const openInvoice = await this.getOpenInvoice(existing.paymentAddress)
-        if (openInvoice) return this.toQuote(openInvoice)
-      }
+      const existingResult = await this.existingQuote(await localdb.files.get(cid))
+      if (existingResult) return existingResult
 
       const usdPerBch = await wallet.getUsdPerBch()
       const price = calculatePrice({ sizeBytes: file.sizeBytes, usdPerBch, cfg: this.config })
@@ -97,6 +89,18 @@ class FileUseCases {
     } finally {
       await this.removeTempFile(filePath)
     }
+  }
+
+  // A previously uploaded file may already be hosted (paid) or still have an
+  // open quote. In both cases the upload returns that result instead of a new
+  // payment address.
+  async existingQuote (existing) {
+    if (!existing) return null
+    if (isPaidFileStatus(existing.status)) return this.alreadyHosted(existing)
+    if (existing.status !== FILE_STATUS.STAGED) return null
+
+    const openInvoice = await this.getOpenInvoice(existing.paymentAddress)
+    return openInvoice ? this.toQuote(openInvoice) : null
   }
 
   // An invoice for the same file that can still be paid, so re-uploading an

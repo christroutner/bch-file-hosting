@@ -10,6 +10,7 @@
   "scripts": {
     "start": "node bin/server.js",
     "test": "SVC_ENV=test c8 mocha --recursive 'test/unit/**/*.unit.js'",
+    "test:property": "SVC_ENV=test mocha --recursive 'test/property/**/*.property.js'",
     "test:integration": "node test/integration/host-file.js",
     "test:acceptance": "node acceptance/acceptance.js",
     "lint": "standard --env mocha --fix",

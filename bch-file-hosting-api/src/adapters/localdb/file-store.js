@@ -2,36 +2,18 @@
   LevelDB store for hosted file records, keyed by file:<cid>.
 */
 
+import RecordStore from './record-store.js'
+
 const FILE_PREFIX = 'file:'
 
-class FileStore {
+class FileStore extends RecordStore {
   constructor ({ db } = {}) {
-    if (!db) throw new Error('FileStore requires a db instance')
-    this.db = db
-  }
-
-  fileKey (cid) {
-    return `${FILE_PREFIX}${cid}`
+    super({ db, prefix: FILE_PREFIX, label: 'File', idField: 'cid' })
   }
 
   async put (file) {
-    await this.db.put(this.fileKey(file.cid), file)
+    await this.db.put(this.recordKey(file.cid), file)
     return file
-  }
-
-  async get (cid) {
-    const file = await this.db.get(this.fileKey(cid))
-    return file === undefined ? null : file
-  }
-
-  // Merge changes into an existing file record. Returns the updated record.
-  async update (cid, changes) {
-    const file = await this.get(cid)
-    if (!file) throw new Error(`File not found: ${cid}`)
-
-    const updated = { ...file, ...changes, cid }
-    await this.db.put(this.fileKey(cid), updated)
-    return updated
   }
 }
 

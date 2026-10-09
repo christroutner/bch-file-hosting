@@ -2,6 +2,8 @@
   REST controller for operator endpoints. All routes require x-api-key.
 */
 
+import { sendSuccess } from '../respond.js'
+
 class AdminController {
   constructor ({ useCases } = {}) {
     if (!useCases) throw new Error('AdminController requires the use-cases')
@@ -21,31 +23,28 @@ class AdminController {
   async listInvoices (req, res) {
     const { status, sweepStatus } = req.query
     const invoices = await this.useCases.admin.listInvoices({ status, sweepStatus })
-    res.json({ success: true, invoices })
+    sendSuccess(res, { invoices })
   }
 
   /**
    * @api {post} /admin/files/:cid/delete Remove a file from every pinning provider
    */
   async removeFile (req, res) {
-    const result = await this.useCases.admin.removeFile({ cid: req.params.cid })
-    res.json({ success: true, ...result })
+    sendSuccess(res, await this.useCases.admin.removeFile({ cid: req.params.cid }))
   }
 
   /**
    * @api {post} /admin/sweeps/retry Sweep paid invoices that have not been swept
    */
   async retrySweeps (req, res) {
-    const result = await this.useCases.payments.retrySweeps()
-    res.json({ success: true, ...result })
+    sendSuccess(res, await this.useCases.payments.retrySweeps())
   }
 
   /**
    * @api {post} /admin/cleanup/run Delete expired unpaid uploads now
    */
   async runCleanup (req, res) {
-    const result = await this.useCases.cleanup.deleteUnpaid()
-    res.json({ success: true, ...result })
+    sendSuccess(res, await this.useCases.cleanup.deleteUnpaid())
   }
 }
 

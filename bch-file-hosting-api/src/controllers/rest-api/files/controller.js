@@ -5,6 +5,7 @@
 import { Readable } from 'stream'
 import { pipeline } from 'stream/promises'
 
+import { sendSuccess } from '../respond.js'
 import { ValidationError } from '../../../use-cases/errors.js'
 
 async function * restOf (first, iterator) {
@@ -44,7 +45,7 @@ class FilesController {
       filename: req.file.originalname,
       sizeBytes: req.file.size
     })
-    res.json({ success: true, ...result })
+    sendSuccess(res, result)
   }
 
   /**
@@ -54,7 +55,7 @@ class FilesController {
   async checkPayment (req, res) {
     const paymentAddress = req.body?.paymentAddress
     const result = await this.useCases.payments.checkPayment({ paymentAddress })
-    res.json({ success: true, ...result })
+    sendSuccess(res, result)
   }
 
   /**
@@ -62,7 +63,7 @@ class FilesController {
    */
   async getFileStatus (req, res) {
     const result = await this.useCases.files.getFileStatus({ cid: req.params.cid })
-    res.json({ success: true, ...result })
+    sendSuccess(res, result)
   }
 
   /**

@@ -153,13 +153,21 @@ class FileUploadPage {
     }
   }
 
-  // Poll check-payment until it reports paid or expired. If it never confirms
-  // within the polling window, the page shows the pending message.
+  // Poll check-payment until it reports paid or expired. A rejected check (an
+  // HTTP or network error) shows the API error and stops polling. If the
+  // payment never confirms within the polling window, the page shows the
+  // pending message.
   async waitForConfirmation () {
     if (!this.quote) throw new Error('There is no open quote to confirm')
 
     for (let attempt = 0; attempt < this.maxConfirmations; attempt++) {
-      const result = await this.hostingApi.checkPayment({ paymentAddress: this.quote.paymentAddress })
+      let result
+      try {
+        result = await this.hostingApi.checkPayment({ paymentAddress: this.quote.paymentAddress })
+      } catch (err) {
+        this.state = errorState(err, this.quote.filename)
+        return this.state
+      }
 
       if (result.status === 'paid') {
         this.state = paidState(result, this.txid)

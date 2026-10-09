@@ -264,6 +264,30 @@ test('shows the pending message when the payment never confirms', async () => {
   assert.equal(sleeps.length, 2)
 })
 
+test('shows the API error and stops polling when check-payment rejects', async () => {
+  let checks = 0
+  const sleeps = []
+  const page = new FileUploadPage({
+    hostingApi: {
+      upload: async () => ({ alreadyHosted: false, priceSats: 2000, paymentAddress: 'bitcoincash:qinvoice' }),
+      checkPayment: async () => {
+        checks++
+        throw new Error('Hosting API unavailable')
+      }
+    },
+    wallet: { send: async () => 'txid-9' },
+    sleep: async (ms) => sleeps.push(ms)
+  })
+  await page.upload({ name: 'photo.jpg' })
+  await page.payFromWallet()
+
+  const state = await page.waitForConfirmation()
+
+  assert.deepEqual(state, { status: 'error', filename: 'photo.jpg', message: 'Hosting API unavailable' })
+  assert.equal(checks, 1)
+  assert.equal(sleeps.length, 0)
+})
+
 test('requires a wallet and an open quote to pay', async () => {
   const page = new FileUploadPage({ hostingApi: paymentPage({}).hostingApi })
 

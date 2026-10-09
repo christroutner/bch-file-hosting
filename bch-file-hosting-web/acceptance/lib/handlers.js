@@ -53,6 +53,7 @@ function createWorld () {
     walletSends: [],
     walletTxid: null,
     walletError: null,
+    checkError: null,
     checkResults: [],
     pendingPaid: null
   }
@@ -70,6 +71,7 @@ function makeHostingApi (world) {
       return world.response
     },
     checkPayment: async () => {
+      if (world.checkError) throw new Error(world.checkError)
       if (world.checkResults.length === 0) return { status: 'unpaid' }
       const index = Math.min(checkIndex, world.checkResults.length - 1)
       checkIndex++
@@ -191,6 +193,13 @@ const handlers = [
     pattern: /^the hosting API reports the payment as expired$/,
     run (m, example, world) {
       world.checkResults.push({ status: 'expired' })
+    }
+  },
+  {
+    name: 'the hosting API rejects the payment check',
+    pattern: /^the hosting API rejects the payment check with error (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.checkError = resolveParam(m[1], example)
     }
   },
   {

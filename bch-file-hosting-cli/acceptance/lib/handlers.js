@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url'
 import FileUpload from '../../src/commands/file-upload.js'
 import FileCheck from '../../src/commands/file-check.js'
 import FileStatus from '../../src/commands/file-status.js'
+import FilePay from '../../src/commands/file-pay.js'
 import WalletCreate from '../../src/commands/wallet-create.js'
 import WalletBalance from '../../src/commands/wallet-balance.js'
 import WalletStore from '../../src/lib/wallet-store.js'
@@ -65,6 +66,9 @@ function createWorld () {
     apiError: null,
     receivedAddress: null,
     receivedCid: null,
+    walletTxid: null,
+    sentAmount: null,
+    sentAddress: null,
     stdout: '',
     stderr: '',
     exitCode: null,
@@ -94,7 +98,12 @@ function createWorld () {
   world.walletStore = new WalletStore({ dir: walletDir })
   world.walletService = {
     create: async () => world.walletCreateResult,
-    balanceSats: async () => world.walletBalance
+    balanceSats: async () => world.walletBalance,
+    sendSats: async ({ toAddress, amountSats } = {}) => {
+      world.sentAddress = toAddress
+      world.sentAmount = amountSats
+      return world.walletTxid
+    }
   }
 
   return world
@@ -142,6 +151,12 @@ const handlers = [
     pattern: /^a file-status command$/,
     run (_match, _example, world) {
       buildCommand(world, FileStatus)
+    }
+  },
+  {
+    pattern: /^a file-pay command$/,
+    run (_match, _example, world) {
+      buildCommand(world, FilePay)
     }
   },
   {
@@ -501,6 +516,120 @@ const handlers = [
     }
   },
   {
+    pattern: /^the hosting API reports an already paid invoice$/,
+    run (_match, _example, world) {
+      world.apiResult = { success: true, status: 'paid' }
+    }
+  },
+  {
+    pattern: /^the hosting API reports an unpaid invoice$/,
+    run (_match, _example, world) {
+      world.apiResult = { success: true, status: 'unpaid', receivedSats: 0, requiredSats: 2000 }
+    }
+  },
+  {
+    pattern: /^the wallet will broadcast the transaction <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.walletTxid = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^I run file-pay for the address (.+) with the wallet (.+)$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({
+        address: expectedText(example, match[1]),
+        name: expectedText(example, match[2])
+      })
+    }
+  },
+  {
+    pattern: /^I run file-pay with the wallet (.+)$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({ name: expectedText(example, match[1]) })
+    }
+  },
+  {
+    pattern: /^I run file-pay for the address (.+) with no wallet$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({ address: expectedText(example, match[1]) })
+    }
+  },
+  {
+    pattern: /^I run file-pay with JSON output for the address (.+) with the wallet (.+)$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({
+        address: expectedText(example, match[1]),
+        name: expectedText(example, match[2]),
+        json: true
+      })
+    }
+  },
+  {
+    pattern: /^the wallet paid <([A-Za-z0-9_]+)> satoshis to <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const amount = asInt(exampleValue(example, match[1]), match[1])
+      const address = exampleValue(example, match[2])
+      if (world.sentAmount !== amount) {
+        throw new Error(`expected the wallet to pay ${amount} satoshis, paid ${world.sentAmount}`)
+      }
+      if (world.sentAddress !== address) {
+        throw new Error(`expected the wallet to pay ${address}, paid ${world.sentAddress}`)
+      }
+    }
+  },
+  {
+    pattern: /^the wallet made no payment$/,
+    run (_match, _example, world) {
+      if (world.sentAmount !== null) {
+        throw new Error(`expected no payment, but the wallet paid ${world.sentAmount} satoshis`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the amount <([A-Za-z0-9_]+)> satoshis$/,
+    run (match, example, world) {
+      const expected = asInt(exampleValue(example, match[1]), match[1])
+      if (!world.stdout.includes(`Amount: ${expected} satoshis`)) {
+        throw new Error(`stdout did not print the amount ${expected} satoshis: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the transaction <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (!world.stdout.includes(`Transaction: ${expected}`)) {
+        throw new Error(`stdout did not print the transaction ${expected}: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints already paid$/,
+    run (_match, _example, world) {
+      if (!/already paid/i.test(world.stdout)) {
+        throw new Error(`stdout did not print already paid: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the JSON output has the transaction <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.json.txid !== expected) {
+        throw new Error(`expected JSON transaction ${expected}, got ${world.json.txid}`)
+      }
+    }
+  },
+  {
+    pattern: /^the JSON output has the amount <([A-Za-z0-9_]+)> satoshis$/,
+    run (match, example, world) {
+      const expected = asInt(exampleValue(example, match[1]), match[1])
+      if (world.json.amountSats !== expected) {
+        throw new Error(`expected JSON amount ${expected} satoshis, got ${world.json.amountSats}`)
+      }
+    }
+  },
+  {
     pattern: /^the hosting API received the address <([A-Za-z0-9_]+)>$/,
     run (match, example, world) {
       const expected = exampleValue(example, match[1])
@@ -608,9 +737,9 @@ const handlers = [
     }
   },
   {
-    pattern: /^a wallet named <([A-Za-z0-9_]+)> already exists$/,
+    pattern: /^a wallet named (.+) already exists$/,
     run (match, example, world) {
-      const name = exampleValue(example, match[1])
+      const name = expectedText(example, match[1])
       world.walletStore.write(name, { mnemonic: 'existing wallet', cashAddress: 'bitcoincash:qexisting' })
     }
   },

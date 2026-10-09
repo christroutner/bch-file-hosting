@@ -17,6 +17,7 @@ class WalletService {
     this.walletOptions = this.walletOptions.bind(this)
     this.create = this.create.bind(this)
     this.balanceSats = this.balanceSats.bind(this)
+    this.sendSats = this.sendSats.bind(this)
   }
 
   walletOptions (extra = {}) {
@@ -48,6 +49,27 @@ class WalletService {
     }
 
     return balance
+  }
+
+  // Send BCH from a stored wallet to a payment address. Returns the txid.
+  async sendSats ({ wallet, toAddress, amountSats } = {}) {
+    if (!Number.isInteger(amountSats) || amountSats <= 0) {
+      throw new Error(`amountSats must be a positive integer, got: ${amountSats}`)
+    }
+
+    const bchWallet = new this.BchWallet(
+      wallet.mnemonic,
+      this.walletOptions({ hdPath: wallet.hdPath })
+    )
+    await bchWallet.walletInfoPromise
+    await bchWallet.initialize()
+
+    const txid = await bchWallet.send([{ address: toAddress, amountSat: amountSats }])
+    if (typeof txid !== 'string' || !txid) {
+      throw new Error(`Unexpected transaction id from wallet backend: ${txid}`)
+    }
+
+    return txid
   }
 }
 

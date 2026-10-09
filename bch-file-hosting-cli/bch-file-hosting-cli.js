@@ -11,6 +11,7 @@ import { Command } from 'commander'
 import FileUpload from './src/commands/file-upload.js'
 import FileCheck from './src/commands/file-check.js'
 import FileStatus from './src/commands/file-status.js'
+import FilePay from './src/commands/file-pay.js'
 import WalletCreate from './src/commands/wallet-create.js'
 import WalletBalance from './src/commands/wallet-balance.js'
 
@@ -18,6 +19,7 @@ import WalletBalance from './src/commands/wallet-balance.js'
 const fileUpload = new FileUpload()
 const fileCheck = new FileCheck()
 const fileStatus = new FileStatus()
+const filePay = new FilePay()
 const walletCreate = new WalletCreate()
 const walletBalance = new WalletBalance()
 
@@ -49,6 +51,15 @@ program.command('file-status')
   .option('--json', 'print the result as a single JSON object')
   .action(async (flags) => {
     process.exitCode = await fileStatus.run(flags)
+  })
+
+program.command('file-pay')
+  .description('Pay an invoice from a local wallet (-a <address>, -n <name>, --json)')
+  .option('-a, --address <address>', 'payment address of the invoice')
+  .option('-n, --name <name>', 'wallet name to pay from')
+  .option('--json', 'print the result as a single JSON object')
+  .action(async (flags) => {
+    process.exitCode = await filePay.run(flags)
   })
 
 program.command('wallet-create')

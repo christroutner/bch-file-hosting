@@ -25,16 +25,29 @@ class FakeBchWallet {
     }
     this.walletInfoPromise = Promise.resolve(this.walletInfo)
     this.balance = FakeBchWallet.balance
+    this.initialized = false
+    this.sentOutputs = null
+    FakeBchWallet.lastInstance = this
+  }
+
+  async initialize () {
+    this.initialized = true
   }
 
   async getBalance () {
     return this.balance
+  }
+
+  async send (outputs) {
+    this.sentOutputs = outputs
+    return FakeBchWallet.txid
   }
 }
 
 describe('#wallet-service', () => {
   beforeEach(() => {
     FakeBchWallet.balance = 42
+    FakeBchWallet.txid = 'fake-txid'
   })
 
   describe('#create', () => {
@@ -79,6 +92,57 @@ describe('#wallet-service', () => {
         assert.fail('Unexpected result')
       } catch (err) {
         assert.include(err.message, 'Unexpected balance')
+      }
+    })
+  })
+
+  describe('#sendSats', () => {
+    it('should broadcast a BCH payment and return the transaction id', async () => {
+      const uut = new WalletService({ config, BchWallet: FakeBchWallet })
+
+      const txid = await uut.sendSats({
+        wallet: { mnemonic: 'test mnemonic', cashAddress: 'bitcoincash:qpayer', hdPath: "m/44'/245'/0'" },
+        toAddress: 'bitcoincash:qinvoice',
+        amountSats: 2000
+      })
+
+      assert.equal(txid, 'fake-txid')
+      assert.equal(FakeBchWallet.lastInstance.initialized, true)
+      assert.deepEqual(FakeBchWallet.lastInstance.sentOutputs, [
+        { address: 'bitcoincash:qinvoice', amountSat: 2000 }
+      ])
+    })
+
+    it('should throw when the backend returns no transaction id', async () => {
+      FakeBchWallet.txid = ''
+      const uut = new WalletService({ config, BchWallet: FakeBchWallet })
+
+      try {
+        await uut.sendSats({
+          wallet: { mnemonic: 'test mnemonic', cashAddress: 'bitcoincash:qpayer' },
+          toAddress: 'bitcoincash:qinvoice',
+          amountSats: 2000
+        })
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.include(err.message, 'Unexpected transaction')
+      }
+    })
+
+    it('should reject a non-positive or non-integer amount', async () => {
+      const uut = new WalletService({ config, BchWallet: FakeBchWallet })
+
+      for (const amountSats of [0, -1, 1.5, '2000']) {
+        try {
+          await uut.sendSats({
+            wallet: { mnemonic: 'test mnemonic', cashAddress: 'bitcoincash:qpayer' },
+            toAddress: 'bitcoincash:qinvoice',
+            amountSats
+          })
+          assert.fail(`Unexpected result for ${amountSats}`)
+        } catch (err) {
+          assert.include(err.message, 'amountSats')
+        }
       }
     })
   })

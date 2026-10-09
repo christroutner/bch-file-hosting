@@ -1,0 +1,76 @@
+{
+  "name": "bch-file-hosting-web",
+  "version": "0.1.0",
+  "dependencies": {
+    "@chris.troutner/react-jdenticon": "1.0.1",
+    "@fortawesome/fontawesome-svg-core": "6.7.2",
+    "@fortawesome/free-regular-svg-icons": "6.7.2",
+    "@fortawesome/free-solid-svg-icons": "6.7.2",
+    "@fortawesome/react-fontawesome": "0.2.2",
+    "axios": "0.27.2",
+    "bch-message-lib": "2.2.1",
+    "bch-token-sweep": "2.2.1",
+    "bootstrap": "5.2.0",
+    "qrcode.react": "4.2.0",
+    "query-string": "7.1.1",
+    "react": "19.0.0",
+    "react-bootstrap": "2.10.7",
+    "react-dom": "19.0.0",
+    "react-markdown": "10.1.0",
+    "react-router-dom": "7.1.3",
+    "react-scripts": "5.0.1",
+    "use-local-storage-state": "19.5.0",
+    "use-query-params": "1.2.3"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "node --test \"test/unit/*.test.js\"",
+    "test:acceptance": "node acceptance/acceptance.js",
+    "eject": "react-scripts eject",
+    "lint": "standard --env mocha --fix",
+    "crap": "crap4javascript",
+    "dry": "dry4javascript src",
+    "mutate": "mutate4javascript",
+    "pub": "node deploy/publish-main.js",
+    "pub:ghp": "./deploy/publish-gh-pages.sh"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "crap4javascript": "github:FullStack-Agents/crap4javascript",
+    "dry4javascript": "github:FullStack-Agents/dry4javascript",
+    "husky": "9.1.7",
+    "minimal-slp-wallet": "5.13.1",
+    "mutate4javascript": "github:FullStack-Agents/mutate4javascript",
+    "semantic-release": "24.2.3",
+    "standard": "17.1.2",
+    "web3.storage": "4.3.0"
+  },
+  "release": {
+    "publish": [
+      {
+        "path": "@semantic-release/npm",
+        "npmPublish": false
+      }
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint"
+    }
+  }
+}

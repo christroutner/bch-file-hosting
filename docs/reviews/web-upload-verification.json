@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "task": "web-upload",
+  "component": "bch-file-hosting-web",
+  "git_sha": "98033a8f99f3fe8e27ce6eb66906dd9500f2ecab",
+  "branch": "swarmforge-coder",
+  "timestamp": "2026-10-09T14:40:17.467Z",
+  "commands": [
+    {
+      "name": "unit",
+      "command": "npm test",
+      "exit": 0,
+      "duration_ms": 147,
+      "summary": "14 pass / 0 fail"
+    },
+    {
+      "name": "property",
+      "command": "npm run test:property",
+      "skipped": true,
+      "summary": "skipped: no \"test:property\" npm script"
+    },
+    {
+      "name": "acceptance",
+      "command": "npm run test:acceptance",
+      "exit": 0,
+      "duration_ms": 181,
+      "summary": "all 1 acceptance suites passed"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "exit": 0,
+      "duration_ms": 433,
+      "summary": "ok"
+    }
+  ],
+  "result": "pass"
+}

@@ -48,6 +48,15 @@ const COMPONENTS = {
       ['acceptance', 'test:acceptance'],
       ['lint', 'lint']
     ]
+  },
+  web: {
+    dir: 'bch-file-hosting-web',
+    commands: [
+      ['unit', 'test'],
+      ['property', 'test:property'],
+      ['acceptance', 'test:acceptance'],
+      ['lint', 'lint']
+    ]
   }
 }
 

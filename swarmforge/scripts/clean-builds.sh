@@ -8,7 +8,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-for component in bch-file-hosting-api bch-file-hosting-cli; do
+for component in bch-file-hosting-api bch-file-hosting-cli bch-file-hosting-web; do
   rm -rf "$ROOT/$component/tmp/acceptance" \
          "$ROOT/$component/target/mutation-workers"
 done

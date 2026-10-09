@@ -39,7 +39,15 @@ as of `5ed6759239`.
 
 ## In progress
 
-- None.
+- **`web-upload-transport` — send web uploads through the browser fetch
+  transport (2026-10-09):** reported bug — uploading a file on the `/host` page
+  shows `'fetch' called on an object that does not implement interface
+  Window.` `HostingApi` stores the bare global `fetch` and calls it as
+  `this.fetch(...)`, so the receiver is the adapter instance rather than
+  `window`; browsers reject the call before any request is sent. New spec
+  `bch-file-hosting-web/specs/web-upload-transport.feature` exercises the real
+  adapter over a browser-like global fetch (the existing acceptance handlers
+  fake the adapter, which masked the bug). Awaiting coder.
 
 ## Up next (in order)
 

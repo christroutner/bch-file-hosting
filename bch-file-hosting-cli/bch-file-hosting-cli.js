@@ -10,10 +10,14 @@ import { Command } from 'commander'
 // Local libraries
 import FileUpload from './src/commands/file-upload.js'
 import FileCheck from './src/commands/file-check.js'
+import WalletCreate from './src/commands/wallet-create.js'
+import WalletBalance from './src/commands/wallet-balance.js'
 
 // Instantiate subcommands
 const fileUpload = new FileUpload()
 const fileCheck = new FileCheck()
+const walletCreate = new WalletCreate()
+const walletBalance = new WalletBalance()
 
 const program = new Command()
 
@@ -35,6 +39,20 @@ program.command('file-check')
   .option('--json', 'print the result as a single JSON object')
   .action(async (flags) => {
     process.exitCode = await fileCheck.run(flags)
+  })
+
+program.command('wallet-create')
+  .description('Create a local wallet and print its address (-n <name>)')
+  .option('-n, --name <name>', 'wallet name')
+  .action(async (flags) => {
+    process.exitCode = await walletCreate.run(flags)
+  })
+
+program.command('wallet-balance')
+  .description('Print the satoshi balance of a local wallet (-n <name>)')
+  .option('-n, --name <name>', 'wallet name')
+  .action(async (flags) => {
+    process.exitCode = await walletBalance.run(flags)
   })
 
 program.parseAsync(process.argv)

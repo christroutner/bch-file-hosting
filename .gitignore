@@ -9,5 +9,6 @@ build/
 .leveldb/
 logs/
 wallet.json
+.wallets/
 .swarmforge/
 .worktrees/

@@ -16,6 +16,9 @@ import { fileURLToPath } from 'node:url'
 // Local libraries
 import FileUpload from '../../src/commands/file-upload.js'
 import FileCheck from '../../src/commands/file-check.js'
+import WalletCreate from '../../src/commands/wallet-create.js'
+import WalletBalance from '../../src/commands/wallet-balance.js'
+import WalletStore from '../../src/lib/wallet-store.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 // Resolve component-local temp files from this module, not the process cwd, so
@@ -50,6 +53,9 @@ function expectedText (example, token) {
 function createWorld () {
   const tmpDir = path.join(COMPONENT_ROOT, 'tmp', 'acceptance')
   fs.mkdirSync(tmpDir, { recursive: true })
+  // A fresh wallet directory per scenario keeps stored wallets from leaking
+  // between scenarios.
+  const walletDir = fs.mkdtempSync(path.join(tmpDir, 'wallets-'))
 
   const world = {
     tmpDir,
@@ -61,7 +67,9 @@ function createWorld () {
     stderr: '',
     exitCode: null,
     json: null,
-    command: null
+    command: null,
+    walletCreateResult: null,
+    walletBalance: 0
   }
 
   world.hostingApi = {
@@ -76,15 +84,23 @@ function createWorld () {
     }
   }
 
+  world.walletStore = new WalletStore({ dir: walletDir })
+  world.walletService = {
+    create: async () => world.walletCreateResult,
+    balanceSats: async () => world.walletBalance
+  }
+
   return world
 }
 
-// Instantiate the command under test with the world's fake API and captured
-// output, so every scenario drives production command code.
+// Instantiate the command under test with the world's fake dependencies and
+// captured output, so every scenario drives production command code.
 function buildCommand (world, CommandClass) {
   world.command = new CommandClass({
     config: world.config,
     hostingApi: world.hostingApi,
+    walletStore: world.walletStore,
+    walletService: world.walletService,
     output: (msg) => { world.stdout += `${msg}\n` },
     errorOutput: (msg) => { world.stderr += `${msg}\n` }
   })
@@ -113,6 +129,18 @@ const handlers = [
     pattern: /^a file-check command$/,
     run (_match, _example, world) {
       buildCommand(world, FileCheck)
+    }
+  },
+  {
+    pattern: /^a wallet-create command$/,
+    run (_match, _example, world) {
+      buildCommand(world, WalletCreate)
+    }
+  },
+  {
+    pattern: /^a wallet-balance command$/,
+    run (_match, _example, world) {
+      buildCommand(world, WalletBalance)
     }
   },
   {
@@ -423,6 +451,113 @@ const handlers = [
       const expected = exampleValue(example, match[1])
       if (world.json.downloadUrl !== expected) {
         throw new Error(`expected JSON download URL ${expected}, got ${world.json.downloadUrl}`)
+      }
+    }
+  },
+  {
+    pattern: /^the new wallet has the address <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.walletCreateResult = {
+        ...(world.walletCreateResult || {}),
+        cashAddress: exampleValue(example, match[1])
+      }
+    }
+  },
+  {
+    pattern: /^the new wallet has the mnemonic <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.walletCreateResult = {
+        ...(world.walletCreateResult || {}),
+        mnemonic: exampleValue(example, match[1])
+      }
+    }
+  },
+  {
+    pattern: /^a wallet named <([A-Za-z0-9_]+)> already exists$/,
+    run (match, example, world) {
+      const name = exampleValue(example, match[1])
+      world.walletStore.write(name, { mnemonic: 'existing wallet', cashAddress: 'bitcoincash:qexisting' })
+    }
+  },
+  {
+    pattern: /^a wallet named <([A-Za-z0-9_]+)> holds <([A-Za-z0-9_]+)> satoshis$/,
+    run (match, example, world) {
+      const name = exampleValue(example, match[1])
+      world.walletStore.write(name, { mnemonic: 'stored wallet mnemonic', cashAddress: 'bitcoincash:qstored' })
+      world.walletBalance = asInt(exampleValue(example, match[2]), match[2])
+    }
+  },
+  {
+    pattern: /^no wallet named <([A-Za-z0-9_]+)> exists$/,
+    run () {}
+  },
+  {
+    pattern: /^a wallet named <([A-Za-z0-9_]+)> has the mnemonic <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const name = exampleValue(example, match[1])
+      world.walletStore.write(name, {
+        mnemonic: exampleValue(example, match[2]),
+        cashAddress: 'bitcoincash:qstored'
+      })
+    }
+  },
+  {
+    pattern: /^I run wallet-create for the name <([A-Za-z0-9_]+)>$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({ name: exampleValue(example, match[1]) })
+    }
+  },
+  {
+    pattern: /^I run wallet-create with no name$/,
+    async run (_match, _example, world) {
+      world.exitCode = await world.command.run({})
+    }
+  },
+  {
+    pattern: /^I run wallet-balance for the name <([A-Za-z0-9_]+)>$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({ name: exampleValue(example, match[1]) })
+    }
+  },
+  {
+    pattern: /^I run wallet-balance with no name$/,
+    async run (_match, _example, world) {
+      world.exitCode = await world.command.run({})
+    }
+  },
+  {
+    pattern: /^the wallet store contains a wallet named <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const name = exampleValue(example, match[1])
+      if (!world.walletStore.has(name)) {
+        throw new Error(`expected the wallet store to contain ${name}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the address <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (!world.stdout.includes(expected)) {
+        throw new Error(`stdout did not print the address ${expected}: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the balance <([A-Za-z0-9_]+)> satoshis$/,
+    run (match, example, world) {
+      const expected = asInt(exampleValue(example, match[1]), match[1])
+      if (!world.stdout.includes(`Balance: ${expected} satoshis`)) {
+        throw new Error(`stdout did not print the balance ${expected} satoshis: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command does not print the mnemonic <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const mnemonic = exampleValue(example, match[1])
+      if (world.stdout.includes(mnemonic)) {
+        throw new Error(`stdout unexpectedly printed the mnemonic: ${JSON.stringify(world.stdout)}`)
       }
     }
   }

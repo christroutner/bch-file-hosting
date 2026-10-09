@@ -54,17 +54,20 @@ the background, plus a web dashboard to watch progress (`web-dashboard`). The
 
 ## In progress
 
-- None.
+- **`web-dashboard` (API + web UI):** a public, server-wide **file feed**. The
+  API gets `GET /files` returning only paid files (`pinning`, `pinned`,
+  `pinFailed`), newest paid first, paginated by an opaque cursor, with the
+  public fields `cid, filename, sizeBytes, status, paymentAddress, createdAt,
+  paidAt, hostedUntil, pins[{provider,status}]`. The web gets a dashboard view
+  that loads the feed, shows each file and its pins in feed order, and provides
+  Refresh and Load-more actions (no localStorage, no auto-polling). Specs:
+  `bch-file-hosting-api/specs/file-feed.feature`,
+  `bch-file-hosting-web/specs/web-dashboard.feature`. Depends on
+  `lighthouse-upload-verify` for the `pinning` status and per-provider
+  sub-status.
 
 ## Up next (in order)
 
-- **`web-dashboard` (web UI):** a dashboard view that lists the visitor's
-  uploads with live pin/verification progress, so a user can upload a file, then
-  watch the background process settle. Depends on `lighthouse-upload-verify` for
-  the `pinning` status and per-provider sub-status. No accounts exist yet, so the
-  web records uploaded CIDs client-side (`localStorage`) and polls
-  `GET /files/:cid` for each — a server-side list keyed by wallet is the
-  alternative if cross-device is wanted.
 - **`pin-recovery`:** a crash mid-pin can strand a file in `pinning` —
   `needsPinRetry` recovers `pinFailed` or a file with a failed pin, but not a
   `pinning` record left by a killed process (all recorded pins `pinned`, status

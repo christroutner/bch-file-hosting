@@ -34,6 +34,12 @@ describe('#public-network', () => {
       assert.isFalse(config.dhtClientMode)
     })
 
+    it('should trust the UPnP-mapped address without an autonat service', () => {
+      const config = buildPublicNetworkServices()
+
+      assert.isTrue(config.natAutoConfirmAddress)
+    })
+
     it('should build a factory for every exposed service', () => {
       const { services } = buildPublicNetworkServices()
 

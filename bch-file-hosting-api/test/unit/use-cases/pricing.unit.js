@@ -107,6 +107,13 @@ describe('#pricing.js', () => {
       )
     })
 
+    it('should accept a positive usdPerBch below 1', () => {
+      const result = calculatePrice({ sizeBytes: 1000000, usdPerBch: 0.5, cfg })
+
+      assert.isTrue(Number.isInteger(result.priceSats))
+      assert.isAtLeast(result.priceSats, cfg.minInvoiceSats)
+    })
+
     it('should throw if usdPerBch is zero', () => {
       assert.throws(
         () => calculatePrice({ sizeBytes: 1000, usdPerBch: 0, cfg }),

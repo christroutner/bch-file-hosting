@@ -104,6 +104,15 @@ describe('#rest-api', () => {
       assert.equal(res.status, 503)
       assert.deepEqual(res.body, { success: false, version: '0.1.0', ipfs: 'down', db: 'down' })
     })
+
+    it('should return 503 when only the database is down', async () => {
+      adapters.localdb.isOpen.returns(false)
+
+      const res = await request(app).get('/health')
+
+      assert.equal(res.status, 503)
+      assert.deepEqual(res.body, { success: false, version: '0.1.0', ipfs: 'up', db: 'down' })
+    })
   })
 
   describe('POST /files', () => {
@@ -194,6 +203,7 @@ describe('#rest-api', () => {
         .send('{"paymentAddress":')
 
       assert.equal(res.status, 400)
+      assert.equal(res.body.success, false)
       assert.equal(res.body.error, 'Request body is not valid JSON')
     })
 
@@ -295,6 +305,7 @@ describe('#rest-api', () => {
       const res = await request(app).get('/admin/invoices')
 
       assert.equal(res.status, 401)
+      assert.isFalse(res.body.success)
       assert.isTrue(useCases.admin.listInvoices.notCalled)
     })
 
@@ -302,6 +313,7 @@ describe('#rest-api', () => {
       const res = await request(app).get('/admin/invoices').set('x-api-key', 'wrong')
 
       assert.equal(res.status, 401)
+      assert.isFalse(res.body.success)
     })
 
     it('should return 503 when no admin key is configured', async () => {
@@ -310,6 +322,7 @@ describe('#rest-api', () => {
       const res = await request(noAdmin).get('/admin/invoices').set('x-api-key', 'anything')
 
       assert.equal(res.status, 503)
+      assert.isFalse(res.body.success)
     })
 
     it('should list invoices with filters', async () => {
@@ -352,6 +365,7 @@ describe('#rest-api', () => {
 
       assert.equal(res.status, 429)
       assert.equal(res.body.success, false)
+      assert.isUndefined(res.headers['x-ratelimit-limit'])
     })
 
     it('should not rate limit /health', async () => {

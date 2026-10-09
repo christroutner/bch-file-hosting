@@ -66,6 +66,15 @@ describe('#payment-use-cases.js', () => {
       }
     })
 
+    it('should reject an empty payment address with a 422 error', async () => {
+      try {
+        await uut.checkPayment({ paymentAddress: '' })
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.equal(err.status, 422)
+      }
+    })
+
     it('should throw a 404 error for an unknown address', async () => {
       try {
         await uut.checkPayment({ paymentAddress: 'bitcoincash:qunknown' })

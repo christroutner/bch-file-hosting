@@ -61,3 +61,7 @@ class RestApi {
 }
 
 export default RestApi
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T02:27:09.044Z","module_hash":"8f5bb3d759dba821560c76ee36f19d16bacd93cc5f396df92fe5261a79640e5c","functions":[{"id":"func/RestApi.constructor","name":"RestApi.constructor","line":15,"end_line":25,"hash":"4b4e89f2609afde75921338f8b7ab2c7714363983d08135025d621d67a16a9bc"},{"id":"func/RestApi.buildApp","name":"RestApi.buildApp","line":27,"end_line":44,"hash":"37c68e7054bb3c4bb2122ba8f7de25a4c49e4235f019844ba525a1f576ab0a8c"},{"id":"func/RestApi.health","name":"RestApi.health","line":49,"end_line":60,"hash":"81116810e8c1bfa22bf09b4985e19029c8e8f4ff93656e9f4f08b0a97640135e"}]}
+// mutate4javascript-manifest-end

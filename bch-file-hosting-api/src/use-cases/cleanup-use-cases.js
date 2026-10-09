@@ -93,3 +93,7 @@ class CleanupUseCases extends UseCase {
 }
 
 export default CleanupUseCases
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T02:19:52.632Z","module_hash":"e23e9999cfbf0f4c15cd8df3cecb8bf0f7243e22c06b5fae322b70351452ed48","functions":[{"id":"func/CleanupUseCases.constructor","name":"CleanupUseCases.constructor","line":12,"end_line":20,"hash":"9a62b3a7e3da80cd83d5df646f65192e445a2339f5a7935cfa1aa1f8f4fe5ee9"},{"id":"func/CleanupUseCases.deleteUnpaid","name":"CleanupUseCases.deleteUnpaid","line":25,"end_line":38,"hash":"36aeaa71f4e655e7753f8aec81c0050e391486e228ec73190c0efcb1708f60af"},{"id":"func/CleanupUseCases.cleanupOne","name":"CleanupUseCases.cleanupOne","line":43,"end_line":73,"hash":"2b207a501e376a63db73e59a32f2e29f7ae88026dc008e8f8e4a9805e4535471"},{"id":"func/CleanupUseCases.deleteInvoice","name":"CleanupUseCases.deleteInvoice","line":77,"end_line":92,"hash":"da9f68b9e4f6f88acb6537aef987444fe1d7a47e732ecdb4bec6596b91e70c98"}]}
+// mutate4javascript-manifest-end

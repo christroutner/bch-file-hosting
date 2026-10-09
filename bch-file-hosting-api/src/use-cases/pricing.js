@@ -33,3 +33,7 @@ export function calculatePrice ({ sizeBytes, usdPerBch, cfg }) {
 }
 
 export default { calculatePrice }
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T02:25:37.230Z","module_hash":"9f0bce7a38b9243f098d9638a5e6cf0031a9dccbb97cae8906505b9f1f84935c","functions":[{"id":"func/calculatePrice","name":"calculatePrice","line":9,"end_line":33,"hash":"550f432a2935d161db1d4dda46d2895e1305cc6cb5d262be356f593844131513"}]}
+// mutate4javascript-manifest-end

@@ -72,6 +72,10 @@ describe('#ipfs/index.js', () => {
     it('should throw if no config is passed in', () => {
       assert.throws(() => new IpfsAdapter(), /requires a config object/)
     })
+
+    it('should report not ready before start', () => {
+      assert.isFalse(uut.isReady)
+    })
   })
 
   describe('#start', () => {
@@ -107,6 +111,13 @@ describe('#ipfs/index.js', () => {
       const opts = coordInstances[0].opts
       assert.isTrue(opts.isCircuitRelay)
       assert.deepEqual(opts.circuitRelayInfo, { ip4: '1.2.3.4', tcpPort: 4001 })
+    })
+
+    it('should create the IPFS directory recursively and report success', async () => {
+      const result = await uut.start()
+
+      assert.isTrue(result)
+      assert.isTrue(uut.fsp.mkdir.calledWith('./tmp/test/.ipfsdata', { recursive: true }))
     })
 
     it('should route coord status messages to the debug logger', async () => {
@@ -372,6 +383,13 @@ describe('#ipfs/index.js', () => {
         uut.heliaNode.multiaddrs = undefined
 
         assert.deepEqual(uut.getStatus().multiaddrs, [])
+      })
+
+      it('should report not ready when the node exists but is not ready', () => {
+        uut.heliaNode = { id: 'peer-id', multiaddrs: [] }
+        uut.isReady = false
+
+        assert.deepEqual(uut.getStatus(), { isReady: false })
       })
     })
   })

@@ -44,8 +44,9 @@ describe('#adapters/index.js', () => {
 
   describe('#start', () => {
     it('should start adapters in order and then build the pinning registry', async () => {
-      await uut.start()
+      const result = await uut.start()
 
+      assert.isTrue(result)
       assert.deepEqual(calls, ['db', 'wallet', 'ipfs'])
       assert.deepEqual(uut.pinning.getProviders().map(p => p.name), ['local-helia'])
     })
@@ -66,8 +67,9 @@ describe('#adapters/index.js', () => {
 
   describe('#stop', () => {
     it('should stop IPFS and then close the database', async () => {
-      await uut.stop()
+      const result = await uut.stop()
 
+      assert.isTrue(result)
       assert.deepEqual(calls, ['ipfs-stop', 'db-close'])
     })
   })

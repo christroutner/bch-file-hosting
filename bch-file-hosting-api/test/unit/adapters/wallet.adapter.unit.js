@@ -198,6 +198,14 @@ describe('#wallet.adapter.js', () => {
       assert.isTrue(uut.bchWallet.getKeyPair.calledWith(7))
     })
 
+    it('should derive the key pair for invoice index 1, the first invoice index', async () => {
+      await uut.init()
+
+      const result = await uut.getKeyPair(1)
+
+      assert.deepEqual(result, { cashAddress: 'bitcoincash:addr1', wif: 'wif1', hdIndex: 1 })
+    })
+
     it('should refuse index 0, the server wallet', async () => {
       await uut.init()
       try {
@@ -227,6 +235,13 @@ describe('#wallet.adapter.js', () => {
 
       assert.equal(result, 2500)
       assert.isTrue(uut.bchWallet.getBalance.calledWith({ bchAddress: 'bitcoincash:addr1' }))
+    })
+
+    it('should treat a zero balance as a valid balance', async () => {
+      await uut.init()
+      uut.bchWallet.getBalance.resolves(0)
+
+      assert.equal(await uut.getBalanceSats('bitcoincash:addr1'), 0)
     })
 
     it('should throw if the backend returns a BCH amount instead of sats', async () => {
@@ -285,6 +300,17 @@ describe('#wallet.adapter.js', () => {
 
       // (10 + 148 + 34) * 1.2 = 230.4 -> 231 sats
       assert.deepEqual(builders[0].outputs, [{ address: TREASURY, sats: 2000 - 231 }])
+    })
+
+    it('should sweep when the remainder is exactly the dust limit', async () => {
+      // One input: (10 + 148 + 34) * 1.2 = 230.4 -> 231 sats fee. 231 + 546 = 777.
+      invoiceUtxos.splice(0, invoiceUtxos.length, { tx_hash: 'txa', tx_pos: 0, value: 777 })
+      await uut.init()
+
+      const txid = await uut.sweep(4)
+
+      assert.equal(txid, 'sweep-txid')
+      assert.deepEqual(builders[0].outputs, [{ address: TREASURY, sats: 546 }])
     })
 
     it('should refuse to sweep when nothing would be left above the dust limit', async () => {
@@ -352,6 +378,13 @@ describe('#wallet.adapter.js', () => {
       await uut.init()
 
       assert.equal(await uut.getUsdPerBch(), 400.5)
+    })
+
+    it('should return a positive BCH price below 1 USD', async () => {
+      await uut.init()
+      uut.bchWallet.getUsd.resolves(0.5)
+
+      assert.equal(await uut.getUsdPerBch(), 0.5)
     })
 
     it('should throw on an invalid price', async () => {

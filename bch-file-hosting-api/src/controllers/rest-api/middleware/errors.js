@@ -47,3 +47,7 @@ export function createErrorHandler ({ logger, config }) {
     return res.status(500).json({ success: false, error: 'Internal server error' })
   }
 }
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T02:27:30.378Z","module_hash":"d3fabcb919968a080b65ae5d32de412c1fadf255f025e68eb5273021b8dc3bd3","functions":[{"id":"func/notFoundHandler","name":"notFoundHandler","line":23,"end_line":25,"hash":"216f61b09496dba65edd7d9c8f51a696fe1499344615cc29b5d3c40fb2fc799c"},{"id":"func/createErrorHandler","name":"createErrorHandler","line":27,"end_line":49,"hash":"0158308fcdbe840c2cb4bd3f3db4a2e0e4b0c1d4bd48f1f673713fa7759bb0cf"}]}
+// mutate4javascript-manifest-end

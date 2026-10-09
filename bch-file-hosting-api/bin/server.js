@@ -109,3 +109,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   })
 }
 /* c8 ignore stop */
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T02:28:12.900Z","module_hash":"63b76b87452dc8cdc86d002a13581950d76b99d912b20e7d1ab7ac1091b8dc65","functions":[{"id":"func/Server.constructor","name":"Server.constructor","line":15,"end_line":31,"hash":"67ac4b25032d861b20247686d5494451aef829d878f8d599cd299706bef3467e"},{"id":"func/Server.start","name":"Server.start","line":33,"end_line":56,"hash":"3276765550e2676f5cbca9abbe99d024fd667b5cb1b6c7d94c96cdcce28689e9"},{"id":"func/Server.listen","name":"Server.listen","line":58,"end_line":64,"hash":"b1987cc523f7c735c8f3a43f4ab1f4e4b965e39453fbdb23d51e4a690b394b64"},{"id":"func/Server.closeHttpServer","name":"Server.closeHttpServer","line":66,"end_line":72,"hash":"3449aa41788965ac5f18159519bd1fe54f5dadfb26654f6c00b99255b68a14a1"},{"id":"func/Server.stop","name":"Server.stop","line":75,"end_line":81,"hash":"84f90ad7d5d67f3ff5785542f281a805e56d30efbb3343cbaaf710f53c28cf7c"},{"id":"func/Server.shutdown","name":"Server.shutdown","line":83,"end_line":98,"hash":"08e7d8ffee057251f3088e69195e0d61957334ed2827d41f100b1a7368f05644"}]}
+// mutate4javascript-manifest-end

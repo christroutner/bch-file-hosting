@@ -14,11 +14,10 @@ import { CID } from 'multiformats/cid'
 import { createUnsafe } from 'multiformats/block'
 
 // Helia's pins.add() and pins.rm() are lazy: the DAG is only walked while the
-// returned iterator is consumed.
+// returned iterator is consumed. The value produced while draining is unused.
 async function drain (iterable) {
-  let count = 0
-  for await (const _ of iterable) count++ // eslint-disable-line no-unused-vars
-  return count
+  // eslint-disable-next-line no-unused-vars
+  for await (const _ of iterable) { /* consume */ }
 }
 
 class IpfsAdapter {
@@ -250,3 +249,7 @@ class IpfsAdapter {
 }
 
 export default IpfsAdapter
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T02:26:20.214Z","module_hash":"2f91824ae193d1462d0bc7b2a9ed72bc58986045ddce0bee4cfab8d17350a16e","functions":[{"id":"func/drain","name":"drain","line":18,"end_line":21,"hash":"e99a6d70920fb894014b3b95a0a6bf552577b24669989f834c9df237d3815632"},{"id":"func/IpfsAdapter.constructor","name":"IpfsAdapter.constructor","line":24,"end_line":42,"hash":"09c824178a35dec248c3f249031d52079fe2933af4280759516db4005f3a8d26"},{"id":"func/IpfsAdapter.start","name":"IpfsAdapter.start","line":44,"end_line":60,"hash":"b21864b8a3226bd6c44257662eebac6da6ac911a3a6c6820521346263ff58c56"},{"id":"func/IpfsAdapter.startCoord","name":"IpfsAdapter.startCoord","line":62,"end_line":101,"hash":"2857d276beb1bfd639501a2425bb610e108aeda508f8af423b7f60ff3534f339"},{"id":"func/IpfsAdapter.getDetectedIp4","name":"IpfsAdapter.getDetectedIp4","line":104,"end_line":108,"hash":"93ffe88d03cac7d8420c3151364217b4dd32445ffb672fd9664c3e07562dcd36"},{"id":"func/IpfsAdapter.getSeed","name":"IpfsAdapter.getSeed","line":111,"end_line":120,"hash":"fd68032bbd5972e07f2241a3e5b829aa06eac05f69cc41ddfe479483067ea5c7"},{"id":"func/IpfsAdapter.assertReady","name":"IpfsAdapter.assertReady","line":122,"end_line":124,"hash":"8a4e7a3a2d27e65fc355af98754e34dbf1b50a3fe29ffee31d1dabd6545c2f53"},{"id":"func/IpfsAdapter.parseCid","name":"IpfsAdapter.parseCid","line":126,"end_line":132,"hash":"c492b3fd203210403292c860e93b38e264b3aea6bcd86e921498c4d3e3e1c15d"},{"id":"func/IpfsAdapter.addFile","name":"IpfsAdapter.addFile","line":136,"end_line":154,"hash":"dcadb1f6c932c61721cd9cec87ede6d81da7a70b440d095874d77b79644289ed"},{"id":"func/IpfsAdapter.cat","name":"IpfsAdapter.cat","line":157,"end_line":160,"hash":"98b607436b3a574f5db68de6fc22e14fe952dfde7c9763bcccc6540c326e0ba7"},{"id":"func/IpfsAdapter.stat","name":"IpfsAdapter.stat","line":162,"end_line":165,"hash":"cf46046d3b2665ce9cb78b475088e3b9b356689a51187c3f52df8b5d3ea42cbf"},{"id":"func/IpfsAdapter.pin","name":"IpfsAdapter.pin","line":167,"end_line":175,"hash":"cd90562294f9a2f1a2a492c0ee133432b0d4efc1f1b62076313bab86fe312e75"},{"id":"func/IpfsAdapter.unpin","name":"IpfsAdapter.unpin","line":177,"end_line":185,"hash":"b4932ff615bb2ee629bee1d27fe0b13f6281fbbf1f88ed26346202883881b261"},{"id":"func/IpfsAdapter.isPinned","name":"IpfsAdapter.isPinned","line":187,"end_line":190,"hash":"61b76e1f1e577206c203a91120c2761cf5ad130d49704ea4cecb29181404d356"},{"id":"func/IpfsAdapter.remove","name":"IpfsAdapter.remove","line":194,"end_line":206,"hash":"99065050d09bdaf888995cbedda0164d6ce82fd68bb0d2866daf19bf846fe7ae"},{"id":"func/IpfsAdapter.listLocalBlocks","name":"IpfsAdapter.listLocalBlocks","line":210,"end_line":231,"hash":"90021d388fed47748e524f26fc15d99cb7a8e3cfd4f1e72603e2333bf8f88068"},{"id":"func/IpfsAdapter.getStatus","name":"IpfsAdapter.getStatus","line":233,"end_line":241,"hash":"6301bbb0f5a01cbc1895b5b1d0c06ba8c287f840b21507dd42ab7c7c95204549"},{"id":"func/IpfsAdapter.stop","name":"IpfsAdapter.stop","line":243,"end_line":248,"hash":"4ecdc1adeb89ecb8b53b2a98f2964d8c4cdb7c1b776be8b1107426840e0cb010"}]}
+// mutate4javascript-manifest-end

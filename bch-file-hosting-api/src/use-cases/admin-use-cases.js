@@ -61,3 +61,7 @@ class AdminUseCases extends UseCase {
 }
 
 export default AdminUseCases
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T02:20:18.742Z","module_hash":"17317592b8d3a34aa2a6a0470a2ea01a26c314f94b25cb4751bcb995deae4e05","functions":[{"id":"func/AdminUseCases.constructor","name":"AdminUseCases.constructor","line":12,"end_line":17,"hash":"1ee153003e7e41c9e17742c5f9a6941da79704b884ceb585399c09511b733fe9"},{"id":"func/AdminUseCases.listInvoices","name":"AdminUseCases.listInvoices","line":19,"end_line":27,"hash":"72e6da132bbc3ee2fff470a699cd5d9f4fc933c84dfe1f31d45fa63da583418d"},{"id":"func/AdminUseCases.removeFile","name":"AdminUseCases.removeFile","line":31,"end_line":60,"hash":"61a2ee0ef10b3588adb00c0c67de4456129d55f536f445d98c96388dba526b96"}]}
+// mutate4javascript-manifest-end

@@ -78,8 +78,18 @@ describe('#invoice.js', () => {
       assert.throws(() => uut.validate(data), /'cid' must be a non-empty string/)
     })
 
+    it('should throw if the cid is an empty string', () => {
+      data.cid = ''
+      assert.throws(() => uut.validate(data), /'cid' must be a non-empty string/)
+    })
+
     it('should throw if the filename is missing', () => {
       delete data.filename
+      assert.throws(() => uut.validate(data), /'filename' must be a non-empty string/)
+    })
+
+    it('should throw if the filename is an empty string', () => {
+      data.filename = ''
       assert.throws(() => uut.validate(data), /'filename' must be a non-empty string/)
     })
 
@@ -108,6 +118,18 @@ describe('#invoice.js', () => {
       assert.throws(() => uut.validate(data), /'usdPerBch' must be a positive number/)
     })
 
+    it('should throw if usdPerBch is zero', () => {
+      data.usdPerBch = 0
+      assert.throws(() => uut.validate(data), /'usdPerBch' must be a positive number/)
+    })
+
+    it('should accept a usdPerBch below 1', () => {
+      data.usdPerBch = 0.5
+      const result = uut.validate(data)
+
+      assert.equal(result.usdPerBch, 0.5)
+    })
+
     it('should throw if createdAt is not a date', () => {
       data.createdAt = 'yesterday'
       assert.throws(() => uut.validate(data), /'createdAt' must be an ISO date string/)
@@ -120,6 +142,11 @@ describe('#invoice.js', () => {
 
     it('should throw if the quote expires before it was created', () => {
       data.quoteExpiresAt = '2026-10-07T00:00:00.000Z'
+      assert.throws(() => uut.validate(data), /'quoteExpiresAt' must be after 'createdAt'/)
+    })
+
+    it('should throw if the quote expires at the same time it was created', () => {
+      data.quoteExpiresAt = data.createdAt
       assert.throws(() => uut.validate(data), /'quoteExpiresAt' must be after 'createdAt'/)
     })
   })
@@ -168,6 +195,10 @@ describe('#invoice.js', () => {
 
     it('should never accept an empty address, even with a huge tolerance', () => {
       assert.isFalse(uut.isPaymentSufficient({ priceSats, receivedSats: 0, toleranceSats: 5000 }))
+    })
+
+    it('should accept a 1 sat payment for a 1 sat invoice', () => {
+      assert.isTrue(uut.isPaymentSufficient({ priceSats: 1, receivedSats: 1, toleranceSats: 0 }))
     })
 
     it('should throw if receivedSats is a BCH amount instead of sats', () => {

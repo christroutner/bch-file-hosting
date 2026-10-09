@@ -53,6 +53,29 @@ describe('#config', () => {
     })
   })
 
+  describe('#common defaults', () => {
+    it('should apply the documented fallbacks when the env vars are unset', () => {
+      const config = selectConfig('development')
+
+      assert.equal(config.walletInterface, 'web3')
+      assert.equal(config.publicUrl, `http://localhost:${config.port}`)
+      assert.equal(config.logLevel, 'info')
+      assert.equal(config.logDir, './logs')
+      assert.equal(config.mnemonic, '')
+      assert.equal(config.treasuryAddress, '')
+      assert.equal(config.apiServer, 'https://free-bch.fullstack.cash')
+      assert.equal(config.walletWifX402, '')
+      assert.equal(config.uploadTmpDir, './tmp/uploads')
+      assert.equal(config.levelDbPath, './.leveldb')
+      assert.equal(config.ipfsDir, './.ipfsdata')
+      assert.isFalse(config.enableCircuitRelay)
+      assert.isTrue(config.enableIpfsCoord)
+      assert.equal(config.coordName, 'bch-file-hosting')
+      assert.equal(config.adminApiKey, '')
+      assert.isFalse(config.trustProxy)
+    })
+  })
+
   describe('#toNumber', () => {
     it('should return the fallback when unset or empty', () => {
       assert.equal(toNumber(undefined, 5), 5)

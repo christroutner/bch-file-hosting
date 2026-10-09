@@ -28,3 +28,7 @@ class FilesRouter {
 }
 
 export default FilesRouter
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T02:22:16.973Z","module_hash":"dd09770a2e239fc081fec5ce5cbbadafe2037520577b24c477497f5149d9bd10","functions":[{"id":"func/FilesRouter.constructor","name":"FilesRouter.constructor","line":11,"end_line":18,"hash":"dd97e659d270dd43e0fe8d8e2e0ea9e9b17dd0ec20a7aba8ac7adf2e69ed7e9c"},{"id":"func/FilesRouter.attach","name":"FilesRouter.attach","line":20,"end_line":27,"hash":"97f8b4db931818a2b79769ca03bd0a1746da394a59faed857280c67a37a6287e"}]}
+// mutate4javascript-manifest-end

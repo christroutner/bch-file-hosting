@@ -39,6 +39,7 @@ describe('#rest-api middleware', () => {
       handler(new multer.MulterError('LIMIT_PART_COUNT'), { method: 'POST', path: '/files' }, res)
 
       assert.isTrue(res.status.calledWith(400))
+      assert.isFalse(res.json.firstCall.args[0].success)
     })
 
     it('should return 422 when too many files are sent', () => {
@@ -77,6 +78,17 @@ describe('#rest-api middleware', () => {
       handler(err, { method: 'GET', path: '/x' }, res)
 
       assert.isTrue(res.status.calledWith(500))
+    })
+
+    it('should treat a 500 status as an internal error and not leak its message', () => {
+      const res = makeRes()
+      const err = new Error('secret database details')
+      err.status = 500
+
+      handler(err, { method: 'GET', path: '/x' }, res)
+
+      assert.isTrue(res.status.calledWith(500))
+      assert.deepEqual(res.json.firstCall.args[0], { success: false, error: 'Internal server error' })
     })
   })
 

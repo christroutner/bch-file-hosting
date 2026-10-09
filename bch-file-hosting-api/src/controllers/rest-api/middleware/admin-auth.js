@@ -28,3 +28,7 @@ export function createAdminAuth ({ config }) {
 }
 
 export default createAdminAuth
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T02:27:19.530Z","module_hash":"c104a96f7ab7097c4297c8baed7a75d6c0e5991a8a532a7406698cbb4302b973","functions":[{"id":"func/safeEqual","name":"safeEqual","line":9,"end_line":13,"hash":"608ff2edafbe0a2d3ba88c1dbdb19503d8aea10aea341304d943ee0dfd2ec97c"},{"id":"func/createAdminAuth","name":"createAdminAuth","line":15,"end_line":28,"hash":"0eb94197918057b243cf7943fcc7e5c54f4ac510481d7a5682995afbf5db5921"}]}
+// mutate4javascript-manifest-end

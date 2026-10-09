@@ -36,3 +36,7 @@ class MetaStore {
 }
 
 export default MetaStore
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T02:21:04.158Z","module_hash":"70504bcb28eaec1361792fc48d34908e4378f0cde35b51e297dc12e610644856","functions":[{"id":"func/MetaStore.constructor","name":"MetaStore.constructor","line":12,"end_line":20,"hash":"d8a9a3f144fe9fc075b47ca7b026f1d53fcc05eac1b23ff2c02df2afcfde2c75"},{"id":"func/MetaStore.nextHdIndex","name":"MetaStore.nextHdIndex","line":23,"end_line":27,"hash":"dc17552b8c018315d961acfbe5e019ae8b595abfb7ece64a3c05ff8123295720"},{"id":"func/MetaStore.reserveHdIndex","name":"MetaStore.reserveHdIndex","line":29,"end_line":35,"hash":"b3e1723e8851a343b9484fb217010aeddc44243e3ae68b3caa40c492ae01dde6"}]}
+// mutate4javascript-manifest-end

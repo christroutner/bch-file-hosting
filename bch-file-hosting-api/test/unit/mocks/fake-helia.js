@@ -52,6 +52,10 @@ export function makeFakeHelia (sandbox = sinon) {
       isPinned: sandbox.stub().callsFake(async (cid) => pinnedBlocks.has(cid.toString()))
     },
 
+    routing: {
+      provide: sandbox.stub().resolves()
+    },
+
     fs: {
       addAll: sandbox.stub(),
       cat: sandbox.stub().returns((async function * () { yield new Uint8Array([1, 2, 3]) })()),

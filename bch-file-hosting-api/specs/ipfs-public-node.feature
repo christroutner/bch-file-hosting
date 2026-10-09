@@ -28,4 +28,4 @@ Feature: Ipfs Public Node
     Examples:
       | cid                                                          | provided_cid                                                 |
       | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi |
-      | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
+      | bafybeiaycpklq3l6vfbnm25jbnxsevqn4j6tonzxtgbkm2vnqsrju5tuqi | bafybeiaycpklq3l6vfbnm25jbnxsevqn4j6tonzxtgbkm2vnqsrju5tuqi |

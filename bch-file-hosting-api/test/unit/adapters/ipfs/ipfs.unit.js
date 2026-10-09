@@ -288,6 +288,34 @@ describe('#ipfs/index.js', () => {
         }
       })
 
+      it('should provide the CID to content routing when pinning', async () => {
+        const cid = (await makeCid('provide')).toString()
+
+        await uut.pin(cid)
+
+        assert.isTrue(helia.routing.provide.calledOnce)
+        assert.equal(helia.routing.provide.firstCall.args[0].toString(), cid)
+      })
+
+      it('should surface a content-routing provide failure', async () => {
+        helia.routing.provide.rejects(new Error('routing unavailable'))
+        const cid = (await makeCid('provide-fail')).toString()
+
+        try {
+          await uut.pin(cid)
+          assert.fail('Unexpected result')
+        } catch (err) {
+          assert.include(err.message, 'routing unavailable')
+        }
+      })
+
+      it('should provide a CID directly to content routing', async () => {
+        const cid = (await makeCid('direct')).toString()
+
+        assert.isTrue(await uut.provide(cid))
+        assert.equal(helia.routing.provide.firstCall.args[0].toString(), cid)
+      })
+
       it('should treat unpinning a CID that is not pinned as success', async () => {
         helia.pins.rm.callsFake(async function * () {
           const err = new Error('Not Found')

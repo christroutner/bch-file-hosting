@@ -1,13 +1,15 @@
 /*
-  IPFS adapter. Runs a Helia node (created by helia-coord's node factory) and
-  optionally joins the PSF network with helia-coord. Use-cases only see CID
-  strings and this small API: addFile, cat, stat, pin, unpin, isPinned, remove.
+  IPFS adapter. Runs a Helia node (created by the project-owned public node
+  factory, which extends helia-coord's factory and joins the public IPFS
+  network) and optionally joins the PSF network with helia-coord. Use-cases only
+  see CID strings and this small API: addFile, cat, stat, pin, unpin, isPinned,
+  remove.
 */
 
 import fs from 'fs'
 import { mkdir, readFile, writeFile } from 'fs/promises'
 import { randomBytes } from 'crypto'
-import CreateHeliaNode from 'helia-coord/create-helia-node'
+import PublicHeliaNode from './public-helia-node.js'
 import IpfsCoord from 'helia-coord'
 import SlpWallet from 'minimal-slp-wallet'
 import { CID } from 'multiformats/cid'
@@ -27,7 +29,7 @@ class IpfsAdapter {
     this.logger = logger
 
     // Encapsulated for unit tests.
-    this.CreateHeliaNode = CreateHeliaNode
+    this.CreateHeliaNode = PublicHeliaNode
     this.IpfsCoord = IpfsCoord
     this.SlpWallet = SlpWallet
     this.fs = fs
@@ -166,11 +168,22 @@ class IpfsAdapter {
 
   async pin (cid) {
     this.assertReady()
+    const parsed = this.parseCid(cid)
     try {
-      await drain(this.helia.pins.add(this.parseCid(cid)))
+      await drain(this.helia.pins.add(parsed))
     } catch (err) {
       if (!err.message.includes('Already pinned')) throw err
     }
+    await this.provide(cid)
+    return true
+  }
+
+  // Announce to content routing that this node provides the CID. Public pinning
+  // services fetch our content by CID, so a local pin must be published to the
+  // DHT for them to discover this node.
+  async provide (cid) {
+    this.assertReady()
+    await this.helia.routing.provide(this.parseCid(cid))
     return true
   }
 

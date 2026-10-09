@@ -12,6 +12,8 @@ import PaymentUseCases from '../../src/use-cases/payment-use-cases.js'
 import AdminUseCases from '../../src/use-cases/admin-use-cases.js'
 import PinningRegistry from '../../src/adapters/pinning/index.js'
 import LighthouseProvider from '../../src/adapters/pinning/lighthouse.js'
+import IpfsAdapter from '../../src/adapters/ipfs/index.js'
+import { buildPublicNetworkServices } from '../../src/adapters/ipfs/public-network.js'
 import TimerControllers from '../../src/controllers/timer-controllers.js'
 
 const UPLOAD_FILENAME = 'upload.bin'
@@ -49,6 +51,23 @@ function jsonResponse (body, status = 200) {
     status,
     headers: { 'Content-Type': 'application/json' }
   })
+}
+
+// A minimal in-memory Helia node for the public-network scenarios. It records
+// the CIDs announced to content routing and accepts pins without a network.
+function makeFakeIpfsNode () {
+  const provided = []
+  return {
+    provided,
+    pins: {
+      add: async function * (cid) { yield cid },
+      rm: async function * (cid) { yield cid },
+      isPinned: async () => false
+    },
+    routing: {
+      provide: async (cid) => { provided.push(cid) }
+    }
+  }
 }
 
 function createWorld () {
@@ -483,6 +502,57 @@ const handlers = [
       const actual = (world.adminFiles || []).length
       if (actual !== expected) {
         throw new Error(`expected ${expected} files listed, got ${actual}`)
+      }
+    }
+  },
+  {
+    pattern: /^a Helia node service configuration for the public IPFS network$/,
+    run (_match, _example, world) {
+      world.publicNodeServices = buildPublicNetworkServices()
+    }
+  },
+  {
+    pattern: /^the configuration registers the DHT service <([A-Za-z0-9_]+)> for protocol <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const name = exampleValue(example, match[1])
+      const protocol = exampleValue(example, match[2])
+      const actual = world.publicNodeServices.dhtProtocols[name]
+      if (actual !== protocol) {
+        throw new Error(`expected DHT service ${name} to use protocol ${protocol}, got ${actual}`)
+      }
+    }
+  },
+  {
+    pattern: /^the configuration enables the NAT service <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const name = exampleValue(example, match[1])
+      if (!world.publicNodeServices.natServices.includes(name)) {
+        throw new Error(`expected the configuration to enable NAT service ${name}`)
+      }
+    }
+  },
+  {
+    pattern: /^an IPFS adapter whose node holds the file as CID <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.ipfsNode = makeFakeIpfsNode()
+      world.ipfsAdapter = new IpfsAdapter({ config: {}, logger: null })
+      world.ipfsAdapter.helia = world.ipfsNode
+      world.heldCid = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^the adapter pins the CID <([A-Za-z0-9_]+)>$/,
+    async run (match, example, world) {
+      await world.ipfsAdapter.pin(exampleValue(example, match[1]))
+    }
+  },
+  {
+    pattern: /^the node provides the CID <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      const provided = world.ipfsNode.provided.map(cid => cid.toString())
+      if (!provided.includes(expected)) {
+        throw new Error(`expected the node to provide ${expected}, got [${provided.join(', ')}]`)
       }
     }
   }

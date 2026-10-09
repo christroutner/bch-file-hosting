@@ -120,4 +120,57 @@ describe('#hosting-api', () => {
       }
     })
   })
+
+  describe('#getStatus', () => {
+    it('GETs /files/:cid and returns the parsed body', async () => {
+      const fetch = sandbox.stub().resolves({
+        ok: true,
+        status: 200,
+        json: async () => ({ success: true, cid: 'bafy-known', status: 'pinned' })
+      })
+      const uut = new HostingApi({ config, fetch })
+
+      const result = await uut.getStatus({ cid: 'bafy-known' })
+
+      assert.equal(result.status, 'pinned')
+      sinon.assert.calledOnce(fetch)
+
+      const [url, options] = fetch.firstCall.args
+      assert.equal(url, 'http://localhost:5050/files/bafy-known')
+      assert.equal(options.method, 'GET')
+    })
+
+    it('throws the API error message when the response is not ok', async () => {
+      const fetch = sandbox.stub().resolves({
+        ok: false,
+        status: 404,
+        json: async () => ({ success: false, error: 'File not found' })
+      })
+      const uut = new HostingApi({ config, fetch })
+
+      try {
+        await uut.getStatus({ cid: 'bafy-missing' })
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.instanceOf(err, HostingApiError)
+        assert.equal(err.message, 'File not found')
+      }
+    })
+
+    it('throws a generic message when the error body is not JSON', async () => {
+      const fetch = sandbox.stub().resolves({
+        ok: false,
+        status: 500,
+        json: async () => { throw new Error('not json') }
+      })
+      const uut = new HostingApi({ config, fetch })
+
+      try {
+        await uut.getStatus({ cid: 'bafy-known' })
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.include(err.message, 'HTTP 500')
+      }
+    })
+  })
 })

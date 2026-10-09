@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url'
 // Local libraries
 import FileUpload from '../../src/commands/file-upload.js'
 import FileCheck from '../../src/commands/file-check.js'
+import FileStatus from '../../src/commands/file-status.js'
 import WalletCreate from '../../src/commands/wallet-create.js'
 import WalletBalance from '../../src/commands/wallet-balance.js'
 import WalletStore from '../../src/lib/wallet-store.js'
@@ -63,6 +64,7 @@ function createWorld () {
     apiResult: null,
     apiError: null,
     receivedAddress: null,
+    receivedCid: null,
     stdout: '',
     stderr: '',
     exitCode: null,
@@ -79,6 +81,11 @@ function createWorld () {
     },
     checkPayment: async ({ paymentAddress } = {}) => {
       world.receivedAddress = paymentAddress
+      if (world.apiError) throw new Error(world.apiError)
+      return world.apiResult
+    },
+    getStatus: async ({ cid } = {}) => {
+      world.receivedCid = cid
       if (world.apiError) throw new Error(world.apiError)
       return world.apiResult
     }
@@ -129,6 +136,12 @@ const handlers = [
     pattern: /^a file-check command$/,
     run (_match, _example, world) {
       buildCommand(world, FileCheck)
+    }
+  },
+  {
+    pattern: /^a file-status command$/,
+    run (_match, _example, world) {
+      buildCommand(world, FileStatus)
     }
   },
   {
@@ -363,6 +376,128 @@ const handlers = [
     pattern: /^I run file-check with no address$/,
     async run (_match, _example, world) {
       world.exitCode = await world.command.run({})
+    }
+  },
+  {
+    pattern: /^the hosting API reports a file with CID <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.apiResult = {
+        success: true,
+        cid: exampleValue(example, match[1]),
+        pins: []
+      }
+    }
+  },
+  {
+    pattern: /^the hosting API reports the file name <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.apiResult.filename = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^the hosting API reports the file size <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.apiResult.sizeBytes = asInt(exampleValue(example, match[1]), match[1])
+    }
+  },
+  {
+    pattern: /^the hosting API reports the file status <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.apiResult.status = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^the hosting API reports the hosting window <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.apiResult.hostedUntil = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^the hosting API reports a pin for provider <([A-Za-z0-9_-]+)> with status <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.apiResult.pins.push({
+        provider: exampleValue(example, match[1]),
+        status: exampleValue(example, match[2])
+      })
+    }
+  },
+  {
+    pattern: /^the hosting API rejects the status with error <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.apiError = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^I run file-status for the CID (.+)$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({ cid: expectedText(example, match[1]) })
+    }
+  },
+  {
+    pattern: /^I run file-status with no CID$/,
+    async run (_match, _example, world) {
+      world.exitCode = await world.command.run({})
+    }
+  },
+  {
+    pattern: /^I run file-status with JSON output for the CID (.+)$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({ cid: expectedText(example, match[1]), json: true })
+    }
+  },
+  {
+    pattern: /^the hosting API received the CID <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.receivedCid !== expected) {
+        throw new Error(`expected the hosting API to receive ${expected}, got ${world.receivedCid}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the file name <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (!world.stdout.includes(`File name: ${expected}`)) {
+        throw new Error(`stdout did not print the file name ${expected}: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the size <([A-Za-z0-9_]+)> bytes$/,
+    run (match, example, world) {
+      const expected = asInt(exampleValue(example, match[1]), match[1])
+      if (!world.stdout.includes(`Size: ${expected} bytes`)) {
+        throw new Error(`stdout did not print the size ${expected} bytes: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the file status <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (!world.stdout.includes(`Status: ${expected}`)) {
+        throw new Error(`stdout did not print the file status ${expected}: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the hosting window <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (!world.stdout.includes(`Hosting window: ${expected}`)) {
+        throw new Error(`stdout did not print the hosting window ${expected}: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the pin <([A-Za-z0-9_-]+)> <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const provider = exampleValue(example, match[1])
+      const status = exampleValue(example, match[2])
+      if (!world.stdout.includes(`Pin: ${provider} ${status}`)) {
+        throw new Error(`stdout did not print the pin ${provider} ${status}: ${JSON.stringify(world.stdout)}`)
+      }
     }
   },
   {

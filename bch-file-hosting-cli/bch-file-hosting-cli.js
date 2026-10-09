@@ -10,12 +10,14 @@ import { Command } from 'commander'
 // Local libraries
 import FileUpload from './src/commands/file-upload.js'
 import FileCheck from './src/commands/file-check.js'
+import FileStatus from './src/commands/file-status.js'
 import WalletCreate from './src/commands/wallet-create.js'
 import WalletBalance from './src/commands/wallet-balance.js'
 
 // Instantiate subcommands
 const fileUpload = new FileUpload()
 const fileCheck = new FileCheck()
+const fileStatus = new FileStatus()
 const walletCreate = new WalletCreate()
 const walletBalance = new WalletBalance()
 
@@ -39,6 +41,14 @@ program.command('file-check')
   .option('--json', 'print the result as a single JSON object')
   .action(async (flags) => {
     process.exitCode = await fileCheck.run(flags)
+  })
+
+program.command('file-status')
+  .description('Look up a file and print its status and pins (-c <cid>, --json)')
+  .option('-c, --cid <cid>', 'IPFS CID to look up')
+  .option('--json', 'print the result as a single JSON object')
+  .action(async (flags) => {
+    process.exitCode = await fileStatus.run(flags)
   })
 
 program.command('wallet-create')

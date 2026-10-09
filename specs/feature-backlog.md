@@ -38,20 +38,13 @@ at `f579aafd67`.
 
 ## Up next (in order)
 
-- Remaining phase-6 CLI command (`file-host`); scope it with the user after the
-  CLI PSF donation decision below.
+- Remaining phase-6 CLI command (`file-host`); scope it with the user.
 
 ## Needs a decision from the user
 
-These come from the long-term plan's open questions (section 14) unless noted.
-Do not spec them until the user decides.
+These come from the long-term plan's open questions (section 14). Do not spec
+them until the user decides.
 
-- **CLI PSF donation (pipeline follow-up):** `WalletService.sendSats` uses
-  `minimal-slp-wallet.send()`, which appends a 2,000-sat PSF donation, so every
-  `file-pay` costs `amountSats + 2,000 + fee` and a minimum invoice roughly
-  doubles. Decide whether to build a donation-free send (mirroring
-  `WalletAdapter.sweep`) or explicitly accept/document the donation. This also
-  affects `file-host`.
 - **Expiry policy (Q1):** what happens when a file's year of hosting ends.
 - **Renewals / multi-year (Q2).**
 - **OP_RETURN announcement format (Q3)** for the stubbed announcer.
@@ -75,10 +68,11 @@ Do not spec them until the user decides.
   6.0; soft Gherkin file-pay 36/36 killed. Independent acceptance check after
   merge: all 6 suites passed, including the 12 file-pay executions. Architect
   summary: `docs/reviews/file-pay-summary.md`.
-  - **Open follow-up (product decision):** every CLI payment adds a 2,000-sat
-    PSF donation because `sendSats` uses `minimal-slp-wallet.send()`. Decide
-    whether to build a donation-free send or accept/document the donation; a
-    minimum invoice roughly doubles for the payer.
+  - **Accepted (product decision):** every CLI payment deliberately adds a
+    2,000-sat PSF donation because `sendSats` uses `minimal-slp-wallet.send()`;
+    `file-pay` therefore costs `amountSats + 2,000 + fee`. This is kept as a
+    documented PSF contribution; `wallet-service.js` documents the side effect
+    and a unit test covers it.
 
 - **P6.4 `file-status` — look up a file and print its status and pins
   (2026-10-09):** `file-status -c <cid> [--json]` calls `GET /files/:cid` and

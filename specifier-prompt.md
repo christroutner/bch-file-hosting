@@ -263,9 +263,9 @@ Specific to bch-file-hosting (found while building the core port):
     donation output.** `sendAll()` made every sweep of a minimum invoice fail;
     `send()` makes every `file-pay` cost `amountSats + 2,000 + fee`. The server
     wallet adapter builds its own sweep transaction, but the CLI
-    `WalletService.sendSats` still uses `send()`, so paying a minimum invoice
-    roughly doubles the payer's cost. Whether to build a donation-free CLI send
-    or accept the donation is an open product decision (backlog).
+    `WalletService.sendSats` still uses `send()`. The CLI deliberately keeps the
+    2,000-sat donation as a PSF contribution (accepted product decision,
+    2026-10-09), so every `file-pay` costs `amountSats + 2,000 + fee`.
 13. **Helia's `fs.addFile()` ignores `wrapWithDirectory`.** The IPFS adapter uses
     `fs.addAll()` and returns the wrapping directory's CID, so gateway links are
     `<gateway><cid>/<filename>`.
@@ -347,14 +347,14 @@ named local wallet via `requiredSats - receivedSats`; a paid invoice is a no-op.
 `docs/reviews/file-pay-verification.json` reports `verify.sh cli` pass 4/4
 (record `git_sha` `1a7d74b`, docs-only behind the tip) and the independent
 post-merge acceptance check passed all 6 suites, including the 12 file-pay
-executions. **Open decision:** every CLI payment adds a 2,000-sat PSF donation
-(`minimal-slp-wallet.send()`), roughly doubling a minimum invoice; decide
-whether to build a donation-free send or accept it (backlog). Open follow-ups:
-the mutation-inert mnemonic-hygiene scenarios and the file-upload `upload_path`
-column. Prior cycles (Q1, P5.1-P5.3, P6.1-P6.4) are in the backlog.
+executions. The CLI PSF donation is an **accepted product decision** (every
+`file-pay` deliberately adds 2,000 sats to the PSF; `sendSats` uses
+`minimal-slp-wallet.send()`), so a minimum invoice costs the payer
+`amountSats + 2,000 + fee`. Open follow-ups: the mutation-inert mnemonic-hygiene
+scenarios and the file-upload `upload_path` column. Prior cycles (Q1,
+P5.1-P5.3, P6.1-P6.4) are in the backlog.
 
 Current `master` HEAD: `f579aafd67` (Record file-pay architect review and
 verification).
 
-Next action: resolve the CLI PSF donation decision, then ask the user to scope
-the last phase-6 command, `file-host`.
+Next action: scope the last phase-6 command, `file-host`, with the user.

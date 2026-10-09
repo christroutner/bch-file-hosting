@@ -30,6 +30,11 @@ export const PUBLIC_BOOTSTRAP_PEERS = [
 
 const NAT_SERVICES = ['upnpNAT', 'dcutr']
 
+// Both DHTs run as full servers, not clients: the node must store and serve
+// provider records so public peers (for example Lighthouse) can find the CIDs
+// it hosts.
+const DHT_CLIENT_MODE = false
+
 // The public-network service factories plus the metadata a reviewer or test
 // can inspect without starting a node.
 export function buildPublicNetworkServices () {
@@ -37,7 +42,7 @@ export function buildPublicNetworkServices () {
     services: {
       aminoDHT: kadDHT({
         protocol: PUBLIC_DHT_PROTOCOL,
-        clientMode: false,
+        clientMode: DHT_CLIENT_MODE,
         peerInfoMapper: removePrivateAddressesMapper,
         logPrefix: 'libp2p:dht-amino',
         datastorePrefix: '/dht-amino',
@@ -45,7 +50,7 @@ export function buildPublicNetworkServices () {
       }),
       dht: kadDHT({
         protocol: PSF_DHT_PROTOCOL,
-        clientMode: false
+        clientMode: DHT_CLIENT_MODE
       }),
       upnpNAT: uPnPNAT(),
       dcutr: dcutr()
@@ -54,6 +59,7 @@ export function buildPublicNetworkServices () {
       aminoDHT: PUBLIC_DHT_PROTOCOL,
       dht: PSF_DHT_PROTOCOL
     },
+    dhtClientMode: DHT_CLIENT_MODE,
     natServices: [...NAT_SERVICES]
   }
 }
@@ -66,3 +72,7 @@ export function withPublicNetworkServices (baseServices = {}) {
 }
 
 export default { buildPublicNetworkServices, withPublicNetworkServices }
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T18:01:40.720Z","module_hash":"c374665e2999703aee6a42f0a06e9130deba57515179a573ccd42895c799974f","functions":[{"id":"func/buildPublicNetworkServices","name":"buildPublicNetworkServices","line":40,"end_line":65,"hash":"50d6433b810f88f6185b85b7c02a642847621433d3e9abb8282973ad932c92b4"},{"id":"func/withPublicNetworkServices","name":"withPublicNetworkServices","line":69,"end_line":72,"hash":"86578999145ee9a84459bb21883c770dc1d22b94cc8cb2e8631fc947c86c8bfd"}]}
+// mutate4javascript-manifest-end

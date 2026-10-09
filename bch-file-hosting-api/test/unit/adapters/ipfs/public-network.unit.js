@@ -28,6 +28,12 @@ describe('#public-network', () => {
       assert.deepEqual(config.natServices, ['upnpNAT', 'dcutr'])
     })
 
+    it('should run both DHTs as full servers, not clients', () => {
+      const config = buildPublicNetworkServices()
+
+      assert.isFalse(config.dhtClientMode)
+    })
+
     it('should build a factory for every exposed service', () => {
       const { services } = buildPublicNetworkServices()
 

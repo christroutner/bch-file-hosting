@@ -1,3 +1,8 @@
+# mutation-stamp: sha256=224a99407dd35b60f2a120910208584066b76548fd27e072abac17eb0f21af3c
+# acceptance-mutation-manifest-begin
+# {"version":1,"tested_at":"2026-10-09T18:01:58.040043540Z","feature_name":"Ipfs Public Node","feature_path":"/home/trout/work/psf/code/ipfs/bch-file-hosting/.worktrees/architect/bch-file-hosting-api/specs/ipfs-public-node.feature","background_hash":"74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b","implementation_hash":"unknown","scenarios":[{"index":0,"name":"Ipfs Public Node - 1 the node registers the DHT services","scenario_hash":"dc026f4784fe7cadb0b54c448500a24d10abe48ee39a9aa6189745f7e59d0c8d","mutation_count":4,"result":{"Total":4,"Killed":4,"Survived":0,"Errors":0},"tested_at":"2026-10-09T18:01:58.040043540Z"},{"index":1,"name":"Ipfs Public Node - 2 the node enables NAT traversal","scenario_hash":"0e9192c56b788c6ac2dc7d4edd0677bf9895507087d6031d735cecce6871aad7","mutation_count":2,"result":{"Total":2,"Killed":2,"Survived":0,"Errors":0},"tested_at":"2026-10-09T18:01:58.040043540Z"},{"index":2,"name":"Ipfs Public Node - 3 pinning a file provides its CID to content routing","scenario_hash":"501cf492a6368141227558286915124ed405f83558cdc8108332f7ca8c3c374c","mutation_count":4,"result":{"Total":4,"Killed":4,"Survived":0,"Errors":0},"tested_at":"2026-10-09T18:01:58.040043540Z"}]}
+# acceptance-mutation-manifest-end
+
 # Ipfs Public Node - 1, Ipfs Public Node - 2, Ipfs Public Node - 3
 
 Feature: Ipfs Public Node

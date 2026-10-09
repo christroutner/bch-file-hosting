@@ -35,3 +35,7 @@ class PublicHeliaNode extends CreateHeliaNode {
 }
 
 export default PublicHeliaNode
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T18:00:42.446Z","module_hash":"8269a05c148f2a405a6898c37914667b6a6f23e749cb585a98ee4381aeb3cfc4","functions":[{"id":"func/PublicHeliaNode.constructor","name":"PublicHeliaNode.constructor","line":16,"end_line":21,"hash":"9eaa87c936ba53c45e1b2e0119b39d712478e30570b789d70fb3dbb8f05099ff"},{"id":"func/PublicHeliaNode.createNode","name":"PublicHeliaNode.createNode","line":23,"end_line":34,"hash":"03c190e47ac66a709dcaa53bed543244fc01a64ce6c43b10cc011050bb1aeb18"}]}
+// mutate4javascript-manifest-end

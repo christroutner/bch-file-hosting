@@ -180,6 +180,71 @@ describe('#lighthouse.property.js', () => {
     })
   })
 
+  describe('#add response parsing', () => {
+    it('should recover the wrapping-directory CID from noisy NDJSON', () => {
+      forAllAsync({
+        seed: 6,
+        runs: 200,
+        generate: (random) => {
+          const expected = `bafy${randomToken(random, 42)}`
+          const lines = [`{"Name":"","Hash":"${expected}"}`]
+          const noiseLines = integerBetween(random, 0, 4)
+          for (let i = 0; i < noiseLines; i++) {
+            const kind = integerBetween(random, 0, 2)
+            if (kind === 0) lines.push('')
+            else if (kind === 1) lines.push(`not json ${randomToken(random, 5)}`)
+            else lines.push(`{"Name":"file","Hash":"bafy${randomToken(random, 20)}"}`)
+          }
+          return { expected, lines }
+        },
+        property: async ({ expected, lines }) => {
+          fetch.reset()
+          fetch.resolves(new Response(`${lines.join('\n')}\n`, { status: 200 }))
+
+          const reported = await build().upload({ filename: 'f', content: content() })
+
+          assert.equal(reported, expected)
+        }
+      })
+    })
+  })
+
+  describe('#content normalization', () => {
+    it('should upload the same bytes from a Blob, a ReadableStream, or an async iterable', () => {
+      forAllAsync({
+        seed: 7,
+        runs: 100,
+        generate: (random) => {
+          const size = integerBetween(random, 0, 64)
+          const bytes = new Uint8Array(size)
+          for (let i = 0; i < size; i++) bytes[i] = integerBetween(random, 0, 255)
+          return { bytes }
+        },
+        property: async ({ bytes }) => {
+          const sizeVia = async (content) => {
+            fetch.reset()
+            fetch.resolves(new Response('', { status: 200 }))
+            await build().upload({ filename: 'f', content })
+            return fetch.firstCall.args[1].body.get('file').size
+          }
+
+          assert.equal(await sizeVia(new Blob([bytes])), bytes.length)
+
+          async function * chunks () { yield bytes }
+          assert.equal(await sizeVia(chunks()), bytes.length)
+
+          const stream = new ReadableStream({
+            start (controller) {
+              controller.enqueue(bytes)
+              controller.close()
+            }
+          })
+          assert.equal(await sizeVia(stream), bytes.length)
+        }
+      })
+    })
+  })
+
   describe('#status mapping', () => {
     it('should echo a known status and report every other status as unknown', () => {
       forAllAsync({

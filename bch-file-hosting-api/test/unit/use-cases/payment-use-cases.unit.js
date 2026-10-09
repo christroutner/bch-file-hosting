@@ -455,5 +455,40 @@ describe('#payment-use-cases.js', () => {
       assert.deepEqual(result, { retried: [], pinned: [], failed: [] })
       assert.isTrue(adapters.pinning.providers[0].pin.notCalled)
     })
+
+    it('should skip a provider whose pin already succeeded', async () => {
+      await adapters.localdb.files.put({
+        cid: 'bafy-partly-pinned',
+        filename: 'photo.jpg',
+        sizeBytes: 20000,
+        status: FILE_STATUS.PIN_FAILED,
+        pins: [{ provider: 'local-helia', status: 'pinned', providerRef: null, pinnedAt: null, error: null }]
+      })
+
+      const result = await uut.retryPins()
+
+      assert.deepEqual(result, { retried: ['bafy-partly-pinned'], pinned: ['bafy-partly-pinned'], failed: [] })
+      assert.isTrue(adapters.pinning.providers[0].pin.notCalled)
+      const file = await adapters.localdb.files.get('bafy-partly-pinned')
+      assert.equal(file.pins[0].status, 'pinned')
+    })
+
+    it('should pin a file record that carries no pins array', async () => {
+      await adapters.localdb.files.put({
+        cid: 'bafy-no-pins',
+        filename: 'photo.jpg',
+        sizeBytes: 20000,
+        status: FILE_STATUS.PINNING
+      })
+
+      const updated = await uut.pinFile({ cid: 'bafy-no-pins', filename: 'photo.jpg', sizeBytes: 20000 })
+
+      assert.equal(updated.status, FILE_STATUS.PINNED)
+      assert.equal(updated.pins[0].provider, 'local-helia')
+    })
+
+    it('should not retry a file record that carries no pins array', () => {
+      assert.isFalse(uut.needsPinRetry({ status: FILE_STATUS.PINNED }))
+    })
   })
 })

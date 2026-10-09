@@ -219,6 +219,20 @@ describe('#lighthouse', () => {
     assert.equal(sleep.callCount, 1)
   })
 
+  it('should fall back to the real sleep when none is injected', async () => {
+    const uut = new LighthouseProvider({
+      config: { ...config, lighthouseVerifyAttempts: 2, lighthouseVerifyDelayMs: 0 },
+      fetch
+    })
+    fetch.onFirstCall().resolves(addResponse(CID))
+    fetch.onSecondCall().resolves(headResponse(404))
+    fetch.onThirdCall().resolves(headResponse(200, SIZE))
+
+    const result = await uut.pin({ cid: CID, filename: 'photo.jpg', sizeBytes: SIZE, content: content() })
+
+    assert.deepEqual(result, { providerCid: CID, providerRef: null })
+  })
+
   it('should fail when the gateway reports the wrong content length', async () => {
     fetch.onFirstCall().resolves(addResponse(CID))
     fetch.resolves(headResponse(200, SIZE + 1))
@@ -228,6 +242,65 @@ describe('#lighthouse', () => {
       assert.fail('Unexpected result')
     } catch (err) {
       assert.include(err.message, 'content-length')
+    }
+  })
+
+  it('should upload an async iterable of string and byte chunks', async () => {
+    fetch.onFirstCall().resolves(addResponse(CID))
+    fetch.onSecondCall().resolves(headResponse(200, SIZE))
+
+    async function * chunks () {
+      yield 'hello'
+      yield new Uint8Array([1, 2, 3])
+    }
+
+    const result = await build().pin({ cid: CID, filename: 'photo.jpg', sizeBytes: SIZE, content: chunks() })
+
+    assert.deepEqual(result, { providerCid: CID, providerRef: null })
+  })
+
+  it('should upload a web ReadableStream of bytes', async () => {
+    fetch.onFirstCall().resolves(addResponse(CID))
+    fetch.onSecondCall().resolves(headResponse(200, SIZE))
+    const stream = new ReadableStream({
+      start (controller) {
+        controller.enqueue(new Uint8Array(SIZE))
+        controller.close()
+      }
+    })
+
+    const result = await build().pin({ cid: CID, filename: 'photo.jpg', sizeBytes: SIZE, content: stream })
+
+    assert.deepEqual(result, { providerCid: CID, providerRef: null })
+  })
+
+  it('should skip blank and malformed add-response lines', async () => {
+    fetch.onFirstCall().resolves(new Response(`\n not-json \n{"Name":"photo.jpg","Hash":"${CID}"}\n`, { status: 200 }))
+    fetch.onSecondCall().resolves(headResponse(200, SIZE))
+
+    const result = await build().pin({ cid: CID, filename: 'photo.jpg', sizeBytes: SIZE, content: content() })
+
+    assert.deepEqual(result, { providerCid: CID, providerRef: null })
+  })
+
+  it('should skip an add-response entry that reports no CID', async () => {
+    fetch.onFirstCall().resolves(new Response(`{"Name":"x"}\n{"Name":"","Hash":"${CID}"}\n`, { status: 200 }))
+    fetch.onSecondCall().resolves(headResponse(200, SIZE))
+
+    const result = await build().pin({ cid: CID, filename: 'photo.jpg', sizeBytes: SIZE, content: content() })
+
+    assert.deepEqual(result, { providerCid: CID, providerRef: null })
+  })
+
+  it('should report a gateway request failure as a failed verification', async () => {
+    fetch.onFirstCall().resolves(addResponse(CID))
+    fetch.onSecondCall().rejects(new Error('network down'))
+
+    try {
+      await build({ lighthouseVerifyAttempts: 1 }).pin({ cid: CID, filename: 'photo.jpg', sizeBytes: SIZE, content: content() })
+      assert.fail('Unexpected result')
+    } catch (err) {
+      assert.include(err.message, 'network down')
     }
   })
 
@@ -287,6 +360,12 @@ describe('#lighthouse', () => {
 
     it('should report unknown when the list response has an empty body', async () => {
       fetch.resolves(jsonResponse(undefined, 200))
+
+      assert.equal(await build().status(CID), 'unknown')
+    })
+
+    it('should report unknown when the list response is not JSON', async () => {
+      fetch.resolves(new Response('not json', { status: 200 }))
 
       assert.equal(await build().status(CID), 'unknown')
     })

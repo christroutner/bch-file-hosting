@@ -57,37 +57,67 @@ async function readJson (response, action) {
   }
 }
 
+// Parse one line of the newline-delimited /api/v0/add response. `undefined`
+// marks a blank or malformed line to skip.
+function parseAddLine (line) {
+  if (!line.trim()) return undefined
+  try {
+    return JSON.parse(line)
+  } catch {
+    return undefined
+  }
+}
+
+// The CID of one add-response entry, under either field name.
+function entryCid (entry) {
+  return entry.Hash ?? entry.cid ?? null
+}
+
+// The wrapping directory is the add-response entry with no name.
+function isWrappingDirectory (entry) {
+  return entry.Name === '' || entry.path === ''
+}
+
 // IPFS's /api/v0/add returns newline-delimited JSON, one line per added item.
 // With wrap-with-directory the wrapping directory is the entry with no name.
 function parseAddedCid (text) {
   let fallback = null
   for (const line of text.split('\n')) {
-    if (!line.trim()) continue
-    let entry
-    try {
-      entry = JSON.parse(line)
-    } catch {
-      continue
-    }
-    const cid = entry.Hash ?? entry.cid ?? null
+    const entry = parseAddLine(line)
+    if (entry === undefined) continue
+    const cid = entryCid(entry)
     if (!cid) continue
-    if (entry.Name === '' || entry.path === '') return cid
+    if (isWrappingDirectory(entry)) return cid
     fallback = cid
   }
   return fallback
 }
 
+function isBlob (value) {
+  return typeof Blob !== 'undefined' && value instanceof Blob
+}
+
+function isReadableStream (value) {
+  return Boolean(value) && typeof value.getReader === 'function'
+}
+
+// Text chunks are encoded; byte chunks pass through unchanged.
+function chunkToBytes (chunk) {
+  return typeof chunk === 'string' ? new TextEncoder().encode(chunk) : chunk
+}
+
+async function collectChunks (content) {
+  const chunks = []
+  for await (const chunk of content) chunks.push(chunkToBytes(chunk))
+  return chunks
+}
+
 // Normalize the content source (a Blob, a web ReadableStream, or an async
 // iterable of chunks) into a Blob for the multipart upload.
 async function toBlob (content) {
-  if (typeof Blob !== 'undefined' && content instanceof Blob) return content
-  if (content && typeof content.getReader === 'function') return new Response(content).blob()
-
-  const chunks = []
-  for await (const chunk of content) {
-    chunks.push(typeof chunk === 'string' ? new TextEncoder().encode(chunk) : chunk)
-  }
-  return new Blob(chunks)
+  if (isBlob(content)) return content
+  if (isReadableStream(content)) return new Response(content).blob()
+  return new Blob(await collectChunks(content))
 }
 
 function mapStatus (status) {

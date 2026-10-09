@@ -33,8 +33,8 @@ function randomString (random, min, max) {
 
 // A stand-in for minimal-slp-wallet that never touches the network and records
 // the constructor arguments and getBalance call of each instance.
-function makeFakeWalletClass () {
-  const state = { instances: [], balance: 0 }
+function makeFakeWalletClass ({ txid = 'fake-txid' } = {}) {
+  const state = { instances: [], balance: 0, txid }
 
   class FakeBchWallet {
     constructor (mnemonic, options) {
@@ -46,12 +46,22 @@ function makeFakeWalletClass () {
         hdPath: options.hdPath || "m/44'/245'/0'"
       }
       this.walletInfoPromise = Promise.resolve(this.walletInfo)
+      this.initialized = false
       state.instances.push(this)
     }
 
     async getBalance (args) {
       this.balanceArgs = args
       return state.balance
+    }
+
+    async initialize () {
+      this.initialized = true
+    }
+
+    async send (outputs) {
+      this.sentOutputs = outputs
+      return state.txid
     }
   }
 
@@ -143,6 +153,79 @@ describe('#wallet-service.property.js', () => {
 
         assert.equal(wallet.mnemonic, 'generated mnemonic')
         assert.isUndefined(state.instances[0].mnemonic)
+      }
+    })
+  })
+
+  it('should send the exact satoshi amount to the address and return the txid', () => {
+    forAllAsync({
+      seed: 5,
+      runs: 200,
+      generate: (random) => ({
+        amountSats: integerBetween(random, 1, 1000000000),
+        toAddress: `bitcoincash:q${randomString(random, 20, 38)}`,
+        mnemonic: randomString(random, 1, 60),
+        hdPath: `m/44'/245'/0'/0/${integerBetween(random, 0, 100000)}`,
+        txid: randomString(random, 1, 64)
+      }),
+      property: async ({ amountSats, toAddress, mnemonic, hdPath, txid }) => {
+        const { FakeBchWallet, state } = makeFakeWalletClass({ txid })
+        const uut = new WalletService({ config, BchWallet: FakeBchWallet })
+
+        const result = await uut.sendSats({ wallet: { mnemonic, hdPath }, toAddress, amountSats })
+
+        assert.equal(result, txid)
+        assert.equal(state.instances[0].mnemonic, mnemonic)
+        assert.equal(state.instances[0].options.hdPath, hdPath)
+        assert.isTrue(state.instances[0].initialized)
+        assert.deepEqual(state.instances[0].sentOutputs, [{ address: toAddress, amountSat: amountSats }])
+      }
+    })
+  })
+
+  it('should reject any non-positive or non-integer amount before building a wallet', () => {
+    forAllAsync({
+      seed: 6,
+      runs: 150,
+      generate: (random, run) => {
+        if (run % 3 === 0) return integerBetween(random, -1000000000, 0)
+        if (run % 3 === 1) return integerBetween(random, 1, 1000) + 0.5
+        return randomString(random, 1, 8)
+      },
+      property: async (amountSats) => {
+        const { FakeBchWallet, state } = makeFakeWalletClass()
+        const uut = new WalletService({ config, BchWallet: FakeBchWallet })
+
+        let threw = false
+        try {
+          await uut.sendSats({ wallet: { mnemonic: 'm' }, toAddress: 'bitcoincash:qto', amountSats })
+        } catch (err) {
+          threw = true
+          assert.include(err.message, 'amountSats must be a positive integer')
+        }
+        assert.isTrue(threw)
+        assert.lengthOf(state.instances, 0)
+      }
+    })
+  })
+
+  it('should reject any non-string or empty txid from the backend', () => {
+    forAllAsync({
+      seed: 7,
+      runs: 100,
+      generate: (random, run) => (run % 2 === 0 ? '' : integerBetween(random, 0, 1000000)),
+      property: async (txid) => {
+        const { FakeBchWallet } = makeFakeWalletClass({ txid })
+        const uut = new WalletService({ config, BchWallet: FakeBchWallet })
+
+        let threw = false
+        try {
+          await uut.sendSats({ wallet: { mnemonic: 'm' }, toAddress: 'bitcoincash:qto', amountSats: 1000 })
+        } catch (err) {
+          threw = true
+          assert.include(err.message, 'Unexpected transaction id')
+        }
+        assert.isTrue(threw)
       }
     })
   })

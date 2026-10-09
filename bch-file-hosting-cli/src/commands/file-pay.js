@@ -8,24 +8,16 @@
 */
 
 // Local libraries
-import FileCommand, { UsageError } from '../lib/file-command.js'
-import WalletStore, { isValidWalletName } from '../lib/wallet-store.js'
-import WalletService from '../lib/wallet-service.js'
+import WalletCommand, { UsageError } from '../lib/wallet-command.js'
+import HostingApi from '../lib/hosting-api.js'
 
-const MISSING_WALLET_MESSAGE = 'You must specify a wallet name with the -n flag.'
-
-class FilePay extends FileCommand {
+class FilePay extends WalletCommand {
   constructor (deps = {}) {
     super(deps)
 
-    // Encapsulate wallet dependencies so tests can replace them.
-    this.walletStore = deps.walletStore || new WalletStore()
-    this.walletService = deps.walletService || new WalletService({ config: this.config })
-
-    // Bind 'this' object to all subfunctions.
-    this.validateFlags = this.validateFlags.bind(this)
-    this.execute = this.execute.bind(this)
-    this.report = this.report.bind(this)
+    // WalletCommand supplies the wallet name check, store, and service; this
+    // command also needs the hosting API.
+    this.hostingApi = deps.hostingApi || new HostingApi({ config: this.config })
   }
 
   validateFlags (flags = {}) {
@@ -33,17 +25,7 @@ class FilePay extends FileCommand {
       throw new UsageError('You must specify a payment address with the -a flag.')
     }
 
-    if (!flags.name) {
-      throw new UsageError(MISSING_WALLET_MESSAGE)
-    }
-
-    if (!isValidWalletName(flags.name)) {
-      throw new UsageError(
-        `Invalid wallet name "${flags.name}". Use only letters, digits, hyphens, and underscores.`
-      )
-    }
-
-    return true
+    return super.validateFlags(flags)
   }
 
   async execute (flags = {}) {

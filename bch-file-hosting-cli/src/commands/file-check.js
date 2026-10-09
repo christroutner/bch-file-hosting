@@ -61,3 +61,7 @@ class FileCheck extends Command {
 
 export { UsageError }
 export default FileCheck
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T03:53:23.784Z","module_hash":"278bc99204b1f16f7403dc225971312e79de7d9b8d7ff9b00a93f8527f44d5a1","functions":[{"id":"func/FileCheck.constructor","name":"FileCheck.constructor","line":14,"end_line":21,"hash":"4c2caff0feca92ece20635afce34e3210bca308eabb7b9b8848733631494e409"},{"id":"func/FileCheck.validateFlags","name":"FileCheck.validateFlags","line":23,"end_line":29,"hash":"d516285975bcbfebe26a7bc246e12ce82bba6369d7d0b9e7469ef37aa2ce7999"},{"id":"func/FileCheck.execute","name":"FileCheck.execute","line":31,"end_line":33,"hash":"d1b92cecb74e1960f13c17ef12b34d8cdd3199d388a5bf70e449003943761c17"},{"id":"func/FileCheck.report","name":"FileCheck.report","line":35,"end_line":59,"hash":"053fdb2846ff8b5d906ff8ed6e250498ad47b42ce10439fd096d9e2b21399397"}]}
+// mutate4javascript-manifest-end

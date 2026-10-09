@@ -350,7 +350,7 @@ const handlers = [
     pattern: /^the command prints the CID <([A-Za-z0-9_]+)>$/,
     run (match, example, world) {
       const expected = exampleValue(example, match[1])
-      if (!world.stdout.includes(expected)) {
+      if (!world.stdout.includes(`CID: ${expected}`)) {
         throw new Error(`stdout did not print the CID ${expected}: ${JSON.stringify(world.stdout)}`)
       }
     }

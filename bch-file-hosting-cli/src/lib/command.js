@@ -44,3 +44,7 @@ class Command {
 
 export { UsageError }
 export default Command
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T03:53:19.324Z","module_hash":"400da2c75c7bb036c849d736ee856f253762fe0a56e334e6874c21609206d142","functions":[{"id":"func/Command.constructor","name":"Command.constructor","line":18,"end_line":27,"hash":"a4ed036373b0bc553acfc941ab902736e9eb1b43e6c4358bb1753c8b5d75e435"},{"id":"func/Command.run","name":"Command.run","line":29,"end_line":42,"hash":"cc4678d5060aa6d544413d8d8e5becc0de219962541f2fecf3564b6e66859935"}]}
+// mutate4javascript-manifest-end

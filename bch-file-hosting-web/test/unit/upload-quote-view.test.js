@@ -107,6 +107,20 @@ test('renders the CID, download URL, gateway URL, and payment transaction', () =
   assert.ok(html.includes('abc123'))
 })
 
+test('renders exactly one gateway link per gateway URL', () => {
+  const html = render({
+    status: 'paid',
+    filename: 'photo.jpg',
+    cid: 'bafy123',
+    downloadUrl: 'http://localhost:5050/download/bafy123',
+    gatewayUrls: ['https://ipfs.io/ipfs/bafy123/photo.jpg', 'https://dweb.link/ipfs/bafy123/photo.jpg'],
+    txid: 'abc123'
+  })
+
+  assert.equal((html.match(/file-upload-gateway/g) || []).length, 2)
+  assert.ok(!html.includes('Gateway: <a></a>'))
+})
+
 test('renders the expired and pending messages', () => {
   const expired = render({ status: 'expired', message: 'This quote has expired.' })
   const pending = render({ status: 'pending', message: 'Payment not confirmed.' })

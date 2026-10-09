@@ -79,7 +79,9 @@ export default {
 
   // Access control
   adminApiKey: process.env.ADMIN_API_KEY || '',
-  rateLimitPerMin: toNumber(process.env.RATE_LIMIT_PER_MIN, 30)
+  rateLimitPerMin: toNumber(process.env.RATE_LIMIT_PER_MIN, 30),
+  // Set when running behind a reverse proxy, so rate limits use the client IP.
+  trustProxy: toBool(process.env.TRUST_PROXY, false)
 }
 
 export { toNumber, toBool, toList }

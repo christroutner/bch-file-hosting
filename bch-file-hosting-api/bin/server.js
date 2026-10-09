@@ -1,13 +1,15 @@
 /*
   Service entry point. Starts the adapters (LevelDB, server wallet, IPFS node,
-  pinning registry) and shuts them down cleanly on SIGINT or SIGTERM.
-  The REST API is attached here in milestone 5 of the short-term plan.
+  pinning registry), the use-cases, the REST API, and the timers. Shuts them
+  down in reverse order on SIGINT or SIGTERM.
 */
 
 import { fileURLToPath } from 'url'
 
 import defaultConfig from '../config/index.js'
 import Adapters from '../src/adapters/index.js'
+import UseCases from '../src/use-cases/index.js'
+import Controllers from '../src/controllers/index.js'
 
 class Server {
   constructor ({ config = defaultConfig, adapters, proc = process } = {}) {
@@ -15,6 +17,14 @@ class Server {
     this.adapters = adapters || new Adapters({ config })
     this.process = proc
     this.isShuttingDown = false
+
+    // Encapsulated for unit tests.
+    this.UseCases = UseCases
+    this.Controllers = Controllers
+
+    this.useCases = null
+    this.controllers = null
+    this.httpServer = null
 
     this.start = this.start.bind(this)
     this.shutdown = this.shutdown.bind(this)
@@ -26,12 +36,39 @@ class Server {
 
     await this.adapters.start()
 
+    this.useCases = new this.UseCases({ adapters: this.adapters })
+    this.controllers = new this.Controllers({
+      useCases: this.useCases,
+      adapters: this.adapters,
+      config: this.config
+    })
+
+    const app = this.controllers.buildApp()
+    this.httpServer = await this.listen(app, this.config.port)
+    this.controllers.startTimers()
+
     for (const signal of ['SIGINT', 'SIGTERM']) {
       this.process.once(signal, () => this.shutdown(signal))
     }
 
-    logger.info('bch-file-hosting-api is ready. Press Ctrl+C to stop.')
+    logger.info(`bch-file-hosting-api listening on port ${this.config.port}. Press Ctrl+C to stop.`)
     return true
+  }
+
+  listen (app, port) {
+    return new Promise((resolve, reject) => {
+      const server = app.listen(port)
+      server.once('listening', () => resolve(server))
+      server.once('error', reject)
+    })
+  }
+
+  closeHttpServer () {
+    if (!this.httpServer) return Promise.resolve()
+    return new Promise((resolve) => {
+      this.httpServer.close(() => resolve())
+      this.httpServer.closeIdleConnections()
+    })
   }
 
   async shutdown (signal) {
@@ -42,6 +79,8 @@ class Server {
     logger.info(`Received ${signal}, shutting down`)
 
     try {
+      if (this.controllers) this.controllers.stopTimers()
+      await this.closeHttpServer()
       await this.adapters.stop()
       logger.info('Shutdown complete')
       this.process.exit(0)

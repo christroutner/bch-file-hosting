@@ -105,6 +105,7 @@ bch-file-hosting-api/
 | `PINNING_PROVIDERS` | `` (empty) | Third-party providers; Lighthouse added in phase 5 |
 | `ADMIN_API_KEY` | (required in production) | D19 |
 | `RATE_LIMIT_PER_MIN` | `30` | Per-IP limit on public routes |
+| `TRUST_PROXY` | `false` | Set behind a reverse proxy so rate limits see the client IP |
 
 ### A3. Adapters
 
@@ -202,7 +203,8 @@ All responses are JSON with a `success` boolean, except `/download`.
 | `GET` | `/health` | — | `{ success, ipfs: 'up', db: 'up', version }` |
 | `GET` | `/admin/invoices` | `?status=`, header `x-api-key` | `{ success, invoices: [...] }` |
 | `POST` | `/admin/files/:cid/delete` | header `x-api-key` | `{ success }` (moderation: unpin everywhere) |
-| `POST` | `/admin/sweeps/retry` | header `x-api-key` | `{ success, swept: [...] }` |
+| `POST` | `/admin/sweeps/retry` | header `x-api-key` | `{ success, swept: [...], failed: [...], empty: [...] }` |
+| `POST` | `/admin/cleanup/run` | header `x-api-key` | `{ success, checked, deleted, rescued, failed }` (run unpaid cleanup now) |
 
 - [ ] Upload middleware: multer disk storage in `UPLOAD_TMP_DIR`,
       `limits.fileSize = MAX_FILE_SIZE_BYTES`, single field `file`. Oversize ->

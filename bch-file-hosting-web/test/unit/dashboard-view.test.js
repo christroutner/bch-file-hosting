@@ -68,8 +68,16 @@ test('renders one row per file in feed order', () => {
 
 test('formats the size in decimal units', () => {
   assert.ok(renderFile({ sizeBytes: 999 }).includes('999 bytes'))
+  assert.ok(renderFile({ sizeBytes: 1000 }).includes('1.00 KB'))
   assert.ok(renderFile({ sizeBytes: 1024 }).includes('1.02 KB'))
   assert.ok(renderFile({ sizeBytes: 1000000 }).includes('1.00 MB'))
+})
+
+test('leaves a CID of exactly sixteen characters untruncated', () => {
+  const cid = 'a'.repeat(16)
+
+  assert.equal(DashboardView.truncateCid(cid), cid)
+  assert.equal(DashboardView.truncateCid(`${cid}a`), 'aaaaaaaa...aaaaaaaa')
 })
 
 test('formats the paid and hosting times as UTC minute timestamps', () => {

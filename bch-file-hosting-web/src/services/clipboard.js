@@ -24,4 +24,8 @@ function copyToClipboard (value, clipboard = defaultClipboard()) {
   }
 }
 
-module.exports = { copyToClipboard }
+module.exports = { copyToClipboard, defaultClipboard }
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T23:52:29.150Z","module_hash":"58b69752092084fdf6548f660c66dbddf6f3e3921024bbc10ec459d41d79de29","functions":[{"id":"func/defaultClipboard","name":"defaultClipboard","line":14,"end_line":17,"hash":"e3211984d6afe723cc309e17648b7033660bb2c33f5a00e8ec39d17c43abd19e"},{"id":"func/copyToClipboard","name":"copyToClipboard","line":21,"end_line":25,"hash":"9cc3646ada2d53a3e317baaa20b9a0e247c81dbe5cd84aa544c5d288c12921d5"}]}
+// mutate4javascript-manifest-end

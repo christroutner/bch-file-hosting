@@ -21,6 +21,7 @@ const ReactDOMServer = require('react-dom/server')
 
 const FileUploadPage = require('../../src/services/file-upload-page')
 const FileStatusPage = require('../../src/services/file-status-page')
+const HostingApi = require('../../src/services/hosting-api')
 const UploadQuoteView = require('../../src/components/app-body/file-hosting/upload-quote-view')
 const FileStatusView = require('../../src/components/app-body/file-status/file-status-view')
 
@@ -61,7 +62,8 @@ function createWorld () {
     walletError: null,
     checkError: null,
     checkResults: [],
-    pendingPaid: null
+    pendingPaid: null,
+    browserTransport: null
   }
 }
 
@@ -100,6 +102,27 @@ function makeWallet (world) {
       return world.walletTxid || 'acceptance-txid'
     }
   }
+}
+
+// A browser-like global fetch. A real browser's native fetch rejects any
+// receiver that is not the global object, so this double enforces the same
+// contract: a bare `this.fetch(...)` call by an adapter would throw before any
+// request. It records the calls and answers with the configured upload
+// response.
+function makeBrowserTransport (world) {
+  const calls = []
+  function browserFetch (url, options) {
+    if (this !== globalThis) {
+      throw new TypeError("'fetch' called on an object that does not implement interface Window.")
+    }
+    calls.push({ url, options })
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      json: async () => world.response
+    })
+  }
+  return { calls, fetch: browserFetch }
 }
 
 // Render the current page state once, through the same component the browser
@@ -143,6 +166,33 @@ const handlers = [
         maxConfirmations: 10
       })
       world.statusPage = new FileStatusPage({ hostingApi })
+    }
+  },
+  {
+    name: 'a hosting web page whose API adapter uses the browser fetch transport',
+    pattern: /^a hosting web page whose API adapter uses the browser fetch transport$/,
+    run (m, example, world) {
+      world.browserTransport = makeBrowserTransport(world)
+      globalThis.fetch = world.browserTransport.fetch
+      const hostingApi = new HostingApi({ config: { apiUrl: 'http://localhost:5050' } })
+      world.page = new FileUploadPage({
+        hostingApi,
+        wallet: makeWallet(world),
+        now: world.now,
+        sleep: async () => {},
+        maxConfirmations: 10
+      })
+    }
+  },
+  {
+    name: 'the browser transport replies to the upload',
+    pattern: /^the browser transport replies to the upload with (<[A-Za-z0-9_]+>) satoshis at (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.response = {
+        alreadyHosted: false,
+        priceSats: Number(resolveParam(m[1], example)),
+        paymentAddress: resolveParam(m[2], example)
+      }
     }
   },
   {
@@ -270,7 +320,12 @@ const handlers = [
     pattern: /^the visitor uploads the file (<[A-Za-z0-9_]+>)$/,
     async run (m, example, world) {
       const name = resolveParam(m[1], example)
-      await transition(world, () => world.page.upload({ name }))
+      // The real upload adapter builds a FormData body, which only accepts a
+      // Blob or File. The browser-transport feature drives the real adapter,
+      // so build a real File; the other features use a fake adapter and only
+      // need the name.
+      const file = world.browserTransport ? new File(['acceptance'], name) : { name }
+      await transition(world, () => world.page.upload(file))
     }
   },
   {
@@ -380,6 +435,27 @@ const handlers = [
       }
       if (last.amountSats !== amount) {
         throw new Error(`Expected the wallet to pay ${amount} satoshis, got ${last.amountSats}.`)
+      }
+    }
+  },
+  {
+    name: 'the browser transport received a POST with a file',
+    pattern: /^the browser transport received a POST to (<[A-Za-z0-9_]+>) with the file (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      const expectedUrl = resolveParam(m[1], example)
+      const expectedName = resolveParam(m[2], example)
+      const calls = (world.browserTransport && world.browserTransport.calls) || []
+      const call = calls.find((entry) => entry.options.method === 'POST')
+      if (!call) {
+        throw new Error('The browser transport did not receive a POST.')
+      }
+      if (call.url !== expectedUrl) {
+        throw new Error(`Expected a POST to ${expectedUrl}, got ${call.url}.`)
+      }
+      const sent = call.options.body.get('file')
+      const sentName = sent && sent.name
+      if (sentName !== expectedName) {
+        throw new Error(`Expected the POST to carry the file ${expectedName}, got ${sentName}.`)
       }
     }
   },

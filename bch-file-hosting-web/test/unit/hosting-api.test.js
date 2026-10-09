@@ -58,6 +58,31 @@ test('uploads the file to POST /files and returns the parsed body', async () => 
   assert.equal(body.priceSats, 2000)
 })
 
+test('calls the fetch transport with the browser receiver, not the adapter', async () => {
+  // A browser's native fetch rejects any receiver that is not the global
+  // object, throwing before the request is sent. Simulate that contract so a
+  // bare `this.fetch(...)` call is caught rather than masked.
+  const calls = []
+  function browserFetch (url, options) {
+    if (this !== globalThis) {
+      throw new TypeError("'fetch' called on an object that does not implement interface Window.")
+    }
+    calls.push({ url, options })
+    return Promise.resolve(jsonResponse(200, { success: true, priceSats: 2000, paymentAddress: 'bitcoincash:qquote' }))
+  }
+  const api = new HostingApi({
+    config: { apiUrl: 'http://localhost:5050' },
+    fetch: browserFetch,
+    FormData: FakeFormData
+  })
+
+  const body = await api.upload({ name: 'photo.jpg' })
+
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].url, 'http://localhost:5050/files')
+  assert.equal(body.priceSats, 2000)
+})
+
 test('throws HostingApiError carrying the server error message', async () => {
   const fakeFetch = async () => jsonResponse(413, { error: 'File is too large' })
   const api = new HostingApi({

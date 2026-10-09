@@ -11,18 +11,7 @@
 import { assert } from 'chai'
 
 import WalletStore from '../../src/lib/wallet-store.js'
-import { forAll, integerBetween } from './lib/harness.js'
-
-const ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789-_'
-
-function randomString (random, min, max) {
-  const length = integerBetween(random, min, max)
-  let out = ''
-  for (let i = 0; i < length; i++) {
-    out += ALPHABET[integerBetween(random, 0, ALPHABET.length - 1)]
-  }
-  return out
-}
+import { forAll, randomString, randomWallet } from './lib/harness.js'
 
 // An in-memory fs so arbitrary names and bytes never touch disk.
 function makeFakeFs () {
@@ -50,11 +39,7 @@ describe('#wallet-store.property.js', () => {
       runs: 300,
       generate: (random) => ({
         name: randomString(random, 1, 20),
-        wallet: {
-          mnemonic: randomString(random, 1, 60),
-          cashAddress: `bitcoincash:q${randomString(random, 10, 30)}`,
-          hdPath: `m/44'/245'/0'/0/${integerBetween(random, 0, 100000)}`
-        }
+        wallet: randomWallet(random)
       }),
       property: ({ name, wallet }) => {
         const uut = store()

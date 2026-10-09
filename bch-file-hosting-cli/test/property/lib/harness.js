@@ -23,6 +23,28 @@ export function integerBetween (random, min, max) {
   return min + Math.floor(random() * (max - min + 1))
 }
 
+// Default alphabet for generated identifiers: letters, digits, hyphen, underscore.
+export const DEFAULT_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789-_'
+
+// Random string with length in [min, max] drawn from `alphabet`.
+export function randomString (random, min, max, alphabet = DEFAULT_ALPHABET) {
+  const length = integerBetween(random, min, max)
+  let out = ''
+  for (let i = 0; i < length; i++) {
+    out += alphabet[integerBetween(random, 0, alphabet.length - 1)]
+  }
+  return out
+}
+
+// A structurally valid minimal-slp-wallet walletInfo with random fields.
+export function randomWallet (random) {
+  return {
+    mnemonic: `mnemonic ${randomString(random, 10, 60)}`,
+    cashAddress: `bitcoincash:q${randomString(random, 20, 38)}`,
+    hdPath: `m/44'/245'/0'/0/${integerBetween(random, 0, 100000)}`
+  }
+}
+
 // Run `property` over `runs` generated inputs. Throws with the seed, run, and
 // counterexample so a failure can be replayed.
 export function forAll ({ seed = 1, runs = 200, generate, property }) {

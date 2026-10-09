@@ -12,28 +12,10 @@
 import { assert } from 'chai'
 
 import WalletCreate from '../../src/commands/wallet-create.js'
-import { forAllAsync, integerBetween } from './lib/harness.js'
+import { forAllAsync, randomString, randomWallet } from './lib/harness.js'
 
 const config = { apiUrl: 'http://localhost:5050' }
 const USAGE_MESSAGE = 'You must specify a wallet name with the -n flag.'
-const ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789-_'
-
-function randomString (random, min, max) {
-  const length = integerBetween(random, min, max)
-  let out = ''
-  for (let i = 0; i < length; i++) {
-    out += ALPHABET[integerBetween(random, 0, ALPHABET.length - 1)]
-  }
-  return out
-}
-
-function randomWallet (random) {
-  return {
-    mnemonic: `mnemonic ${randomString(random, 10, 60)}`,
-    cashAddress: `bitcoincash:q${randomString(random, 20, 38)}`,
-    hdPath: `m/44'/245'/0'/0/${integerBetween(random, 0, 100000)}`
-  }
-}
 
 // Build a command with an injected store and service that record every call.
 function build ({ exists = false, createdWallet = {}, createError = null } = {}) {

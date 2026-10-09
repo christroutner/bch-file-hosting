@@ -35,8 +35,8 @@ class FileUpload {
       throw new Error(`Property 'filename' must be at most ${MAX_FILENAME_LENGTH} characters`)
     }
 
-    if (!Number.isInteger(sizeBytes) || sizeBytes < 0) {
-      throw new Error("Property 'sizeBytes' must be a non-negative integer")
+    if (!Number.isInteger(sizeBytes) || sizeBytes <= 0) {
+      throw new Error("Property 'sizeBytes' must be a positive integer")
     }
     if (!Number.isInteger(maxFileSizeBytes) || maxFileSizeBytes <= 0) {
       throw new Error("Property 'maxFileSizeBytes' must be a positive integer")

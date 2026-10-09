@@ -340,21 +340,21 @@ At the end of each session, update this file:
 - Note the current `master` HEAD commit.
 - State the next feature to work on.
 
-Latest session (2026-10-09): completed **`file-pay`** (P6.5) after
-`file-status` (P6.4) and the `wallet-name-validation` hardening earlier the same
-day. `file-pay -a <address> -n <name> [--json]` pays an unpaid invoice from a
-named local wallet via `requiredSats - receivedSats`; a paid invoice is a no-op.
-`docs/reviews/file-pay-verification.json` reports `verify.sh cli` pass 4/4
-(record `git_sha` `1a7d74b`, docs-only behind the tip) and the independent
-post-merge acceptance check passed all 6 suites, including the 12 file-pay
-executions. The CLI PSF donation is an **accepted product decision** (every
-`file-pay` deliberately adds 2,000 sats to the PSF; `sendSats` uses
-`minimal-slp-wallet.send()`), so a minimum invoice costs the payer
-`amountSats + 2,000 + fee`. Open follow-ups: the mutation-inert mnemonic-hygiene
-scenarios and the file-upload `upload_path` column. Prior cycles (Q1,
-P5.1-P5.3, P6.1-P6.4) are in the backlog.
+Latest session (2026-10-09): completed the phase-6 CLI, ending with
+**`file-host`** (P6.6) after `file-pay` (P6.5), `file-status` (P6.4), and the
+`wallet-name-validation` hardening earlier the same day. `file-host -f <path> -n
+<name> [--json]` uploads, pays the quote from the named wallet, and polls
+check-payment until visible. `docs/reviews/file-host-verification.json` reports
+`verify.sh cli` pass 4/4 (record `git_sha` `1f78ae2`, docs-only behind the tip)
+and the independent post-merge acceptance check passed all 7 suites, including
+the 13 file-host executions. The CLI PSF donation is an accepted feature. Open
+follow-ups: the unasserted `upload_path`/`api_txid` Gherkin columns and the
+mutation-inert mnemonic-hygiene scenarios. Prior cycles (Q1, P5.1-P5.3,
+P6.1-P6.5) are in the backlog.
 
-Current `master` HEAD: `f579aafd67` (Record file-pay architect review and
+Current `master` HEAD: `8a93edf5f7` (Record file-host architect review and
 verification).
 
-Next action: scope the last phase-6 command, `file-host`, with the user.
+Next action: roadmap phase 6 is complete; scope roadmap phase 7
+(`bch-file-hosting-web`) with the user, or address the open decisions (Q1, Q2,
+Q3, Q9) first.

@@ -30,7 +30,8 @@ merged to `master` at `55c3ddc714`. P6.3 `wallet-create`/`wallet-balance` is
 complete and merged to `master` at `d3e54d4cf2`. The `wallet-name-validation`
 follow-up hardening is complete and merged at `08c2cd88dc`. P6.4 `file-status`
 is complete and merged at `faabc07d8e`. P6.5 `file-pay` is complete and merged
-at `f579aafd67`.
+at `f579aafd67`. P6.6 `file-host` is complete and merged at `8a93edf5f7`, so
+**roadmap phase 6 (CLI) is complete**.
 
 ## In progress
 
@@ -38,7 +39,15 @@ at `f579aafd67`.
 
 ## Up next (in order)
 
-- Remaining phase-6 CLI command (`file-host`); scope it with the user.
+- **Roadmap phase 7: `bch-file-hosting-web`** (Vite + React + react-bootstrap
+  UI); scope and scaffold it with the user. Onboarding a new component needs a
+  `verify.mjs` entry, a `monorepo.prompt` row, and self-provisioning for any
+  gitignored runtime directories (gotcha #8).
+- **CLI spec-quality follow-ups:** the `upload_path` cells (file-upload,
+  file-host) and the file-host non-JSON `api_txid` cells survive soft mutation
+  because no assertion depends on them; either anchor them with a `Then` or
+  prune the columns. The wallet mnemonic-hygiene scenarios remain
+  mutation-inert.
 
 ## Needs a decision from the user
 
@@ -51,6 +60,27 @@ them until the user decides.
 - **Late payments and refunds (Q9).**
 
 ## Recently completed
+
+- **P6.6 `file-host` — upload, pay, and confirm in one step (2026-10-09):**
+  `file-host -f <path> -n <name> [--json]` uploads the file, short-circuits on
+  an `alreadyHosted` quote, otherwise pays the quote's `priceSats` from the
+  named local wallet and polls `POST /files/check-payment` (bounded retries with
+  an injected sleep) until the payment is visible, then prints the CID, download
+  URL, and gateway URLs; a never-confirmed payment fails with
+  `Payment not confirmed.` Exit codes 0/1/2. `FileHost` extends `FileUpload` and
+  reuses the refactorer's shared `attachWallet`/`validateWalletName` helpers.
+  Spec `file-host.feature` (eight scenarios). Pipeline commits: specifier
+  `0a1a72d`, coder `41005d3`, refactorer `2a683d5`, architect `1f78ae2`
+  (verification `git_sha`), docs `8a93edf`, merged to `master` at `8a93edf5f7`
+  (fast-forward). `verify.sh cli` pass 4/4 (unit 107, property 58, acceptance
+  all 7 suites, lint ok); unit coverage 100%; language mutation 0 survived / 0
+  uncovered across `file-host.js` and `wallet-command.js`; DRY clean; CRAP <=
+  6.0; soft Gherkin file-host 54/67 killed. Independent acceptance check after
+  merge: all 7 suites passed, including the 13 file-host executions. Architect
+  summary: `docs/reviews/file-host-summary.md`. This completes roadmap phase 6.
+  - Follow-up (mutation): the `upload_path` cells (10 in file-host, 9 in
+    file-upload) and the non-JSON `api_txid` cells (3 in file-host) are
+    unasserted and survive soft mutation; anchor them or prune.
 
 - **P6.5 `file-pay` — pay an invoice from a local wallet (2026-10-09):**
   `file-pay -a <address> -n <name> [--json]` looks up the invoice via

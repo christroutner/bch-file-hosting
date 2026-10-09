@@ -30,7 +30,7 @@
     "test:acceptance": "node acceptance/acceptance.js",
     "eject": "react-scripts eject",
     "lint": "standard --env mocha --fix",
-    "crap": "crap4javascript src/services/hosting-api.js src/services/file-upload-page.js src/components/app-body/file-hosting/upload-quote-view.js",
+    "crap": "crap4javascript src/services/hosting-api.js src/services/file-upload-page.js src/services/browser-wallet.js src/services/quote-countdown.js src/components/app-body/file-hosting/upload-quote-view.js",
     "dry": "dry4javascript src",
     "mutate": "mutate4javascript",
     "pub": "node deploy/publish-main.js",

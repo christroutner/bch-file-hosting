@@ -79,6 +79,15 @@ function errorState (err, filename) {
   return { status: 'error', filename, message }
 }
 
+// A wallet payment must yield a non-empty transaction id; anything else is a
+// wallet failure and is surfaced as the page error state.
+function requireTxid (txid) {
+  if (typeof txid !== 'string' || !txid) {
+    throw new Error('Unexpected transaction id from wallet')
+  }
+  return txid
+}
+
 class FileUploadPage {
   constructor ({
     hostingApi,
@@ -133,18 +142,13 @@ class FileUploadPage {
     if (!this.quote) throw new Error('There is no open quote to pay')
 
     try {
-      const txid = await this.wallet.send({
+      this.txid = requireTxid(await this.wallet.send({
         address: this.quote.paymentAddress,
         amountSats: this.quote.priceSats
-      })
-      if (typeof txid !== 'string' || !txid) {
-        throw new Error('Unexpected transaction id from wallet')
-      }
-      this.txid = txid
-      return txid
+      }))
+      return this.txid
     } catch (err) {
-      const message = err && err.message ? err.message : GENERIC_ERROR_MESSAGE
-      this.state = { status: 'error', filename: this.quote.filename, message }
+      this.state = errorState(err, this.quote.filename)
       return null
     }
   }

@@ -186,6 +186,21 @@ test('shows the wallet error when the payment fails', async () => {
   assert.deepEqual(page.getViewModel(), { status: 'error', filename: 'photo.jpg', message: 'Insufficient funds' })
 })
 
+test('shows an error when the wallet returns no transaction id', async () => {
+  const wallet = { send: async () => '' }
+  const page = paymentPage({ wallet })
+  await page.upload({ name: 'photo.jpg' })
+
+  const txid = await page.payFromWallet()
+
+  assert.equal(txid, null)
+  assert.deepEqual(page.getViewModel(), {
+    status: 'error',
+    filename: 'photo.jpg',
+    message: 'Unexpected transaction id from wallet'
+  })
+})
+
 test('confirms a payment that becomes visible on a later poll', async () => {
   const paid = {
     status: 'paid',

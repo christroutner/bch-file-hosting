@@ -181,3 +181,78 @@ test('property: an unreadable error body still rejects with a HostingApiError', 
     }
   })
 })
+
+test('property: checkPayment POSTs the address as JSON to /files/check-payment', async () => {
+  await forAllAsync({
+    seed: 6,
+    runs: 300,
+    generate: (random) => ({
+      apiUrl: randomApiUrl(random),
+      paymentAddress: `bitcoincash:q${randomString(random, 10, 40, URL_ALPHABET)}`,
+      body: { success: true, status: 'unpaid', receivedSats: 0, requiredSats: integerBetween(random, 1, 100000) }
+    }),
+    property: async ({ apiUrl, paymentAddress, body }) => {
+      const calls = []
+      const fetch = async (url, options) => {
+        calls.push({ url, options })
+        return { ok: true, status: 200, json: async () => body }
+      }
+      const api = makeApi({ apiUrl, fetch })
+
+      const result = await api.checkPayment({ paymentAddress })
+
+      assert.equal(calls.length, 1)
+      assert.equal(calls[0].url, `${apiUrl}/files/check-payment`)
+      assert.equal(calls[0].options.method, 'POST')
+      assert.equal(calls[0].options.headers['Content-Type'], 'application/json')
+      assert.equal(calls[0].options.body, JSON.stringify({ paymentAddress }))
+      assert.deepEqual(result, body)
+    }
+  })
+})
+
+test('property: a non-ok check response rejects with the server error string', async () => {
+  await forAllAsync({
+    seed: 7,
+    runs: 200,
+    generate: (random) => ({
+      status: integerBetween(random, 400, 599),
+      error: randomString(random, 1, 60, NAME_ALPHABET)
+    }),
+    property: async ({ status, error }) => {
+      const api = makeApi({
+        apiUrl: 'http://localhost:5050',
+        fetch: async () => ({ ok: false, status, json: async () => ({ success: false, error }) })
+      })
+
+      const { error: thrown } = await capture(api.checkPayment({ paymentAddress: 'bitcoincash:qcheck' }))
+
+      assert.ok(thrown instanceof HostingApiError)
+      assert.equal(thrown.message, error)
+    }
+  })
+})
+
+test('property: a non-ok check response without a usable error falls back to the HTTP status', async () => {
+  const unusableBodies = [null, {}, { error: '' }, { error: 0 }, { error: false }]
+
+  await forAllAsync({
+    seed: 8,
+    runs: 200,
+    generate: (random) => ({
+      status: integerBetween(random, 400, 599),
+      body: unusableBodies[integerBetween(random, 0, unusableBodies.length - 1)]
+    }),
+    property: async ({ status, body }) => {
+      const api = makeApi({
+        apiUrl: 'http://localhost:5050',
+        fetch: async () => ({ ok: false, status, json: async () => body })
+      })
+
+      const { error: thrown } = await capture(api.checkPayment({ paymentAddress: 'bitcoincash:qcheck' }))
+
+      assert.ok(thrown instanceof HostingApiError)
+      assert.ok(thrown.message.includes(`HTTP ${status}`))
+    }
+  })
+})

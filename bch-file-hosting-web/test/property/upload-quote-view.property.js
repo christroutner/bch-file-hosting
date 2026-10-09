@@ -24,6 +24,7 @@ const UploadQuoteView = require('../../src/components/app-body/file-hosting/uplo
 const { forAll, integerBetween, randomString } = require('./lib/harness')
 
 const TEXT_ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .-_'
+const URL_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
 
 function render (state) {
   return ReactDOMServer.renderToStaticMarkup(React.createElement(UploadQuoteView, { state }))
@@ -142,6 +143,66 @@ test('property: untrusted file names and messages are HTML-escaped', () => {
       assert.ok(!html.includes('<script>'))
       assert.ok(!html.includes('</script>'))
       assert.ok(html.includes(escaped))
+    }
+  })
+})
+
+test('property: a paid upload renders the CID, download, gateways, and transaction', () => {
+  forAll({
+    seed: 7,
+    runs: 150,
+    generate: (random) => {
+      const gatewayCount = integerBetween(random, 0, 3)
+      const gatewayUrls = []
+      for (let i = 0; i < gatewayCount; i++) {
+        gatewayUrls.push(`https://gw${i}.test/ipfs/${randomString(random, 5, 30, URL_ALPHABET)}`)
+      }
+      return {
+        cid: `bafy${randomString(random, 10, 40, URL_ALPHABET)}`,
+        downloadUrl: `http://localhost:5050/download/${randomString(random, 5, 30, URL_ALPHABET)}`,
+        gatewayUrls,
+        txid: randomString(random, 1, 64, URL_ALPHABET)
+      }
+    },
+    property: ({ cid, downloadUrl, gatewayUrls, txid }) => {
+      const html = render({ status: 'paid', filename: 'photo.jpg', cid, downloadUrl, gatewayUrls, txid })
+
+      assert.ok(html.includes(`CID: ${cid}`))
+      assert.ok(html.includes(`href="${downloadUrl}"`))
+      assert.ok(html.includes(`Payment: ${txid}`))
+      for (const url of gatewayUrls) assert.ok(html.includes(url))
+    }
+  })
+})
+
+test('property: expired and pending states render their message and class', () => {
+  forAll({
+    seed: 8,
+    runs: 150,
+    generate: (random) => ({
+      status: random() < 0.5 ? 'expired' : 'pending',
+      message: randomString(random, 1, 40, TEXT_ALPHABET)
+    }),
+    property: ({ status, message }) => {
+      const html = render({ status, message })
+
+      assert.ok(html.includes(message))
+      assert.ok(html.includes(`file-upload-${status}`))
+    }
+  })
+})
+
+test('property: a quote with a countdown shows the countdown and a QR code', () => {
+  forAll({
+    seed: 9,
+    runs: 150,
+    generate: (random) => ({ countdown: randomString(random, 1, 20, TEXT_ALPHABET) }),
+    property: ({ countdown }) => {
+      const html = render({ status: 'quote', filename: 'photo.jpg', priceSats: 1, paymentAddress: 'addr', countdown })
+
+      assert.ok(html.includes(`Quote expires in ${countdown}`))
+      assert.ok(html.includes('file-upload-countdown'))
+      assert.ok(html.includes('file-upload-qr'))
     }
   })
 })

@@ -8,23 +8,15 @@
 */
 
 // Local libraries
-import config from '../../config/index.js'
-import HostingApi from '../lib/hosting-api.js'
+import Command, { UsageError } from '../lib/command.js'
 
-// A flag validation failure, which maps to exit code 2.
-class UsageError extends Error {}
-
-class FileCheck {
-  constructor ({ config: cfg = config, hostingApi, output = console.log, errorOutput = console.error } = {}) {
-    // Encapsulate dependencies so tests can replace them.
-    this.config = cfg
-    this.hostingApi = hostingApi || new HostingApi({ config: cfg })
-    this.output = output
-    this.errorOutput = errorOutput
+class FileCheck extends Command {
+  constructor (deps) {
+    super(deps)
 
     // Bind 'this' object to all subfunctions.
-    this.run = this.run.bind(this)
     this.validateFlags = this.validateFlags.bind(this)
+    this.execute = this.execute.bind(this)
     this.report = this.report.bind(this)
   }
 
@@ -36,19 +28,8 @@ class FileCheck {
     return true
   }
 
-  async run (flags = {}) {
-    try {
-      this.validateFlags(flags)
-
-      const result = await this.hostingApi.checkPayment({ paymentAddress: flags.address })
-
-      this.report(result, flags)
-
-      return 0
-    } catch (err) {
-      this.errorOutput(err.message)
-      return err instanceof UsageError ? 2 : 1
-    }
+  async execute (flags = {}) {
+    return this.hostingApi.checkPayment({ paymentAddress: flags.address })
   }
 
   report (result, flags) {

@@ -11,15 +11,6 @@
 import FileCommand, { UsageError } from '../lib/file-command.js'
 
 class FileCheck extends FileCommand {
-  constructor (deps) {
-    super(deps)
-
-    // Bind 'this' object to all subfunctions.
-    this.validateFlags = this.validateFlags.bind(this)
-    this.execute = this.execute.bind(this)
-    this.report = this.report.bind(this)
-  }
-
   validateFlags (flags = {}) {
     if (!flags.address) {
       throw new UsageError('You must specify a payment address with the -a flag.')

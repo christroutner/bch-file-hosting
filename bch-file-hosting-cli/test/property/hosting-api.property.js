@@ -14,18 +14,20 @@
 import { assert } from 'chai'
 
 import HostingApi, { HostingApiError } from '../../src/lib/hosting-api.js'
-import { forAllAsync, integerBetween } from './lib/harness.js'
+import { forAllAsync, integerBetween, randomString as generateString } from './lib/harness.js'
 
 const config = { apiUrl: 'http://localhost:5050' }
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .-_'
+const CID_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
 
+// Draw general text (filenames, byte payloads, errors) from this file's
+// alphabet, or a CID-shaped value from the base32-friendly alphabet.
 function randomString (random, min, max) {
-  const length = integerBetween(random, min, max)
-  let out = ''
-  for (let i = 0; i < length; i++) {
-    out += ALPHABET[integerBetween(random, 0, ALPHABET.length - 1)]
-  }
-  return out
+  return generateString(random, min, max, ALPHABET)
+}
+
+function randomCid (random) {
+  return `bafy${generateString(random, 12, 40, CID_ALPHABET)}`
 }
 
 function randomFilename (random) {
@@ -45,6 +47,15 @@ async function checkWith (fetch, paymentAddress) {
   const uut = new HostingApi({ config, fetch })
   try {
     return { result: await uut.checkPayment({ paymentAddress }), error: null }
+  } catch (err) {
+    return { result: null, error: err }
+  }
+}
+
+async function statusWith (fetch, cid) {
+  const uut = new HostingApi({ config, fetch })
+  try {
+    return { result: await uut.getStatus({ cid }), error: null }
   } catch (err) {
     return { result: null, error: err }
   }
@@ -157,6 +168,66 @@ describe('#hosting-api.property.js', () => {
 
         assert.instanceOf(thrown, HostingApiError)
         assert.equal(thrown.message, error)
+      }
+    })
+  })
+
+  it('should GET the CID path and return the parsed body', () => {
+    forAllAsync({
+      seed: 6,
+      runs: 200,
+      generate: randomCid,
+      property: async (cid) => {
+        let captured
+        const fetch = async (url, options) => {
+          captured = { url, options }
+          return { ok: true, status: 200, json: async () => ({ success: true, cid, status: 'pinned' }) }
+        }
+
+        const { result, error } = await statusWith(fetch, cid)
+
+        assert.isNull(error)
+        assert.equal(result.cid, cid)
+        assert.equal(captured.url, `${config.apiUrl}/files/${cid}`)
+        assert.equal(captured.options.method, 'GET')
+      }
+    })
+  })
+
+  it('should surface the API error string for any non-ok status response', () => {
+    forAllAsync({
+      seed: 7,
+      runs: 200,
+      generate: (random) => ({
+        status: integerBetween(random, 400, 599),
+        error: randomString(random, 1, 40)
+      }),
+      property: async ({ status, error }) => {
+        const fetch = async () => ({ ok: false, status, json: async () => ({ success: false, error }) })
+
+        const { error: thrown } = await statusWith(fetch, 'bafy-known')
+
+        assert.instanceOf(thrown, HostingApiError)
+        assert.equal(thrown.message, error)
+      }
+    })
+  })
+
+  it('should fall back to the HTTP status when the status error body has no usable message', () => {
+    forAllAsync({
+      seed: 8,
+      runs: 200,
+      generate: (random) => ({
+        status: integerBetween(random, 400, 599),
+        body: random() < 0.5 ? null : { success: false, error: '' }
+      }),
+      property: async ({ status, body }) => {
+        const fetch = async () => ({ ok: false, status, json: async () => body })
+
+        const { error: thrown } = await statusWith(fetch, 'bafy-known')
+
+        assert.instanceOf(thrown, HostingApiError)
+        assert.include(thrown.message, `HTTP ${status}`)
       }
     })
   })

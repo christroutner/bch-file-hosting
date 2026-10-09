@@ -21,10 +21,7 @@ class FileUpload extends FileCommand {
     this.path = path
 
     // Bind 'this' object to all subfunctions.
-    this.validateFlags = this.validateFlags.bind(this)
     this.readFile = this.readFile.bind(this)
-    this.execute = this.execute.bind(this)
-    this.report = this.report.bind(this)
   }
 
   validateFlags (flags = {}) {

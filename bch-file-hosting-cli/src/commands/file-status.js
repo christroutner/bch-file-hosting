@@ -10,15 +10,6 @@
 import FileCommand, { UsageError } from '../lib/file-command.js'
 
 class FileStatus extends FileCommand {
-  constructor (deps) {
-    super(deps)
-
-    // Bind 'this' object to all subfunctions.
-    this.validateFlags = this.validateFlags.bind(this)
-    this.execute = this.execute.bind(this)
-    this.report = this.report.bind(this)
-  }
-
   validateFlags (flags = {}) {
     if (!flags.cid) {
       throw new UsageError('You must specify a CID with the -c flag.')

@@ -114,6 +114,17 @@ describe('#file-status', () => {
       assert.include(output.join('\n'), 'Pin: lighthouse failed')
     })
 
+    it('should print no pins when the file record has none', async () => {
+      const { pins, ...withoutPins } = file
+      uut.hostingApi.getStatus.resolves(withoutPins)
+
+      const result = await uut.run({ cid: CID })
+
+      assert.equal(result, 0)
+      assert.include(output.join('\n'), `CID: ${CID}`)
+      assert.notInclude(output.join('\n'), 'Pin:')
+    })
+
     it('should return 1 and print the API error when the lookup is rejected', async () => {
       uut.hostingApi.getStatus.rejects(new Error('File not found'))
 

@@ -16,6 +16,11 @@ class FileCommand extends Command {
 
     // Encapsulate the API adapter so tests can replace it.
     this.hostingApi = deps.hostingApi || new HostingApi({ config: this.config })
+
+    // Bind 'this' object to all subfunctions.
+    this.validateFlags = this.validateFlags.bind(this)
+    this.execute = this.execute.bind(this)
+    this.report = this.report.bind(this)
   }
 }
 

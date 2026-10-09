@@ -22,6 +22,7 @@ class FilesRouter {
 
     app.post('/files', limit, this.upload, this.controller.uploadFile)
     app.post('/files/check-payment', limit, express.json(), this.controller.checkPayment)
+    app.get('/files', limit, this.controller.listFiles)
     app.get('/files/:cid', limit, this.controller.getFileStatus)
     app.get('/download/:cid', limit, this.controller.downloadFile)
   }

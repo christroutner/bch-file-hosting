@@ -10,6 +10,7 @@ import Invoice, { INVOICE_STATUS } from '../entities/invoice.js'
 import UseCase from './use-case.js'
 import { calculatePrice } from './pricing.js'
 import { buildLinks } from './links.js'
+import { paginateFeed } from './file-feed.js'
 import { NotFoundError, ValidationError } from './errors.js'
 
 const MS_PER_HOUR = 60 * 60 * 1000
@@ -25,6 +26,7 @@ class FileUseCases extends UseCase {
     this.unlink = unlink
 
     this.uploadAndQuote = this.uploadAndQuote.bind(this)
+    this.listFeed = this.listFeed.bind(this)
     this.getFileStatus = this.getFileStatus.bind(this)
     this.getDownload = this.getDownload.bind(this)
   }
@@ -156,6 +158,17 @@ class FileUseCases extends UseCase {
       config: this.config,
       providers: this.adapters.pinning.getProviders()
     })
+  }
+
+  // One page of the public feed: paid files, newest paid first, limited and
+  // paginated by an opaque cursor.
+  async listFeed ({ limit, cursor } = {}) {
+    const files = await this.adapters.localdb.files.list()
+    try {
+      return paginateFeed(files, { limit, cursor })
+    } catch (err) {
+      throw new ValidationError(err.message)
+    }
   }
 
   async getFileStatus ({ cid }) {

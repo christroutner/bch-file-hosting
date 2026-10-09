@@ -280,6 +280,86 @@ describe('#file-use-cases.js', () => {
     })
   })
 
+  describe('#listFeed', () => {
+    async function seedFile (overrides = {}) {
+      await adapters.localdb.files.put({
+        cid: TEST_CID,
+        filename: 'photo.jpg',
+        sizeBytes: 20000,
+        paymentAddress: fakeAddress(1),
+        status: FILE_STATUS.PINNED,
+        pins: [{ provider: 'local-helia', status: 'pinned' }],
+        createdAt: '2026-01-01T00:00:00.000Z',
+        paidAt: '2026-01-02T00:00:00.000Z',
+        hostedUntil: '2027-01-02T00:00:00.000Z',
+        ...overrides
+      })
+    }
+
+    it('should publish paid files newest paid first and hide unpaid ones', async () => {
+      await seedFile({ cid: 'bafy-old', paidAt: '2026-01-01T00:00:00.000Z' })
+      await seedFile({ cid: 'bafy-new', paidAt: '2026-01-03T00:00:00.000Z' })
+      await seedFile({ cid: 'bafy-staged', status: FILE_STATUS.STAGED, paidAt: null })
+
+      const result = await uut.listFeed({ limit: 10 })
+
+      assert.deepEqual(result.files.map(f => f.cid), ['bafy-new', 'bafy-old'])
+      assert.isNull(result.nextCursor)
+    })
+
+    it('should publish the public fields of a file', async () => {
+      await seedFile()
+
+      const result = await uut.listFeed({ limit: 10 })
+
+      assert.deepEqual(result.files[0], {
+        cid: TEST_CID,
+        filename: 'photo.jpg',
+        sizeBytes: 20000,
+        status: FILE_STATUS.PINNED,
+        paymentAddress: fakeAddress(1),
+        createdAt: '2026-01-01T00:00:00.000Z',
+        paidAt: '2026-01-02T00:00:00.000Z',
+        hostedUntil: '2027-01-02T00:00:00.000Z',
+        pins: [{ provider: 'local-helia', status: 'pinned' }]
+      })
+    })
+
+    it('should paginate with the cursor from the previous page', async () => {
+      await seedFile({ cid: 'bafy-old', paidAt: '2026-01-01T00:00:00.000Z' })
+      await seedFile({ cid: 'bafy-new', paidAt: '2026-01-03T00:00:00.000Z' })
+
+      const first = await uut.listFeed({ limit: 1 })
+      const second = await uut.listFeed({ limit: 1, cursor: first.nextCursor })
+
+      assert.deepEqual(first.files.map(f => f.cid), ['bafy-new'])
+      assert.deepEqual(second.files.map(f => f.cid), ['bafy-old'])
+      assert.isNull(second.nextCursor)
+    })
+
+    it('should reject an invalid page limit with a 422 error', async () => {
+      try {
+        await uut.listFeed({ limit: 'abc' })
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.equal(err.name, 'ValidationError')
+        assert.equal(err.status, 422)
+        assert.include(err.message, 'Page limit')
+      }
+    })
+
+    it('should reject an unknown cursor with a 422 error', async () => {
+      try {
+        await uut.listFeed({ cursor: 'not-a-cursor' })
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.equal(err.name, 'ValidationError')
+        assert.equal(err.status, 422)
+        assert.include(err.message, 'Cursor is not valid')
+      }
+    })
+  })
+
   describe('#getDownload', () => {
     it('should stream a paid file', async () => {
       await adapters.localdb.files.put({ cid: TEST_CID, filename: 'photo.jpg', sizeBytes: 20000, status: FILE_STATUS.PINNED })

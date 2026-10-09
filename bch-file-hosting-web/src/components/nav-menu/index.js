@@ -105,6 +105,13 @@ function NavMenu (props) {
             >
               Status
             </NavLink>
+            <NavLink
+              className={currentPath === '/dashboard' ? 'nav-link-active' : 'nav-link-inactive'}
+              to='/dashboard'
+              onClick={handleClickEvent}
+            >
+              Dashboard
+            </NavLink>
           </Nav>
         </Navbar.Collapse>
       </Navbar>

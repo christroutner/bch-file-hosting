@@ -26,6 +26,7 @@ class FilesController {
 
     this.uploadFile = this.uploadFile.bind(this)
     this.checkPayment = this.checkPayment.bind(this)
+    this.listFiles = this.listFiles.bind(this)
     this.getFileStatus = this.getFileStatus.bind(this)
     this.downloadFile = this.downloadFile.bind(this)
   }
@@ -55,6 +56,19 @@ class FilesController {
   async checkPayment (req, res) {
     const paymentAddress = req.body?.paymentAddress
     const result = await this.useCases.payments.checkPayment({ paymentAddress })
+    sendSuccess(res, result)
+  }
+
+  /**
+   * @api {get} /files List the public feed of hosted files
+   * @apiQuery {Number} [limit] Page size, 1 to 100 (default 20)
+   * @apiQuery {String} [cursor] Opaque cursor from the previous page
+   */
+  async listFiles (req, res) {
+    const result = await this.useCases.files.listFeed({
+      limit: req.query.limit,
+      cursor: req.query.cursor
+    })
     sendSuccess(res, result)
   }
 

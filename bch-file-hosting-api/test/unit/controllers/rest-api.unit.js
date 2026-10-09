@@ -44,6 +44,7 @@ describe('#rest-api', () => {
     useCases = {
       files: {
         uploadAndQuote: sandbox.stub().resolves({ alreadyHosted: false, cid: 'bafy', paymentAddress: ADDRESS, priceSats: 2000 }),
+        listFeed: sandbox.stub().resolves({ files: [{ cid: 'bafy', status: 'pinned' }], nextCursor: 'next-cursor' }),
         getFileStatus: sandbox.stub().resolves({ cid: 'bafy', status: 'pinned' }),
         getDownload: sandbox.stub().callsFake(async () => ({ filename: 'hello.txt', sizeBytes: 11, content: chunks('hello', ' world') }))
       },
@@ -215,6 +216,35 @@ describe('#rest-api', () => {
 
       assert.equal(res.status, 404)
       assert.deepEqual(res.body, { success: false, error: 'Invoice not found: x' })
+    })
+  })
+
+  describe('GET /files', () => {
+    it('should return the feed page and pass the limit and cursor through', async () => {
+      const res = await request(app).get('/files?limit=2&cursor=abc123')
+
+      assert.equal(res.status, 200)
+      assert.deepEqual(res.body, {
+        success: true,
+        files: [{ cid: 'bafy', status: 'pinned' }],
+        nextCursor: 'next-cursor'
+      })
+      assert.isTrue(useCases.files.listFeed.calledWith({ limit: '2', cursor: 'abc123' }))
+    })
+
+    it('should pass an undefined limit and cursor when none are given', async () => {
+      await request(app).get('/files')
+
+      assert.isTrue(useCases.files.listFeed.calledWith({ limit: undefined, cursor: undefined }))
+    })
+
+    it('should return 422 for a validation error from the use-case', async () => {
+      useCases.files.listFeed.rejects(new ValidationError('Page limit must be an integer between 1 and 100'))
+
+      const res = await request(app).get('/files?limit=0')
+
+      assert.equal(res.status, 422)
+      assert.deepEqual(res.body, { success: false, error: 'Page limit must be an integer between 1 and 100' })
     })
   })
 

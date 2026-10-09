@@ -25,6 +25,7 @@ import ServerSelectView from './configuration/select-server-view'
 import UserDataReview from './user-data-review'
 import FileHosting from './file-hosting'
 import FileStatus from './file-status'
+import Dashboard from './dashboard'
 
 function AppBody (props) {
   // Dependency injection through props
@@ -45,6 +46,7 @@ function AppBody (props) {
         <Route path='/sign' element={<SignMessage appData={appData} />} />
         <Route path='/host' element={<FileHosting appData={appData} />} />
         <Route path='/status' element={<FileStatus />} />
+        <Route path='/dashboard' element={<Dashboard />} />
         <Route path='/configuration' element={<ServerSelectView appData={appData} />} />
         <Route path='/user-data/:tokenId' element={<UserDataReview appData={appData} />} />
       </Routes>

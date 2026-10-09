@@ -146,6 +146,11 @@ function createWorld () {
     lighthouseRequests: [],
     file: null,
     files: [],
+    feedFiles: [],
+    feedLimit: null,
+    feedCursor: null,
+    feed: null,
+    feedError: null,
     adminFiles: null,
     adminError: null,
     retryResult: null,
@@ -291,6 +296,50 @@ async function listAdminFiles (world, status) {
     world.adminFiles = null
     world.adminError = { status: err.status, message: err.message }
   }
+}
+
+// Exercise the real public feed use-case against the seeded file store.
+async function listFileFeed (world, { limit, cursor } = {}) {
+  const files = { list: async () => world.feedFiles }
+  const useCases = new FileUseCases({
+    adapters: {
+      config: world.pinningConfig,
+      localdb: { files },
+      logger: { info: () => {}, error: () => {} }
+    }
+  })
+  try {
+    world.feed = await useCases.listFeed({ limit, cursor })
+    world.feedCursor = world.feed.nextCursor
+    world.feedError = null
+  } catch (err) {
+    world.feed = null
+    world.feedError = { status: err.status, message: err.message }
+  }
+}
+
+// Resolve a step value that is a <parameter> placeholder against the example
+// store. Literal values pass through.
+function resolveValue (raw, example) {
+  const match = /^<([A-Za-z0-9_]+)>$/.exec(String(raw).trim())
+  if (match) return exampleValue(example, match[1])
+  return String(raw).trim()
+}
+
+function findFeedFile (world, cid) {
+  const file = (world.feed ? world.feed.files : []).find(f => f.cid === cid)
+  if (!file) throw new Error(`the feed does not report file ${cid}`)
+  return file
+}
+
+function assertFeedField (file, field, expected) {
+  if (file[field] !== expected) {
+    throw new Error(`expected feed file ${file.cid} ${field} '${expected}', got '${file[field]}'`)
+  }
+}
+
+function asCidList (value) {
+  return value.split(',').map(part => part.trim()).filter(Boolean)
 }
 
 const handlers = [
@@ -626,6 +675,191 @@ const handlers = [
       if (!pin) throw new Error('no local-helia pin was recorded')
       if (pin.status !== expected) {
         throw new Error(`expected local-helia pin state ${expected}, got ${pin.status}`)
+      }
+    }
+  },
+  {
+    pattern: /^a (pinned|pinning|pinFailed) file ([A-Za-z0-9]+) paid at (.+)$/,
+    run (match, _example, world) {
+      world.feedFiles.push({
+        cid: match[2],
+        filename: `${match[2]}.bin`,
+        sizeBytes: 1024,
+        status: match[1],
+        pins: [],
+        paidAt: match[3],
+        createdAt: match[3],
+        hostedUntil: null
+      })
+    }
+  },
+  {
+    pattern: /^a staged file ([A-Za-z0-9]+)$/,
+    run (match, _example, world) {
+      world.feedFiles.push({ cid: match[1], filename: `${match[1]}.bin`, sizeBytes: 1024, status: 'staged', pins: [], paidAt: null, createdAt: null, hostedUntil: null })
+    }
+  },
+  {
+    pattern: /^a deleted file ([A-Za-z0-9]+)$/,
+    run (match, _example, world) {
+      world.feedFiles.push({ cid: match[1], filename: `${match[1]}.bin`, sizeBytes: 1024, status: 'deleted', pins: [], paidAt: null, createdAt: null, hostedUntil: null })
+    }
+  },
+  {
+    pattern: /^a <([A-Za-z0-9_]+)> file <([A-Za-z0-9_]+)> named <([A-Za-z0-9_]+)> of <([A-Za-z0-9_]+)> bytes created at <([A-Za-z0-9_]+)> paid at <([A-Za-z0-9_]+)> until <([A-Za-z0-9_]+)> at address <([A-Za-z0-9_]+)> with a <([A-Za-z0-9_]+)> pin <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.feedFiles.push({
+        cid: exampleValue(example, match[2]),
+        filename: exampleValue(example, match[3]),
+        sizeBytes: asInt(exampleValue(example, match[4]), match[4]),
+        status: exampleValue(example, match[1]),
+        paymentAddress: exampleValue(example, match[8]),
+        createdAt: exampleValue(example, match[5]),
+        paidAt: exampleValue(example, match[6]),
+        hostedUntil: exampleValue(example, match[7]),
+        pins: [{ provider: exampleValue(example, match[9]), status: exampleValue(example, match[10]) }]
+      })
+    }
+  },
+  {
+    pattern: /^I request the file feed with limit (.+)$/,
+    async run (match, example, world) {
+      world.feedLimit = resolveValue(match[1], example)
+      world.feedCursor = null
+      await listFileFeed(world, { limit: world.feedLimit })
+    }
+  },
+  {
+    pattern: /^I request the file feed after cursor (.+)$/,
+    async run (match, example, world) {
+      await listFileFeed(world, { cursor: resolveValue(match[1], example) })
+    }
+  },
+  {
+    pattern: /^the feed lists the CIDs <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = asCidList(exampleValue(example, match[1]))
+      const actual = (world.feed ? world.feed.files : []).map(f => f.cid)
+      if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+        throw new Error(`expected feed CIDs ${expected.join(',')}, got ${actual.join(',')}`)
+      }
+    }
+  },
+  {
+    pattern: /^the first page lists the CIDs <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = asCidList(exampleValue(example, match[1]))
+      const actual = (world.feed ? world.feed.files : []).map(f => f.cid)
+      if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+        throw new Error(`expected first page CIDs ${expected.join(',')}, got ${actual.join(',')}`)
+      }
+    }
+  },
+  {
+    pattern: /^the feed has a next page$/,
+    run (_match, _example, world) {
+      if (!world.feed || !world.feed.nextCursor) {
+        throw new Error('expected the feed to have a next page')
+      }
+    }
+  },
+  {
+    pattern: /^I request the next page of the file feed$/,
+    async run (_match, _example, world) {
+      await listFileFeed(world, { limit: world.feedLimit, cursor: world.feedCursor })
+    }
+  },
+  {
+    pattern: /^the next page lists the CIDs <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = asCidList(exampleValue(example, match[1]))
+      const actual = (world.feed ? world.feed.files : []).map(f => f.cid)
+      if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+        throw new Error(`expected next page CIDs ${expected.join(',')}, got ${actual.join(',')}`)
+      }
+    }
+  },
+  {
+    pattern: /^the feed has no next page$/,
+    run (_match, _example, world) {
+      if (!world.feed || world.feed.nextCursor) {
+        throw new Error('expected the feed to have no next page')
+      }
+    }
+  },
+  {
+    pattern: /^the file feed is rejected with status <([A-Za-z0-9_]+)> and error <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expectedStatus = asInt(exampleValue(example, match[1]), match[1])
+      const expectedError = exampleValue(example, match[2])
+      if (!world.feedError) {
+        throw new Error('expected the file feed to be rejected')
+      }
+      if (world.feedError.status !== expectedStatus) {
+        throw new Error(`expected rejection status ${expectedStatus}, got ${world.feedError.status}`)
+      }
+      if (world.feedError.message !== expectedError) {
+        throw new Error(`expected error '${expectedError}', got '${world.feedError.message}'`)
+      }
+    }
+  },
+  {
+    pattern: /^the feed reports the file <([A-Za-z0-9_]+)> with filename <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const file = findFeedFile(world, exampleValue(example, match[1]))
+      assertFeedField(file, 'filename', exampleValue(example, match[2]))
+    }
+  },
+  {
+    pattern: /^the feed reports the file <([A-Za-z0-9_]+)> with size <([A-Za-z0-9_]+)> bytes$/,
+    run (match, example, world) {
+      const file = findFeedFile(world, exampleValue(example, match[1]))
+      assertFeedField(file, 'sizeBytes', asInt(exampleValue(example, match[2]), match[2]))
+    }
+  },
+  {
+    pattern: /^the feed reports the file <([A-Za-z0-9_]+)> with status <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const file = findFeedFile(world, exampleValue(example, match[1]))
+      assertFeedField(file, 'status', exampleValue(example, match[2]))
+    }
+  },
+  {
+    pattern: /^the feed reports the file <([A-Za-z0-9_]+)> with payment address <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const file = findFeedFile(world, exampleValue(example, match[1]))
+      assertFeedField(file, 'paymentAddress', exampleValue(example, match[2]))
+    }
+  },
+  {
+    pattern: /^the feed reports the file <([A-Za-z0-9_]+)> with created time <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const file = findFeedFile(world, exampleValue(example, match[1]))
+      assertFeedField(file, 'createdAt', exampleValue(example, match[2]))
+    }
+  },
+  {
+    pattern: /^the feed reports the file <([A-Za-z0-9_]+)> with paid time <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const file = findFeedFile(world, exampleValue(example, match[1]))
+      assertFeedField(file, 'paidAt', exampleValue(example, match[2]))
+    }
+  },
+  {
+    pattern: /^the feed reports the file <([A-Za-z0-9_]+)> with hosting window <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const file = findFeedFile(world, exampleValue(example, match[1]))
+      assertFeedField(file, 'hostedUntil', exampleValue(example, match[2]))
+    }
+  },
+  {
+    pattern: /^the feed reports the file <([A-Za-z0-9_]+)> with the pin <([A-Za-z0-9_]+)> <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const file = findFeedFile(world, exampleValue(example, match[1]))
+      const provider = exampleValue(example, match[2])
+      const pinStatus = exampleValue(example, match[3])
+      if (!(file.pins || []).some(pin => pin.provider === provider && pin.status === pinStatus)) {
+        throw new Error(`expected the feed file ${file.cid} to have a ${provider} pin with status ${pinStatus}`)
       }
     }
   },

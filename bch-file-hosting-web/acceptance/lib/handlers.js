@@ -21,9 +21,11 @@ const ReactDOMServer = require('react-dom/server')
 
 const FileUploadPage = require('../../src/services/file-upload-page')
 const FileStatusPage = require('../../src/services/file-status-page')
+const DashboardPage = require('../../src/services/dashboard-page')
 const HostingApi = require('../../src/services/hosting-api')
 const UploadQuoteView = require('../../src/components/app-body/file-hosting/upload-quote-view')
 const FileStatusView = require('../../src/components/app-body/file-status/file-status-view')
+const DashboardView = require('../../src/components/app-body/dashboard/dashboard-view')
 
 const MINUTE_MS = 60 * 1000
 
@@ -44,6 +46,15 @@ function resolveParam (value, example) {
   return String(value).trim()
 }
 
+// Read a named example value, for patterns that capture the name inside the
+// <brackets> rather than the whole placeholder.
+function exampleValue (example, name) {
+  if (!(name in example)) {
+    throw new Error(`Missing example value for "${name}"`)
+  }
+  return example[name]
+}
+
 // A world/state object is created fresh for every scenario execution.
 function createWorld () {
   return {
@@ -57,6 +68,13 @@ function createWorld () {
     html: null,
     statusFile: null,
     statusError: null,
+    feedFiles: [],
+    feedNextPageFiles: [],
+    feedNextCursor: null,
+    feedNextPageCursor: null,
+    feedError: null,
+    dashboardPage: null,
+    dashboardState: null,
     walletSends: [],
     walletTxid: null,
     walletError: null,
@@ -88,6 +106,13 @@ function makeHostingApi (world) {
     getStatus: async () => {
       if (world.statusError) throw new Error(world.statusError)
       return world.statusFile
+    },
+    getFeed: async ({ cursor } = {}) => {
+      if (world.feedError) throw new Error(world.feedError)
+      if (cursor) {
+        return { success: true, files: world.feedNextPageFiles, nextCursor: world.feedNextPageCursor }
+      }
+      return { success: true, files: world.feedFiles, nextCursor: world.feedNextCursor }
     }
   }
 }
@@ -129,10 +154,12 @@ function makeBrowserTransport (world) {
 // uses, and cache the static HTML.
 function renderPage (world) {
   if (world.state === null) {
-    throw new Error('No upload, payment, or lookup has happened yet.')
+    throw new Error('No upload, payment, lookup, or dashboard load has happened yet.')
   }
   if (world.html === null) {
-    const Component = world.view === 'status' ? FileStatusView : UploadQuoteView
+    let Component = UploadQuoteView
+    if (world.view === 'status') Component = FileStatusView
+    if (world.view === 'dashboard') Component = DashboardView
     world.html = ReactDOMServer.renderToStaticMarkup(
       React.createElement(Component, { state: world.state })
     )
@@ -143,6 +170,23 @@ function renderPage (world) {
 // Visible text of a rendered HTML string, for message assertions.
 function visibleText (html) {
   return html.replace(/<[^>]+>/g, '')
+}
+
+// Find one file in the rendered dashboard state.
+function findDashboardFile (world, cid) {
+  const file = ((world.state && world.state.files) || []).find((f) => f.cid === cid)
+  if (!file) throw new Error(`The dashboard does not show the file ${cid}.`)
+  return file
+}
+
+function assertDashboardField (world, cid, field, expected, rendered) {
+  const file = findDashboardFile(world, cid)
+  if (String(file[field]) !== String(expected)) {
+    throw new Error(`Expected the dashboard file ${cid} ${field} ${expected}, got ${file[field]}.`)
+  }
+  if (!renderPage(world).includes(rendered === undefined ? String(expected) : rendered)) {
+    throw new Error(`Rendered dashboard does not show ${rendered === undefined ? expected : rendered}.`)
+  }
 }
 
 // Apply an async page transition and invalidate the cached render.
@@ -166,6 +210,7 @@ const handlers = [
         maxConfirmations: 10
       })
       world.statusPage = new FileStatusPage({ hostingApi })
+      world.dashboardPage = new DashboardPage({ hostingApi })
     }
   },
   {
@@ -688,6 +733,196 @@ const handlers = [
       const html = renderPage(world)
       if (!html.includes(provider) || !html.includes(pinStatus)) {
         throw new Error(`Rendered page does not show the ${provider} pin with status ${pinStatus}.`)
+      }
+    }
+  },
+  {
+    name: 'the hosting API feed lists a file by placeholders',
+    pattern: /^the hosting API feed lists a <([A-Za-z0-9_]+)> file <([A-Za-z0-9_]+)> named <([A-Za-z0-9_]+)> of <([A-Za-z0-9_]+)> bytes paid at <([A-Za-z0-9_]+)> until <([A-Za-z0-9_]+)> at address <([A-Za-z0-9_]+)>$/,
+    run (m, example, world) {
+      world.feedFiles.push({
+        status: exampleValue(example, m[1]),
+        cid: exampleValue(example, m[2]),
+        filename: exampleValue(example, m[3]),
+        sizeBytes: Number(exampleValue(example, m[4])),
+        paidAt: exampleValue(example, m[5]),
+        hostedUntil: exampleValue(example, m[6]),
+        paymentAddress: exampleValue(example, m[7]),
+        pins: []
+      })
+    }
+  },
+  {
+    name: 'the hosting API feed lists a literal file',
+    pattern: /^the hosting API feed lists a ([A-Za-z]+) file (\S+) named (\S+) of (\d+) bytes paid at (\S+) until (\S+) at address (\S+)$/,
+    run (m, _example, world) {
+      world.feedFiles.push({
+        status: m[1],
+        cid: m[2],
+        filename: m[3],
+        sizeBytes: Number(m[4]),
+        paidAt: m[5],
+        hostedUntil: m[6],
+        paymentAddress: m[7],
+        pins: []
+      })
+    }
+  },
+  {
+    name: 'the hosting API feed has a next page',
+    pattern: /^the hosting API feed has a next page$/,
+    run (_m, _example, world) {
+      world.feedNextCursor = 'next-feed-cursor'
+    }
+  },
+  {
+    name: "the hosting API feed's next page lists a file",
+    pattern: /^the hosting API feed's next page lists a ([A-Za-z]+) file (\S+) named (\S+) of (\d+) bytes paid at (\S+) until (\S+) at address (\S+)$/,
+    run (m, _example, world) {
+      world.feedNextPageFiles.push({
+        status: m[1],
+        cid: m[2],
+        filename: m[3],
+        sizeBytes: Number(m[4]),
+        paidAt: m[5],
+        hostedUntil: m[6],
+        paymentAddress: m[7],
+        pins: []
+      })
+    }
+  },
+  {
+    name: 'the hosting API feed is replaced with a file',
+    pattern: /^the hosting API feed is replaced with a ([A-Za-z]+) file (\S+) named (\S+) of (\d+) bytes paid at (\S+) until (\S+) at address (\S+)$/,
+    run (m, _example, world) {
+      world.feedFiles = [{
+        status: m[1],
+        cid: m[2],
+        filename: m[3],
+        sizeBytes: Number(m[4]),
+        paidAt: m[5],
+        hostedUntil: m[6],
+        paymentAddress: m[7],
+        pins: []
+      }]
+      world.feedNextCursor = null
+      world.feedNextPageFiles = []
+      world.feedNextPageCursor = null
+      world.feedError = null
+    }
+  },
+  {
+    name: 'the hosting API feed lists a pin for a file',
+    pattern: /^the hosting API feed lists a <([A-Za-z0-9_]+)> pin <([A-Za-z0-9_]+)> for the file <([A-Za-z0-9_]+)>$/,
+    run (m, example, world) {
+      const cid = exampleValue(example, m[3])
+      const file = world.feedFiles.find((f) => f.cid === cid)
+      if (!file) throw new Error(`The hosting API feed does not list the file ${cid}.`)
+      file.pins.push({ provider: exampleValue(example, m[1]), status: exampleValue(example, m[2]) })
+    }
+  },
+  {
+    name: 'the hosting API rejects the feed',
+    pattern: /^the hosting API rejects the feed with error (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.feedError = resolveParam(m[1], example)
+    }
+  },
+  {
+    name: 'the visitor opens the dashboard',
+    pattern: /^the visitor opens the dashboard$/,
+    async run (_m, _example, world) {
+      world.view = 'dashboard'
+      await transition(world, () => world.dashboardPage.load())
+    }
+  },
+  {
+    name: 'the visitor loads more of the dashboard',
+    pattern: /^the visitor loads more of the dashboard$/,
+    async run (_m, _example, world) {
+      await transition(world, () => world.dashboardPage.loadMore())
+    }
+  },
+  {
+    name: 'the visitor refreshes the dashboard',
+    pattern: /^the visitor refreshes the dashboard$/,
+    async run (_m, _example, world) {
+      await transition(world, () => world.dashboardPage.load())
+    }
+  },
+  {
+    name: 'the dashboard lists the file names',
+    pattern: /^the dashboard lists the file names (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      const expected = resolveParam(m[1], example).split(',').map((s) => s.trim()).filter(Boolean)
+      const actual = ((world.state && world.state.files) || []).map((f) => f.filename)
+      if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+        throw new Error(`Expected the dashboard to list ${expected.join(',')}, got ${actual.join(',')}.`)
+      }
+      const html = renderPage(world)
+      let last = -1
+      for (const name of expected) {
+        const at = html.indexOf(name)
+        if (at <= last) throw new Error(`Rendered dashboard does not list ${name} in feed order.`)
+        last = at
+      }
+    }
+  },
+  {
+    name: 'the dashboard shows the file name',
+    pattern: /^the dashboard shows the file (<[A-Za-z0-9_]+>) named (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      assertDashboardField(world, resolveParam(m[1], example), 'filename', resolveParam(m[2], example))
+    }
+  },
+  {
+    name: 'the dashboard shows the file size',
+    pattern: /^the dashboard shows the file (<[A-Za-z0-9_]+>) of (<[A-Za-z0-9_]+>) bytes$/,
+    run (m, example, world) {
+      const size = resolveParam(m[2], example)
+      assertDashboardField(world, resolveParam(m[1], example), 'sizeBytes', size, `${size} bytes`)
+    }
+  },
+  {
+    name: 'the dashboard shows the file status',
+    pattern: /^the dashboard shows the file (<[A-Za-z0-9_]+>) with status (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      assertDashboardField(world, resolveParam(m[1], example), 'status', resolveParam(m[2], example))
+    }
+  },
+  {
+    name: 'the dashboard shows the file paid time',
+    pattern: /^the dashboard shows the file (<[A-Za-z0-9_]+>) paid at (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      assertDashboardField(world, resolveParam(m[1], example), 'paidAt', resolveParam(m[2], example))
+    }
+  },
+  {
+    name: 'the dashboard shows the file hosting window',
+    pattern: /^the dashboard shows the file (<[A-Za-z0-9_]+>) until (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      assertDashboardField(world, resolveParam(m[1], example), 'hostedUntil', resolveParam(m[2], example))
+    }
+  },
+  {
+    name: 'the dashboard shows the file payment address',
+    pattern: /^the dashboard shows the file (<[A-Za-z0-9_]+>) at address (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      assertDashboardField(world, resolveParam(m[1], example), 'paymentAddress', resolveParam(m[2], example))
+    }
+  },
+  {
+    name: 'the dashboard shows the pin',
+    pattern: /^the dashboard shows the pin (<[A-Za-z0-9_]+>) (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      const provider = resolveParam(m[1], example)
+      const pinStatus = resolveParam(m[2], example)
+      const files = (world.state && world.state.files) || []
+      const found = files.some((f) => (f.pins || []).some((p) => p.provider === provider && p.status === pinStatus))
+      if (!found) throw new Error(`Expected the dashboard to show a ${provider} pin with status ${pinStatus}.`)
+      const html = renderPage(world)
+      if (!html.includes(provider) || !html.includes(pinStatus)) {
+        throw new Error(`Rendered dashboard does not show the ${provider} pin with status ${pinStatus}.`)
       }
     }
   },

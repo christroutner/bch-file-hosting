@@ -193,3 +193,58 @@ test('maps a status rejection to HostingApiError', async () => {
     }
   )
 })
+
+test('gets the feed page with the limit and cursor', async () => {
+  const calls = []
+  const fakeFetch = async (url, options) => {
+    calls.push({ url, options })
+    return jsonResponse(200, { success: true, files: [{ cid: 'bafy' }], nextCursor: 'next' })
+  }
+  const api = new HostingApi({
+    config: { apiUrl: 'http://localhost:5050' },
+    fetch: fakeFetch,
+    FormData: FakeFormData
+  })
+
+  const body = await api.getFeed({ limit: 2, cursor: 'abc123' })
+
+  assert.equal(calls[0].url, 'http://localhost:5050/files?limit=2&cursor=abc123')
+  assert.equal(calls[0].options.method, 'GET')
+  assert.equal(body.files[0].cid, 'bafy')
+  assert.equal(body.nextCursor, 'next')
+})
+
+test('gets the first feed page without a query when no limit or cursor is given', async () => {
+  const calls = []
+  const fakeFetch = async (url, options) => {
+    calls.push({ url, options })
+    return jsonResponse(200, { success: true, files: [], nextCursor: null })
+  }
+  const api = new HostingApi({
+    config: { apiUrl: 'http://localhost:5050' },
+    fetch: fakeFetch,
+    FormData: FakeFormData
+  })
+
+  await api.getFeed()
+
+  assert.equal(calls[0].url, 'http://localhost:5050/files')
+})
+
+test('maps a feed rejection to HostingApiError', async () => {
+  const fakeFetch = async () => jsonResponse(422, { error: 'Page limit must be an integer between 1 and 100' })
+  const api = new HostingApi({
+    config: { apiUrl: 'http://localhost:5050' },
+    fetch: fakeFetch,
+    FormData: FakeFormData
+  })
+
+  await assert.rejects(
+    () => api.getFeed({ limit: 0 }),
+    (err) => {
+      assert.ok(err instanceof HostingApiError)
+      assert.equal(err.message, 'Page limit must be an integer between 1 and 100')
+      return true
+    }
+  )
+})

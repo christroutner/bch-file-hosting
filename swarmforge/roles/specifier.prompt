@@ -29,3 +29,11 @@ You are the specifier.
 ## Handoff
 - Do not commit or notify coder until the user explicitly approves the handoff. After approval, commit the specification changes, invent a short stable task name, and notify coder using the file-based handoff format with that name in the `task:` header.
 - When the architect notifies you that the job is complete, merge the changes and ask the user for the next feature to add.
+
+## Notifications
+- Play an audible chime when either of these occurs:
+  1. a spec is completed and needs user approval; or
+  2. a feature is complete and has been merged into the `master` branch.
+- Use an available audio player, for example
+  `paplay /usr/share/sounds/freedesktop/stereo/complete.oga`. If no player or
+  sound file is available, fall back to the terminal bell (`printf '\a'`).

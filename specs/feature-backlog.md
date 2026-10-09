@@ -27,17 +27,17 @@ pinning (phase 5).
 
 ## In progress
 
-- None.
-
-## Up next (in order)
-
 ### Q1. `api-quality-baseline` — quality hardening (api; refactorer/architect)
 
-Measured when SwarmForge was vendored (2026-10-08). Unit coverage is 100%.
+Spec: `dev-docs/api-quality-baseline.md`. Status: spec draft, awaiting user
+approval to hand off to the refactorer.
 
-- **CRAP > 6:** `FileUpload.validate` 12, `Invoice.validate` 12,
-  `CleanupUseCases.deleteUnpaid` 7, `FileUseCases.uploadAndQuote` 7,
-  `PaymentUseCases.checkPaymentUnlocked` 7.
+Measured when SwarmForge was vendored (2026-10-08); `FileUpload.validate`
+dropped 12 -> 2 in S0. Unit coverage is 100%.
+
+- **CRAP > 6:** `Invoice.validate` 12, `CleanupUseCases.deleteUnpaid` 7,
+  `FileUseCases.uploadAndQuote` 7, `PaymentUseCases.checkPaymentUnlocked` 7.
+  Re-measure before refactoring.
 - **DRY (`npm run dry`):** `FileStore.update` / `InvoiceStore.update`; the
   admin/files controller response pattern; the `FileUseCases` /
   `PaymentUseCases` constructor setup.
@@ -47,6 +47,8 @@ Measured when SwarmForge was vendored (2026-10-08). Unit coverage is 100%.
   automatically by `verify.sh api`), starting with `calculatePrice` and
   `Invoice.isPaymentSufficient`.
 - **Behavior must not change.**
+
+## Up next (in order)
 
 ### P5.1. `pinning-provider-study` — research (docs only)
 

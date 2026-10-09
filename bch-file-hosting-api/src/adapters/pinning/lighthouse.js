@@ -36,23 +36,28 @@ async function readJson (response, action) {
   if (!text) return null
   try {
     return JSON.parse(text)
-  } catch (err) {
+  } catch {
     return null
   }
+}
+
+// The payload is either wrapped in a `data` property or is the body itself.
+function payloadOf (data) {
+  if (!data) return null
+  return data.data ?? data
 }
 
 // Lighthouse may echo the CID it accepted, under a few response shapes. Treat a
 // missing report as success (the request itself already succeeded).
 function reportedCid (data) {
-  if (!data) return null
-  const payload = data.data ?? data
+  const payload = payloadOf(data)
   if (typeof payload === 'string') return payload
+  if (payload === null) return null
   return payload.cid ?? payload.Hash ?? null
 }
 
 function reportedRef (data) {
-  if (!data) return null
-  const payload = data.data ?? data
+  const payload = payloadOf(data)
   if (typeof payload !== 'object' || payload === null) return null
   return payload.id ?? payload.fileId ?? null
 }
@@ -132,7 +137,7 @@ class LighthouseProvider extends PinningProvider {
       headers: this.headers()
     })
     const data = await readJson(response, 'list')
-    const uploads = (data && data.fileList) || []
+    const uploads = data?.fileList ?? []
     return uploads.find(entry => entry.cid === cid) || null
   }
 }

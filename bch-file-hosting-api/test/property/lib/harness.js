@@ -36,3 +36,16 @@ export function forAll ({ seed = 1, runs = 200, generate, property }) {
     }
   }
 }
+
+// Async variant of forAll for properties that await an async operation.
+export async function forAllAsync ({ seed = 1, runs = 200, generate, property }) {
+  const random = createRandom(seed)
+  for (let run = 0; run < runs; run++) {
+    const input = generate(random, run)
+    try {
+      await property(input)
+    } catch (err) {
+      throw new Error(`property failed (seed=${seed}, run=${run}, input=${JSON.stringify(input)}): ${err.message}`)
+    }
+  }
+}

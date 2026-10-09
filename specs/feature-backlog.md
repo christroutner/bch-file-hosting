@@ -37,25 +37,17 @@ merged at `f2e3615e99`.
 
 ## In progress
 
-- **P7.2 `web-payment` — pay the quote and confirm (started 2026-10-09):**
-  extend the `bch-file-hosting-web` quote view with the payment-address QR code
-  and a quote-expiry countdown, add a "Pay now" action that pays the quote's
-  `priceSats` from the loaded in-browser `minimal-slp-wallet` (keeping the
-  2,000-sat PSF donation, consistent with the CLI), poll
-  `POST /files/check-payment` (unpaid / expired / paid) with an injected sleep,
-  and render the result (CID, download URL, gateway URLs, payment transaction)
-  or the expired/pending/error message. Spec
-  `bch-file-hosting-web/specs/web-payment.feature` (six scenarios). Handed to
-  the coder as task `web-payment`.
+- None.
 
 ## Up next (in order)
 
 - **P7.3 `web-file-status` — look up a CID and show its status and pins.**
-- **CLI spec-quality follow-ups:** the `upload_path` cells (file-upload,
+- **Spec-quality follow-ups:** the CLI `upload_path` cells (file-upload,
   file-host) and the file-host non-JSON `api_txid` cells survive soft mutation
   because no assertion depends on them; either anchor them with a `Then` or
   prune the columns. The wallet mnemonic-hygiene scenarios remain
-  mutation-inert.
+  mutation-inert. Also decide the `web-payment` poll-error behavior (the
+  `waitForConfirmation` observation in the P7.2 entry) and add a scenario.
 
 ## Needs a decision from the user
 
@@ -64,6 +56,32 @@ merged at `f2e3615e99`.
   (D26–D29); none needs new Gherkin.
 
 ## Recently completed
+
+- **P7.2 `web-payment` — pay the quote and confirm (2026-10-09):** the
+  `bch-file-hosting-web` quote view now shows a payment QR code and an expiry
+  countdown; "Pay now" pays the quote's `priceSats` to its address from the
+  loaded in-browser wallet via `BrowserWallet` (keeping the 2,000-sat PSF
+  donation), then `FileUploadPage` polls `POST /files/check-payment` with an
+  injected `sleep` and renders the paid result (CID, download URL, gateway
+  URLs, transaction id) or the expired / wallet-error / pending message. New
+  pure modules `quote-countdown.js` and `browser-wallet.js`. Spec
+  `web-payment.feature` (six scenarios). Pipeline commits: specifier `8d6f2b2`,
+  coder `3012127`, refactorer `8df5d5b`, architect `83e4b5e` (verification
+  `git_sha`), docs `b00b6b7`, merged to `master` at `b00b6b7257` (fast-forward).
+  `verify.sh web` pass 4/4 (unit 41, property 40, acceptance 2 suites, lint ok);
+  all testable functions at 100% CRAP coverage (max 6.0); language mutation 0
+  survived / 0 uncovered across the five feature modules; DRY clean on the
+  feature modules; soft Gherkin web-payment 46/46 killed and web-upload
+  re-run 32/32 killed. Independent post-merge acceptance check: web-payment
+  11/11 and web-upload 8/8. Architect summary:
+  `docs/reviews/web-payment-summary.md`.
+  - **Open follow-up (spec):** `waitForConfirmation` does not catch a rejected
+    `check-payment`; a poll HTTP/network error escapes as an unhandled
+    rejection. Decide whether it maps to the error state, the pending message,
+    or a retry, and add a scenario. The other architect observation is a false
+    alarm: the fake paid fixture's `filename` matches the real API
+    `paidResult` response (`bch-file-hosting-api/src/use-cases/payment-use-cases.js`),
+    so no change is needed there.
 
 - **P7.1 `web-upload` — web skeleton and upload quote (2026-10-09):** forked
   `bch-wallet-web3-spa` into `bch-file-hosting-web/` (CRA 5, React 19,

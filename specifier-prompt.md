@@ -349,24 +349,24 @@ At the end of each session, update this file:
 - Note the current `master` HEAD commit.
 - State the next feature to work on.
 
-Latest session (2026-10-09): started roadmap phase 7 by completing **P7.1
-`web-upload`**, the first `bch-file-hosting-web` feature. The component is a
-fork of `bch-wallet-web3-spa` with the wallet app kept intact (long-term plan
-D30); it added a file picker that `POST`s to `/files` and an `UploadQuoteView`
-showing the quote (file name, price in satoshis, payment address), the
-already-hosted download link, a no-file prompt, or the API error. Pipeline
-commits: specifier `98033a8`, coder `f3d850d`, refactorer `08e24ee`, architect
-`314fdc2`, docs `f2e3615`; merged to `master` at `f2e3615e99` (fast-forward).
-`docs/reviews/web-upload-verification.json` reports `verify.sh web` pass 4/4
-(record `git_sha` `314fdc2`, docs-only behind the tip) and the independent
-post-merge acceptance check passed 8/8 executions. Open follow-ups: the CLI
-`upload_path`/`api_txid` Gherkin columns and the mutation-inert
-mnemonic-hygiene scenarios. Prior cycles (Q1, P5.1-P5.3, P6.1-P6.6) are in the
-backlog.
+Latest session (2026-10-09): completed roadmap phase 7 features **P7.1
+`web-upload`** and **P7.2 `web-payment`** in `bch-file-hosting-web` (a fork of
+`bch-wallet-web3-spa`, long-term plan D30). P7.2 added the quote QR code and
+expiry countdown, "Pay now" from the loaded in-browser wallet via
+`BrowserWallet`, `checkPayment` polling with an injected sleep, and the
+paid/expired/pending/error result states. Pipeline commits: specifier `8d6f2b2`,
+coder `3012127`, refactorer `8df5d5b`, architect `83e4b5e`, docs `b00b6b7`;
+merged to `master` at `b00b6b7257` (fast-forward).
+`docs/reviews/web-payment-verification.json` reports `verify.sh web` pass 4/4
+(record `git_sha` `83e4b5e`, docs-only behind the tip) and the independent
+post-merge acceptance check passed web-payment 11/11 and web-upload 8/8. Open
+follow-ups: decide the `web-payment` poll-error behavior and add a scenario; the
+CLI `upload_path`/`api_txid` columns and mutation-inert mnemonic-hygiene
+scenarios. Prior cycles (Q1, P5.1-P5.3, P6.1-P6.6, P7.1) are in the backlog.
 
-Current `master` HEAD: `f2e3615e99` (Record web-upload architect review and
+Current `master` HEAD: `b00b6b7257` (Record web-payment architect review and
 verification).
 
-Next action: specify **P7.2 `web-payment`** (payment-address QR + in-browser
-wallet "Pay now", quote-expiry countdown, poll `check-payment`, and the result
-page), then P7.3 `web-file-status`; or tackle the CLI spec-quality follow-ups.
+Next action: specify **P7.3 `web-file-status`** (look up a CID and show its
+status and pins); decide the `web-payment` poll-error scenario; or tackle the
+CLI spec-quality follow-ups.

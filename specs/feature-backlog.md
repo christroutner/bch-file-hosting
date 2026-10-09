@@ -42,7 +42,13 @@ complete and merged at `dba049d435`.
 
 ## In progress
 
-- None.
+- **`web-upload-quote-columns` — make the new size-scenario setup columns
+  load-bearing (2026-10-09):** the `web-upload-size` soft mutation left 12
+  survivors from unasserted `api_sats`, `api_address`, and `upload_name`
+  columns in `web-upload.feature` scenarios 5 and 6. Add the existing `Then the
+  page shows the file name / price / payment address` assertions (and their
+  `shown_*` columns) so every column is load-bearing. Spec-only; the assertion
+  handlers already exist (verified locally: web-upload 12/12). Awaiting coder.
 
 ## Up next (in order)
 
@@ -51,11 +57,8 @@ complete and merged at `dba049d435`.
 - **Spec-quality follow-ups:** the CLI `upload_path` cells (file-upload,
   file-host) and the file-host non-JSON `api_txid` cells survive soft mutation
   because no assertion depends on them; either anchor them with a `Then` or
-  prune the columns. The same applies to `web-upload.feature` scenarios 5 and 6
-  (`api_sats`, `api_address`, `upload_name`; 12 soft-mutation survivors) — add
-  the corresponding `Then ... shows the price / payment address / file name`
-  assertions or move the setup to fixed values. The wallet mnemonic-hygiene
-  scenarios remain mutation-inert.
+  prune the columns. The wallet mnemonic-hygiene scenarios remain
+  mutation-inert.
 
 ## Needs a decision from the user
 

@@ -53,23 +53,29 @@ Feature: Web Upload
     And the file is <api_size> bytes
     And the billed size is <api_billed> bytes
     When the visitor uploads the file <upload_name>
-    Then the page shows the size <shown_size> bytes
+    Then the page shows the file name <shown_name>
+    And the page shows the price <shown_sats> satoshis
+    And the page shows the payment address <shown_address>
+    And the page shows the size <shown_size> bytes
     And the page shows the billed size <shown_billed> bytes
 
     Examples:
-      | upload_name | api_sats | api_address                                            | api_size | api_billed | shown_size | shown_billed |
-      | photo.jpg   | 2000     | bitcoincash:qquoteaddress00000000000000000000000000000 | 20000    | 100000     | 20000      | 100000       |
-      | small.txt   | 2000     | bitcoincash:qotheraddress00000000000000000000000000000 | 500      | 100000     | 500        | 100000       |
+      | upload_name | api_sats | api_address                                            | api_size | api_billed | shown_name | shown_sats | shown_address                                          | shown_size | shown_billed |
+      | photo.jpg   | 2000     | bitcoincash:qquoteaddress00000000000000000000000000000 | 20000    | 100000     | photo.jpg  | 2000       | bitcoincash:qquoteaddress00000000000000000000000000000 | 20000      | 100000       |
+      | small.txt   | 2000     | bitcoincash:qotheraddress00000000000000000000000000000 | 500      | 100000     | small.txt  | 2000       | bitcoincash:qotheraddress00000000000000000000000000000 | 500        | 100000       |
 
   Scenario Outline: Web Upload - 6 a file at or above the billing minimum shows no separate billed size
     Given the hosting API quotes <api_sats> satoshis at <api_address>
     And the file is <api_size> bytes
     And the billed size is <api_billed> bytes
     When the visitor uploads the file <upload_name>
-    Then the page shows the size <shown_size> bytes
+    Then the page shows the file name <shown_name>
+    And the page shows the price <shown_sats> satoshis
+    And the page shows the payment address <shown_address>
+    And the page shows the size <shown_size> bytes
     And the page shows no billed size
 
     Examples:
-      | upload_name | api_sats | api_address                                            | api_size | api_billed | shown_size |
-      | photo.jpg   | 2500     | bitcoincash:qquoteaddress00000000000000000000000000000 | 1000000  | 1000000    | 1000000    |
-      | archive.tar | 62500    | bitcoincash:qotheraddress00000000000000000000000000000 | 25000000 | 25000000   | 25000000   |
+      | upload_name | api_sats | api_address                                            | api_size | api_billed | shown_name  | shown_sats | shown_address                                          | shown_size |
+      | photo.jpg   | 2500     | bitcoincash:qquoteaddress00000000000000000000000000000 | 1000000  | 1000000    | photo.jpg   | 2500       | bitcoincash:qquoteaddress00000000000000000000000000000 | 1000000    |
+      | archive.tar | 62500    | bitcoincash:qotheraddress00000000000000000000000000000 | 25000000 | 25000000   | archive.tar | 62500      | bitcoincash:qotheraddress00000000000000000000000000000 | 25000000   |

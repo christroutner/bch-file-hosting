@@ -73,6 +73,20 @@ test('shows the download link for an already hosted file', async () => {
   })
 })
 
+test('prefers the API file name over the uploaded name for an already hosted file', async () => {
+  const page = new FileUploadPage({
+    hostingApi: apiReturning({
+      alreadyHosted: true,
+      filename: 'archive.tar',
+      downloadUrl: 'http://localhost:5050/download/bafy'
+    })
+  })
+
+  const state = await page.upload({ name: 'local-name.tar' })
+
+  assert.equal(state.filename, 'archive.tar')
+})
+
 test('falls back to the uploaded file name when the API omits it', async () => {
   const page = new FileUploadPage({
     hostingApi: apiReturning({ alreadyHosted: false, priceSats: 2000, paymentAddress: 'addr' })

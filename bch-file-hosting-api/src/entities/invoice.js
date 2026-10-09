@@ -9,6 +9,14 @@ export const INVOICE_STATUS = Object.freeze({
   DELETED: 'deleted'
 })
 
+// pending: a sweep failed and will be retried. swept: funds sent to the
+// treasury. empty: nothing left to sweep (for example, swept before a restart).
+export const SWEEP_STATUS = Object.freeze({
+  PENDING: 'pending',
+  SWEPT: 'swept',
+  EMPTY: 'empty'
+})
+
 const CASH_ADDRESS_REGEX = /^bitcoincash:[qp][02-9ac-hj-np-z]{41}$/
 
 function assertPositiveInteger (value, name) {

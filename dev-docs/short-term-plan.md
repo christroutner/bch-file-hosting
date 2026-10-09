@@ -168,10 +168,15 @@ export function calculatePrice ({ sizeBytes, usdPerBch, cfg }) {
   - If the same CID already has a paid file, return `alreadyHosted: true` with
     links instead of a new invoice.
 - [ ] **checkPayment({ paymentAddress })**:
-  1. Load the invoice; 404 if unknown; return the stored result if already paid.
-  2. If `quoteExpiresAt` has passed, return `expired`.
+  1. Load the invoice; 404 if unknown; return the stored result if already paid
+     (re-running pinning if it had failed, but never sweeping twice). Checks for
+     the same address run one at a time.
+  2. If the invoice was deleted by cleanup, return `expired`.
   3. `receivedSats = wallet.getBalanceSats(address)`.
-  4. If `receivedSats < priceSats - UNDERPAY_TOLERANCE_SATS`, return `unpaid`.
+  4. If `receivedSats < priceSats - UNDERPAY_TOLERANCE_SATS`, return `expired`
+     when `quoteExpiresAt` has passed, otherwise `unpaid`. A payment that is
+     sufficient is honored even after `quoteExpiresAt`, as long as cleanup has
+     not deleted the file yet.
   5. Mark `paid`, set `hostedUntil = paidAt + 1 year` (D1).
   6. Pin via each registry provider; record `pins[]`.
   7. `announcement.announce()` (no-op).

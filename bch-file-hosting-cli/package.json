@@ -1,0 +1,56 @@
+{
+  "name": "bch-file-hosting-cli",
+  "version": "0.1.0",
+  "description": "Command-line client for the bch-file-hosting REST API",
+  "main": "bch-file-hosting-cli.js",
+  "bin": {
+    "bch-file-hosting-cli": "bch-file-hosting-cli.js"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "SVC_ENV=test c8 --reporter=text mocha --exit --timeout 15000 --recursive test/unit",
+    "test:property": "SVC_ENV=test mocha --exit --timeout 15000 --recursive 'test/property/**/*.property.js'",
+    "test:acceptance": "node acceptance/acceptance.js",
+    "lint": "standard --env mocha --fix",
+    "crap": "crap4javascript",
+    "dry": "dry4javascript src",
+    "mutate": "mutate4javascript",
+    "coverage": "SVC_ENV=test c8 --reporter=html --reporter=text mocha --exit --timeout 15000 --recursive test/unit"
+  },
+  "author": "Chris Troutner <chris.troutner@gmail.com>",
+  "license": "MIT",
+  "release": {
+    "publish": [
+      {
+        "path": "@semantic-release/npm",
+        "npmPublish": false
+      }
+    ]
+  },
+  "c8": {
+    "include": [
+      "src/**"
+    ],
+    "reporter": [
+      "text"
+    ]
+  },
+  "dependencies": {
+    "commander": "12.1.0",
+    "dotenv": "18.0.6"
+  },
+  "devDependencies": {
+    "c8": "12.0.0",
+    "chai": "6.3.0",
+    "crap4javascript": "github:FullStack-Agents/crap4javascript",
+    "dry4javascript": "github:FullStack-Agents/dry4javascript",
+    "mocha": "12.0.3",
+    "mutate4javascript": "github:FullStack-Agents/mutate4javascript",
+    "semantic-release": "24.1.2",
+    "sinon": "22.1.0",
+    "standard": "17.1.2"
+  }
+}

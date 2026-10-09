@@ -2,7 +2,7 @@
 
 **Status**: DRAFT
 **Owner**: specifier.
-**Last updated**: 2026-10-08
+**Last updated**: 2026-10-09
 
 Roadmap phases refer to `dev-docs/long-term-plan.md` (section 13). Decisions
 referenced as `Dn` are in its Decisions Log.
@@ -21,23 +21,15 @@ pluggable third-party pinning services.
 ## Current direction
 
 The core port (roadmap phase 3) is complete and verified on mainnet. SwarmForge
-was integrated in phase 4. Next is the pipeline smoke test (S0), then the
-quality baseline (Q1), then third-party pinning (phase 5).
+was integrated in phase 4, and the pipeline smoke test (S0) completed the first
+full four-role cycle. Next is the quality baseline (Q1), then third-party
+pinning (phase 5).
 
 ## In progress
 
 - None.
 
 ## Up next (in order)
-
-### S0. `reject-empty-upload` — pipeline smoke test (api)
-
-- **Goal:** prove the four-role SwarmForge cycle end to end with a tiny change.
-- **Behavior:** `POST /files` with a 0-byte file returns HTTP 422 with
-  `{ success: false, error: ... }`, creates no invoice, issues no payment
-  address, and deletes the temp file. Today a 0-byte file is accepted and billed
-  at the 100 KB minimum.
-- **Components:** `bch-file-hosting-api` (entity `FileUpload.validate`).
 
 ### Q1. `api-quality-baseline` — quality hardening (api; refactorer/architect)
 
@@ -102,6 +94,14 @@ them until the user decides.
 
 ## Recently completed
 
+- **S0 `reject-empty-upload` — pipeline smoke test (2026-10-09):** the first
+  full four-role cycle (specifier -> coder -> refactorer -> architect).
+  `FileUpload.validate` now requires a strictly positive `sizeBytes`, so
+  `POST /files` with a 0-byte file returns HTTP 422 with
+  `{ success: false, error }` and creates no invoice or payment address. Spec
+  `bch-file-hosting-api/specs/upload-validation.feature`; verification record
+  `docs/reviews/reject-empty-upload-verification.json` (pass).
+  `FileUpload.validate` CRAP 12 -> 2. Merged to `master` at `1cc2bcaf51`.
 - **Core port, roadmap phase 3 (2026-10-08, built outside the swarm):**
   upload and quote, BCH invoices on unique HD addresses, payment checks,
   local Helia pinning, downloads, 24-hour unpaid cleanup, admin routes, timers.

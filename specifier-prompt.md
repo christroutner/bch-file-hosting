@@ -316,10 +316,15 @@ At the end of each session, update this file:
 - Note the current `master` HEAD commit.
 - State the next feature to work on.
 
-Latest session (2026-10-08): SwarmForge was vendored from psf-memo (roadmap
-phase 4). The API acceptance pipeline is wired (`npm run test:acceptance`)
-and `bch-file-hosting-api/specs/pricing.feature` covers the long-term plan
-worked examples. No feature has gone through the swarm yet.
+Latest session (2026-10-09): S0 `reject-empty-upload` completed the first full
+specifier -> coder -> refactorer -> architect cycle and was merged to `master`
+at `1cc2bcaf51`. `FileUpload.validate` now rejects a zero-byte upload with HTTP
+422 before any IPFS add, invoice, or address; `docs/reviews/reject-empty-upload-verification.json`
+records a passing verify run and `FileUpload.validate` CRAP dropped 12 -> 2.
 
-Next action: **specify S0 `reject-empty-upload`** (see the backlog) as the
-pipeline smoke test, ask the user for approval, and hand it to the coder.
+Current `master` HEAD: `1cc2bcaf51` (Record reject-empty-upload architect review
+and verification).
+
+Next action: **specify Q1 `api-quality-baseline`** (see the backlog) — quality
+hardening only, behavior unchanged — then ask the user for approval and hand it
+to the coder.

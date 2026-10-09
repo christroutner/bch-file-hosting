@@ -39,6 +39,7 @@ describe('#public-network.property.js', () => {
           dht: PSF_DHT_PROTOCOL
         })
         assert.deepEqual(config.natServices, ['upnpNAT', 'dcutr'])
+        assert.isFalse(config.dhtClientMode)
         for (const name of PUBLIC_SERVICES) {
           assert.equal(typeof config.services[name], 'function', `${name} should be a factory`)
         }

@@ -47,7 +47,15 @@ merged at `e2b9f571d1`.
 
 ## In progress
 
-- None.
+- **`ipfs-provide-best-effort` — do not block or fail the pin on content-routing
+  provide (2026-10-09):** `IpfsAdapter.pin` awaits `helia.routing.provide`, and
+  the kad-dht `DEFAULT_QUERY_TIMEOUT` is 180 s, so a node that cannot complete
+  the provider query stalls `POST /files/check-payment` for ~3 minutes and
+  records the local pin as `pinFailed`. Make `provide` best-effort and off the
+  request path (fire-and-forget or bounded and logged), and let the local
+  `pins.add` alone decide pin success. Spec `ipfs-public-node.feature` gained
+  scenarios 4 (a failing provide does not fail the pin) and 5 (pinning does not
+  wait for the provide). Awaiting coder.
 
 ## Up next (in order)
 
@@ -79,13 +87,10 @@ merged at `e2b9f571d1`.
 
 ## Needs a decision from the user
 
-- **`ipfs-public-node` provide failure:** a `provide` failure currently rejects
-  the local pin, and `pinFile` marks the file `pinFailed` (retried hourly) while
-  the payment completes. Decide whether `provide` should instead be
-  best-effort. Flagged by the `ipfs-public-node` architect.
 - None open. Q1 (expiry), Q2 (renewals), Q3 (OP_RETURN), and Q9 (late
   payments/refunds) are decided in the long-term plan's Decisions Log
-  (D26–D29); none needs new Gherkin.
+  (D26–D29); none needs new Gherkin. The `ipfs-public-node` provide-failure
+  question is decided: `provide` becomes best-effort (`ipfs-provide-best-effort`).
 
 ## Recently completed
 

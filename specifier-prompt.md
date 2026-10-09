@@ -344,6 +344,16 @@ Specific to bch-file-hosting (found while building the core port):
     (`gateway.lighthouse.storage` is paid-only, HTTP 402), and
     `LIGHTHOUSE_GATEWAY` must be set or the paid default is used.
 
+28. **A cross-component feature gets per-component verification records.**
+    When a task touches more than one component, the architect runs
+    `verify.sh <component>` for each and writes
+    `docs/reviews/<task>-<component>-verification.json`, not a single
+    `<task>-verification.json`. Check every component record's `git_sha` before
+    treating a merge as verified. The architect's end-of-chain handoff payload
+    is `merge_and_process <role> <sha>`: fast-forward that branch into `master`,
+    then run the merged feature's acceptance test for each affected component as
+    the independent check.
+
 ---
 
 ## 10. Run / verify
@@ -381,46 +391,41 @@ At the end of each session, update this file:
 - Note the current `master` HEAD commit.
 - State the next feature to work on.
 
-Latest session (2026-10-09): completed **`lighthouse-upload-verify`** in
-`bch-file-hosting-api`, on top of `ipfs-public-node` and
-`ipfs-provide-best-effort`. Hosted files were not retrievable: the provide
-never completes, so the CID is never announced, and Lighthouse's asynchronous
-pin-by-CID never fetches the bytes. `LighthouseProvider.pin` now **uploads the
-file bytes** to Lighthouse's IPFS-compatible
-`upload.lighthouse.storage/api/v0/add?wrap-with-directory=true&cid-version=1&raw-leaves=true&pin=true`
-endpoint (reproducing our exact CID), then verifies retrieval with `HEAD
-<gateway>/<cid>/<filename>`. `completePayment` records the payment, sets a new
-`pinning` status, and runs pin+announce off the request path. Providers carry
-`authoritative` in their capabilities: the file is `pinned` when every
-authoritative provider succeeded, and `local-helia` is best-effort, so a failed
-local pin is recorded but does not fail the file; `retryPins` now also recovers a
-failed local pin and never re-uploads (already-pinned providers are skipped).
-Specs: `lighthouse-pinning.feature` (1, 2, 5), new
-`background-pinning.feature` (1–4), `pin-retry.feature` (1–5). Pipeline
-commits — specifier `e931b78`, coder `0388fe7`, refactorer `96fa16e`, architect
-`f6f10f5` (verification `git_sha`), docs `641bf94`. Merged to `master`
-(fast-forward) at `641bf94`. `verify.sh api` 4/4 (unit 428, property 28,
-acceptance all 7 suites, lint ok); language mutation `lighthouse.js` 22 killed /
-1 equivalent, four other modules 0 survivors; soft Gherkin
-`background-pinning` 9/9, `lighthouse-pinning` 16/19, `pin-retry` 17/22
-(documented equivalents); independent post-merge acceptance check all 7 suites.
-Real-network verification is still pending: restart the API with
-`LIGHTHOUSE_GATEWAY=https://open-sheep-fwyxe.lighthouseweb3.xyz/ipfs/` and
-confirm the dedicated gateway serves an uploaded file. Roadmap phases 3–7 remain
+Latest session (2026-10-09): completed **`web-dashboard`** (API + web UI), on
+top of `lighthouse-upload-verify`. The user chose a **public, server-wide file
+feed** rather than a per-visitor localStorage list. New public `GET /files`
+returns only paid files (`pinning`, `pinned`, `pinFailed`), newest paid first
+with a CID tie-break, paginated by an opaque base64url cursor (`limit` 1..100,
+default 20); each file exposes `cid, filename, sizeBytes, status,
+paymentAddress, createdAt, paidAt, hostedUntil, pins[{provider,status}]`; an
+invalid limit or cursor is rejected with 422. The web `/dashboard` route and nav
+link load the feed through `HostingApi.listFiles`/
+`DashboardPage`/`DashboardView`, preserve feed order, and offer Refresh and
+Load-more actions (no localStorage, no auto-polling). Specs:
+`bch-file-hosting-api/specs/file-feed.feature` (5 scenarios) and
+`bch-file-hosting-web/specs/web-dashboard.feature` (6 scenarios). Pipeline
+commits — specifier `24b6f2b`, coder `3a18cb9`, refactorer `0618ccd`, architect
+`35e6953` (verification `git_sha`), docs `76ec973`. Merged to `master`
+(fast-forward) at `76ec973e1c`. `verify.sh api` 4/4 (unit 461, property 35,
+acceptance all 8 suites, lint ok) and `verify.sh web` 4/4 (unit 83, property 73,
+acceptance all 5 suites, lint ok); language mutation 0 survived / 0 uncovered
+across the seven changed modules; DRY clean; CRAP ≤ 6.0; independent post-merge
+acceptance checks file-feed 9/9 and web-dashboard 8/8. Roadmap phases 3–7 remain
 complete. Prior cycles (Q1, P5.1-P5.3, P6.1-P6.6, P7.1-P7.3,
 web-payment-poll-error, wallet-name-validation, web-upload-transport,
 web-upload-size, web-upload-quote-columns, lighthouse-file-link,
-ipfs-public-node, ipfs-provide-best-effort) are in the backlog. Open follow-ups:
-the CLI `upload_path`/`api_txid` columns, the `web-payment` scenario-8
+ipfs-public-node, ipfs-provide-best-effort, lighthouse-upload-verify) are in the
+backlog. Open follow-ups: `dashboard-loadmore-error` (a failed Load-more drops
+the shown list), the five intrinsic `file-feed` survivors, the CLI
+`upload_path`/`api_txid` columns, the `web-payment` scenario-8
 `paid_cid`/`paid_name` survivors, the `lighthouse-pinning`/`pin-retry`
 echoed-input survivors, the image-link `rel` hardening, the mutation-inert
 mnemonic-hygiene scenarios, the `ipfs-service-dependencies` regression test, and
-the new `pin-recovery`, `shutdown-drain`, and `lighthouse-verify-content-length`
-items.
+`pin-recovery`, `shutdown-drain`, and `lighthouse-verify-content-length`.
 
-Current `master` HEAD: `641bf94` (Record lighthouse-upload-verify architect
-review and verification).
+Current `master` HEAD: `76ec973` (Record web-dashboard architect review and
+verification).
 
-Next action: spec **`web-dashboard`** (the web UI that shows upload and
-pin/verification progress), or scope **roadmap phase 8 (x402-bch)** with the
-user.
+Next action: spec **`dashboard-loadmore-error`** (keep the dashboard list on a
+later-page error) or **`pin-recovery`**, or scope **roadmap phase 8 (x402-bch)**
+with the user.

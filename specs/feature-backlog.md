@@ -50,24 +50,20 @@ completes (180 s kad-dht timeout) so the CID is never announced, and Lighthouse'
 asynchronous pin-by-CID never fetches the bytes. The fix is to upload the file
 bytes to Lighthouse's IPFS-compatible endpoint (`lighthouse-upload-verify`), in
 the background, plus a web dashboard to watch progress (`web-dashboard`). The
-`lighthouse-upload-verify` feature is complete and merged at `641bf94`.
+`lighthouse-upload-verify` feature is complete and merged at `641bf94`. The
+`web-dashboard` feature (a public server-wide file feed at `GET /files` plus the
+web `/dashboard` view) is complete and merged at `76ec973e1c`.
 
 ## In progress
 
-- **`web-dashboard` (API + web UI):** a public, server-wide **file feed**. The
-  API gets `GET /files` returning only paid files (`pinning`, `pinned`,
-  `pinFailed`), newest paid first, paginated by an opaque cursor, with the
-  public fields `cid, filename, sizeBytes, status, paymentAddress, createdAt,
-  paidAt, hostedUntil, pins[{provider,status}]`. The web gets a dashboard view
-  that loads the feed, shows each file and its pins in feed order, and provides
-  Refresh and Load-more actions (no localStorage, no auto-polling). Specs:
-  `bch-file-hosting-api/specs/file-feed.feature`,
-  `bch-file-hosting-web/specs/web-dashboard.feature`. Depends on
-  `lighthouse-upload-verify` for the `pinning` status and per-provider
-  sub-status.
+- None.
 
 ## Up next (in order)
 
+- **`dashboard-loadmore-error` (web, small):** `DashboardPage.loadMore` replaces
+  the whole view with the error state when a later page fails, dropping the files
+  already shown. Decide whether to keep the list and show the error inline.
+  Flagged by the `web-dashboard` architect.
 - **`pin-recovery`:** a crash mid-pin can strand a file in `pinning` —
   `needsPinRetry` recovers `pinFailed` or a file with a failed pin, but not a
   `pinning` record left by a killed process (all recorded pins `pinned`, status
@@ -101,7 +97,11 @@ the background, plus a web dashboard to watch progress (`web-dashboard`). The
   1/5 `upload_cid` and `pin-retry` 1/2 `cid` are echoed-input equivalents (any
   mismatch fails the pin), and `http_status 500` is any-error (any 4xx/5xx
   fails). Anchor them (for example assert the error message carries the reported
-  CID) or accept them as documented equivalents.
+  CID) or accept them as documented equivalents. The `web-dashboard` architect
+  added five intrinsic `file-feed` survivors: the invalid `limit` values
+  (`10→11`, `0→-5`, `101→109`, `abc→Abc`) all map to the same 422 message, and
+  `bad_cursor` is any non-cursor token; the exact invalid value is not
+  load-bearing.
 - **Hardening follow-up (`web-image-link-rel`):** the image gateway link sets
   `target="_blank"` without `rel`; every other `_blank` anchor in
   `bch-file-hosting-web` uses `rel="noreferrer"`. Add `rel="noreferrer"` (with
@@ -125,6 +125,29 @@ the background, plus a web dashboard to watch progress (`web-dashboard`). The
   pin), and the upload+verify runs in the background.
 
 ## Recently completed
+
+- **`web-dashboard` — public file feed and hosted-files dashboard (2026-10-09):**
+  new public `GET /files` endpoint returns only paid files (`pinning`, `pinned`,
+  `pinFailed`), newest paid first with a CID tie-break, paginated by an opaque
+  base64url cursor (`limit` 1..100, default 20); each file exposes `cid,
+  filename, sizeBytes, status, paymentAddress, createdAt, paidAt, hostedUntil,
+  pins[{provider,status}]`; an invalid limit or cursor is rejected with 422. The
+  web `/dashboard` route and nav link render the feed through
+  `HostingApi.listFiles`/`DashboardPage`/`DashboardView`, preserving feed order
+  and offering Refresh and Load-more actions (no localStorage, no auto-polling).
+  Specs `bch-file-hosting-api/specs/file-feed.feature` (5 scenarios) and
+  `bch-file-hosting-web/specs/web-dashboard.feature` (6 scenarios). Pipeline
+  commits: specifier `24b6f2b`, coder `3a18cb9`, refactorer `0618ccd`, architect
+  `35e6953` (verification `git_sha`), docs `76ec973`, merged to `master` at
+  `76ec973e1c` (fast-forward). The architect first collapsed the duplicated
+  cursor/order comparison onto the shared sort comparator. `verify.sh api` pass
+  4/4 (unit 461, property 35, acceptance all 8 suites, lint ok) and `verify.sh
+  web` pass 4/4 (unit 83, property 73, acceptance all 5 suites, lint ok);
+  language mutation 0 survived / 0 uncovered across the seven changed modules;
+  DRY clean; CRAP ≤ 6.0. Independent post-merge acceptance checks: file-feed
+  9/9 and web-dashboard 8/8. Architect summary:
+  `docs/reviews/web-dashboard-summary.md`. Follow-ups: `dashboard-loadmore-error`
+  and five intrinsic `file-feed` soft-mutation survivors (both tracked above).
 
 - **`lighthouse-upload-verify` — upload bytes to Lighthouse and pin in the
   background (2026-10-09):** `LighthouseProvider.pin` now uploads the file bytes

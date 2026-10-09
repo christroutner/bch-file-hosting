@@ -215,6 +215,20 @@ const handlers = [
     }
   },
   {
+    name: 'the file is a number of bytes',
+    pattern: /^the file is (<[A-Za-z0-9_]+>) bytes$/,
+    run (m, example, world) {
+      world.response.sizeBytes = Number(resolveParam(m[1], example))
+    }
+  },
+  {
+    name: 'the billed size is a number of bytes',
+    pattern: /^the billed size is (<[A-Za-z0-9_]+>) bytes$/,
+    run (m, example, world) {
+      world.response.billedBytes = Number(resolveParam(m[1], example))
+    }
+  },
+  {
     name: 'an open hosting quote',
     pattern: /^an open hosting quote$/,
     async run (m, example, world) {
@@ -596,6 +610,28 @@ const handlers = [
       }
       if (!renderPage(world).includes(`${expected} bytes`)) {
         throw new Error(`Rendered page does not show the size ${expected} bytes.`)
+      }
+    }
+  },
+  {
+    name: 'the page shows the billed size',
+    pattern: /^the page shows the billed size (<[A-Za-z0-9_]+>) bytes$/,
+    run (m, example, world) {
+      const expected = resolveParam(m[1], example)
+      if (String(world.state.billedBytes) !== String(expected)) {
+        throw new Error(`Expected the page to show a billed size of ${expected} bytes, got "${world.state.billedBytes}".`)
+      }
+      if (!renderPage(world).includes(`${expected} bytes`)) {
+        throw new Error(`Rendered page does not show the billed size ${expected} bytes.`)
+      }
+    }
+  },
+  {
+    name: 'the page shows no billed size',
+    pattern: /^the page shows no billed size$/,
+    run (m, example, world) {
+      if (renderPage(world).includes('file-upload-billed-size')) {
+        throw new Error('Rendered page shows a separate billed size.')
       }
     }
   },

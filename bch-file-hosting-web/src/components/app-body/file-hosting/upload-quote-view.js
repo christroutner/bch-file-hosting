@@ -23,7 +23,23 @@ function linkLine (key, className, label, url) {
 }
 
 function quoteChildren (state) {
-  const children = [
+  const children = []
+
+  if (state.sizeBytes !== undefined) {
+    children.push(
+      React.createElement('p', { key: 'size', className: 'file-upload-size' }, `Size: ${state.sizeBytes} bytes`)
+    )
+  }
+
+  // A separate billed line is only useful when billing rounds the size up, so
+  // a file at or above the minimum shows a single size.
+  if (state.billedBytes !== undefined && state.billedBytes !== state.sizeBytes) {
+    children.push(
+      React.createElement('p', { key: 'billed-size', className: 'file-upload-billed-size' }, `Billed size: ${state.billedBytes} bytes`)
+    )
+  }
+
+  children.push(
     React.createElement('p', { key: 'price', className: 'file-upload-price' }, `${state.priceSats} satoshis`),
     React.createElement('p', { key: 'address', className: 'file-upload-address' }, state.paymentAddress),
     React.createElement(
@@ -31,7 +47,7 @@ function quoteChildren (state) {
       { key: 'qr', className: 'file-upload-qr' },
       React.createElement(QRCodeSVG, { value: state.paymentAddress })
     )
-  ]
+  )
 
   if (state.countdown) {
     children.push(

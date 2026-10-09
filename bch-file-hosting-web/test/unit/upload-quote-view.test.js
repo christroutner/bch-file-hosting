@@ -33,6 +33,46 @@ test('renders the file name, price, and payment address for a quote', () => {
   assert.ok(html.includes('bitcoincash:qquote'))
 })
 
+test('renders the file size and a separate billed size when they differ', () => {
+  const html = render({
+    status: 'quote',
+    filename: 'small.txt',
+    priceSats: 2000,
+    paymentAddress: 'bitcoincash:qquote',
+    sizeBytes: 500,
+    billedBytes: 100000
+  })
+
+  assert.ok(html.includes('500 bytes'))
+  assert.ok(html.includes('100000 bytes'))
+  assert.ok(html.includes('file-upload-billed-size'))
+})
+
+test('omits the billed size when it equals the file size', () => {
+  const html = render({
+    status: 'quote',
+    filename: 'photo.jpg',
+    priceSats: 2000,
+    paymentAddress: 'bitcoincash:qquote',
+    sizeBytes: 1000000,
+    billedBytes: 1000000
+  })
+
+  assert.ok(html.includes('1000000 bytes'))
+  assert.ok(!html.includes('file-upload-billed-size'))
+})
+
+test('omits the sizes when the quote does not report them', () => {
+  const html = render({
+    status: 'quote',
+    filename: 'photo.jpg',
+    priceSats: 2000,
+    paymentAddress: 'bitcoincash:qquote'
+  })
+
+  assert.ok(!html.includes('bytes'))
+})
+
 test('renders the download URL for an already hosted file', () => {
   const html = render({
     status: 'hosted',

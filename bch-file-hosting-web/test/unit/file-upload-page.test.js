@@ -55,6 +55,40 @@ test('shows the quote for an uploaded file', async () => {
   })
 })
 
+test('includes the file and billed sizes on the quote', async () => {
+  const page = new FileUploadPage({
+    hostingApi: apiReturning({
+      alreadyHosted: false,
+      filename: 'small.txt',
+      priceSats: 2000,
+      paymentAddress: 'bitcoincash:qquote',
+      sizeBytes: 500,
+      billedBytes: 100000
+    })
+  })
+
+  const state = await page.upload({ name: 'small.txt' })
+
+  assert.equal(state.sizeBytes, 500)
+  assert.equal(state.billedBytes, 100000)
+})
+
+test('omits the sizes when the API does not report them', async () => {
+  const page = new FileUploadPage({
+    hostingApi: apiReturning({
+      alreadyHosted: false,
+      filename: 'photo.jpg',
+      priceSats: 2000,
+      paymentAddress: 'bitcoincash:qquote'
+    })
+  })
+
+  const state = await page.upload({ name: 'photo.jpg' })
+
+  assert.equal('sizeBytes' in state, false)
+  assert.equal('billedBytes' in state, false)
+})
+
 test('shows the download link for an already hosted file', async () => {
   const page = new FileUploadPage({
     hostingApi: apiReturning({

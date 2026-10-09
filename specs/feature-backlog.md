@@ -56,7 +56,13 @@ web `/dashboard` view) is complete and merged at `76ec973e1c`.
 
 ## In progress
 
-- None.
+- **`web-build-compile` (web build + verification):** the CRA production build
+  fails on merged code (`globalThis` is not defined in
+  `src/services/hosting-api.js`, plus `'use strict'` warnings), and
+  `verify.sh web` never runs the CRA build so it was not caught. Fix the CRA
+  ESLint configuration at its source and add a CRA build/lint command to the
+  `web` component in `swarmforge/scripts/verify.mjs`. Spec:
+  `dev-docs/web-build-compile.md`. No Gherkin (build/verification deliverable).
 
 ## Up next (in order)
 

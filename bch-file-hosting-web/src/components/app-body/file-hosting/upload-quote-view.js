@@ -29,19 +29,23 @@ function hostedChildren (state) {
   ]
 }
 
+function messageChildren (key, className) {
+  return (state) => [React.createElement('p', { key, className }, state.message)]
+}
+
+// Display status to children builder. A null prototype keeps an unexpected
+// status string (for example "constructor") from resolving to an
+// Object.prototype member instead of the empty default.
+const STATUS_CHILDREN = Object.assign(Object.create(null), {
+  quote: quoteChildren,
+  hosted: hostedChildren,
+  'no-file': messageChildren('prompt', 'file-upload-prompt'),
+  error: messageChildren('error', 'file-upload-error')
+})
+
 function statusChildren (state) {
-  switch (state.status) {
-    case 'quote':
-      return quoteChildren(state)
-    case 'hosted':
-      return hostedChildren(state)
-    case 'no-file':
-      return [React.createElement('p', { key: 'prompt', className: 'file-upload-prompt' }, state.message)]
-    case 'error':
-      return [React.createElement('p', { key: 'error', className: 'file-upload-error' }, state.message)]
-    default:
-      return []
-  }
+  const build = STATUS_CHILDREN[state.status]
+  return build ? build(state) : []
 }
 
 function UploadQuoteView ({ state = { status: 'idle' } } = {}) {

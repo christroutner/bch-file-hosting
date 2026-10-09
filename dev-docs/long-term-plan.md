@@ -75,6 +75,7 @@ code.
 | D27 | Renewals / multi-year (Q2) | Not supported in v1. No `years` input, no renew endpoint, and `alreadyHosted` keeps short-circuiting a re-upload. Renewals will use the future pin-claim code path. |
 | D28 | OP_RETURN announcement (Q3) | Keep the `NoopAnnouncer` stub: no on-chain transaction and no payload format yet. The interface and the `completePayment` call site stay reserved for a future broadcast. |
 | D29 | Late payments / refunds (Q9) | Funds that arrive after a quote expires or a file is deleted are swept to the treasury; there is no automated refund. Refunds are handled manually, case by case, outside the code. The post-deletion sweep is currently a manual/admin action (`retrySweeps` only covers `pending` invoices). |
+| D30 | Web UI foundation (phase 7) | `bch-file-hosting-web/` is a fork of `bch-wallet-web3-spa` (CRA 5, React 19, react-bootstrap, react-router, `qrcode.react`, `minimal-slp-wallet`), keeping the wallet app intact, rather than a fresh Vite app. `psf-memo-client` is itself a fork of that wallet, so developing on the same base makes phase 9 a port. Phase 7 pays both ways: "Pay now" from the in-browser wallet and a QR code for an external mobile wallet. Testable presentational components use plain `React.createElement` and `node --test` + `ReactDOMServer`, matching psf-memo-client. |
 
 ---
 
@@ -429,10 +430,16 @@ Planned commands:
 
 ### Web UI (phase 7) — `bch-file-hosting-web/`
 
-Follows `/home/trout/work/llm/prompt/react/prompt.md`: Vite + React +
-react-bootstrap + react-router. Keep protocol logic in `src/services/` (pure,
-unit-testable) and UI in `src/components/`, matching psf-memo-client so phase 9
-is a port rather than a rewrite.
+A fork of `bch-wallet-web3-spa` (itself forked from
+`react-bootstrap-web3-spa`), the same base `psf-memo-client` uses, rather than
+a fresh Vite app (D30). Keep the wallet app intact and add file-hosting views on
+top. Follow `/home/trout/work/llm/prompt/react/prompt.md` for the React and
+react-bootstrap patterns. Keep protocol logic in `src/services/` (pure,
+unit-testable) and UI in `src/components/`; testable presentational components
+use plain `React.createElement` so `node --test` + `ReactDOMServer` can render
+them offline, matching `psf-memo-client` so phase 9 is a port rather than a
+rewrite. Payment is both in-browser ("Pay now" via `minimal-slp-wallet`) and via
+a QR code for an external mobile wallet (D30).
 
 Screens: upload (drag and drop), quote with QR code for the payment address and
 a countdown to quote expiry, payment-status polling, and a result page with CID,

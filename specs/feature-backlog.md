@@ -35,14 +35,25 @@ at `f579aafd67`. P6.6 `file-host` is complete and merged at `8a93edf5f7`, so
 
 ## In progress
 
-- None.
+- **P7.1 `web-upload` — web skeleton and upload quote (started 2026-10-09):**
+  fork `bch-wallet-web3-spa` into `bch-file-hosting-web/` and add the first
+  file-hosting view: pick/drag a file, `POST /files`, then show the quote
+  (file name, price in satoshis, payment address), the already-hosted download
+  link, a no-file prompt, or the API error. Spec
+  `bch-file-hosting-web/specs/web-upload.feature` (four scenarios). Handed to
+  the coder as task `web-upload`.
 
 ## Up next (in order)
 
-- **Roadmap phase 7: `bch-file-hosting-web`** (Vite + React + react-bootstrap
-  UI); scope and scaffold it with the user. Onboarding a new component needs a
-  `verify.mjs` entry, a `monorepo.prompt` row, and self-provisioning for any
-  gitignored runtime directories (gotcha #8).
+- **Roadmap phase 7 continued — `bch-file-hosting-web`** (fork of
+  `bch-wallet-web3-spa`: CRA 5, React 19, react-bootstrap, react-router,
+  `qrcode.react`, `minimal-slp-wallet`; see long-term plan D30). After P7.1:
+  **P7.2 `web-payment`** (quote QR code + expiry countdown, poll
+  `check-payment`, and offer "Pay now" from the in-browser wallet in addition
+  to the QR for a mobile wallet) and **P7.3 `web-file-status`** (look up a CID
+  and show status/pins). Onboarding needs a `verify.mjs` entry, a
+  `monorepo.prompt` row, and self-provisioning for any gitignored runtime
+  directories (gotcha #8).
 - **CLI spec-quality follow-ups:** the `upload_path` cells (file-upload,
   file-host) and the file-host non-JSON `api_txid` cells survive soft mutation
   because no assertion depends on them; either anchor them with a `Then` or

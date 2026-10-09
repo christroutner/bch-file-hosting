@@ -32,12 +32,13 @@ Feature: Lighthouse Pinning
       | http_status | file_status | pin_status |
       | 500 | pinFailed | failed |
 
-  Scenario Outline: Lighthouse Pinning - 3 exposes the Lighthouse gateway URL for a CID
-    Then the Lighthouse gateway URL for CID <cid> is <gateway_url>
+  Scenario Outline: Lighthouse Pinning - 3 exposes the Lighthouse gateway URL for the file
+    Then the Lighthouse gateway URL for CID <cid> and filename <filename> is <gateway_url>
 
     Examples:
-      | cid | gateway_url |
-      | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | https://gateway.lighthouse.storage/ipfs/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi |
+      | cid | filename | gateway_url |
+      | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | photo.jpg    | https://gateway.lighthouse.storage/ipfs/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/photo.jpg |
+      | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | my photo.jpg | https://gateway.lighthouse.storage/ipfs/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/my%20photo.jpg |
 
   Scenario Outline: Lighthouse Pinning - 4 registers the Lighthouse provider from configuration
     Then the configured pinning providers include <provider_name>

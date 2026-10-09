@@ -44,7 +44,13 @@ cleanup (anchor the size-scenario setup columns) is complete and merged at
 
 ## In progress
 
-- None.
+- **`lighthouse-file-link` — the Lighthouse link opens the file; image links
+  open in a new tab (2026-10-09):** the Lighthouse gateway URL points at the
+  wrapping-directory CID, so it does not open the file. `lighthouse-pinning.feature`
+  scenario 3 now requires `<gateway>/<cid>/<encoded filename>`. On the web,
+  `web-payment.feature` gained `Web Payment - 8`, requiring image gateway links
+  to open with `target="_blank"` and non-image links to keep the default.
+  Touches `bch-file-hosting-api` and `bch-file-hosting-web`. Awaiting coder.
 
 ## Up next (in order)
 

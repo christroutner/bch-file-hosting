@@ -2,36 +2,36 @@
   "schema_version": 1,
   "task": "web-payment-poll-error",
   "component": "bch-file-hosting-web",
-  "git_sha": "cf2625b7ddaadbb4e68d7ba408da4f7186878cee",
-  "branch": "swarmforge-coder",
-  "timestamp": "2026-10-09T15:25:19.725Z",
+  "git_sha": "9fb446c44ba4b573ce97e7a37ec8e4f988862739",
+  "branch": "swarmforge-architect",
+  "timestamp": "2026-10-09T15:27:21.542Z",
   "commands": [
     {
       "name": "unit",
       "command": "npm test",
       "exit": 0,
-      "duration_ms": 189,
+      "duration_ms": 191,
       "summary": "42 pass / 0 fail"
     },
     {
       "name": "property",
       "command": "npm run test:property",
       "exit": 0,
-      "duration_ms": 436,
-      "summary": "40 pass / 0 fail"
+      "duration_ms": 432,
+      "summary": "41 pass / 0 fail"
     },
     {
       "name": "acceptance",
       "command": "npm run test:acceptance",
       "exit": 0,
-      "duration_ms": 309,
+      "duration_ms": 256,
       "summary": "all 2 acceptance suites passed"
     },
     {
       "name": "lint",
       "command": "npm run lint",
       "exit": 0,
-      "duration_ms": 700,
+      "duration_ms": 637,
       "summary": "ok"
     }
   ],

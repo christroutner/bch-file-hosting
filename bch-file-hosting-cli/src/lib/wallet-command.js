@@ -11,6 +11,10 @@ import Command, { UsageError } from './command.js'
 import WalletStore from './wallet-store.js'
 import WalletService from './wallet-service.js'
 
+// Wallet names become `<name>.json` files in the local store, so restrict them
+// to characters that cannot escape the store directory.
+const WALLET_NAME_PATTERN = /^[A-Za-z0-9_-]+$/
+
 class WalletCommand extends Command {
   constructor (deps = {}) {
     super(deps)
@@ -28,6 +32,12 @@ class WalletCommand extends Command {
   validateFlags (flags = {}) {
     if (!flags.name) {
       throw new UsageError('You must specify a wallet name with the -n flag.')
+    }
+
+    if (!WALLET_NAME_PATTERN.test(flags.name)) {
+      throw new UsageError(
+        `Invalid wallet name "${flags.name}". Use only letters, digits, hyphens, and underscores.`
+      )
     }
 
     return true

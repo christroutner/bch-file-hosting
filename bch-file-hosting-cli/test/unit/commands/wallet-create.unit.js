@@ -104,6 +104,16 @@ describe('#wallet-create', () => {
       sinon.assert.notCalled(uut.walletService.create)
     })
 
+    it('should return 2 and reject an unsafe name without touching the store', async () => {
+      const result = await uut.run({ name: '../escape' })
+
+      assert.equal(result, 2)
+      assert.equal(errorOutput.join('\n'), 'Invalid wallet name "../escape". Use only letters, digits, hyphens, and underscores.')
+      sinon.assert.notCalled(walletStore.has)
+      sinon.assert.notCalled(uut.walletService.create)
+      sinon.assert.notCalled(walletStore.write)
+    })
+
     it('should return 1 and print the error when the name already exists', async () => {
       walletStore.has.returns(true)
 

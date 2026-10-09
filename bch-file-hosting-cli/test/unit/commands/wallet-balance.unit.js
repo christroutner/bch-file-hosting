@@ -103,6 +103,15 @@ describe('#wallet-balance', () => {
       assert.include(errorOutput.join('\n'), USAGE_MESSAGE)
     })
 
+    it('should return 2 and reject an unsafe name without reading the store', async () => {
+      const result = await uut.run({ name: 'has space' })
+
+      assert.equal(result, 2)
+      assert.equal(errorOutput.join('\n'), 'Invalid wallet name "has space". Use only letters, digits, hyphens, and underscores.')
+      sinon.assert.notCalled(walletStore.read)
+      sinon.assert.notCalled(uut.walletService.balanceSats)
+    })
+
     it('should return 1 and print the error when the wallet does not exist', async () => {
       walletStore.read.returns(null)
 

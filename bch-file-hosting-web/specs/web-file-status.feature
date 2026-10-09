@@ -1,3 +1,8 @@
+# mutation-stamp: sha256=b9ad82bbd4c942253f03f6def5c9b46711043085e4ad7c637de4b894adaa2564
+# acceptance-mutation-manifest-begin
+# {"version":1,"tested_at":"2026-10-09T15:57:19.212475021Z","feature_name":"Web File Status","feature_path":"/home/trout/work/psf/code/ipfs/bch-file-hosting/.worktrees/architect/bch-file-hosting-web/specs/web-file-status.feature","background_hash":"2e2c4d647fb6d89439b386c85e1e172482bda212c398974385ba02fcd2dd3879","implementation_hash":"unknown","scenarios":[{"index":0,"name":"Web File Status - 1 a found file shows its details and pins","scenario_hash":"1f82ef23e8dd3c59e58a8f65df52d787d7648bf99d2df1defffda41f224a4f64","mutation_count":28,"result":{"Total":28,"Killed":28,"Survived":0,"Errors":0},"tested_at":"2026-10-09T15:57:19.212475021Z"},{"index":1,"name":"Web File Status - 2 a staged file shows no hosting window","scenario_hash":"8a18f7ba5a170582a2469690b748cab779f824910edc9d93a7160a1433b04bb7","mutation_count":9,"result":{"Total":9,"Killed":9,"Survived":0,"Errors":0},"tested_at":"2026-10-09T15:57:19.212475021Z"},{"index":3,"name":"Web File Status - 4 an API error shows the error","scenario_hash":"4fef5b66b27777ea68ebddeb5e883c8a9eaef47d5f730f1bcc2ac07f0048a38b","mutation_count":4,"result":{"Total":4,"Killed":4,"Survived":0,"Errors":0},"tested_at":"2026-10-09T15:57:19.212475021Z"}]}
+# acceptance-mutation-manifest-end
+
 # Web File Status - 1, Web File Status - 2, Web File Status - 3, Web File Status - 4
 
 Feature: Web File Status

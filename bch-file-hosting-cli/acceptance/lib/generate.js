@@ -1,5 +1,5 @@
 /*
-  Project-specific acceptance entrypoint generator for bch-file-hosting-api.
+  Project-specific acceptance entrypoint generator for bch-file-hosting-cli.
 
   Reads parser JSON IR and writes executable generated test entry points plus
   per-feature metadata. Generated tests delegate all step behavior to the

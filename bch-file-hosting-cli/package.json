@@ -12,6 +12,7 @@
   },
   "scripts": {
     "test": "SVC_ENV=test c8 --reporter=text mocha --exit --timeout 15000 --recursive test/unit",
+    "test:property": "SVC_ENV=test mocha --exit --timeout 15000 --recursive 'test/property/**/*.property.js'",
     "test:acceptance": "node acceptance/acceptance.js",
     "lint": "standard --env mocha --fix",
     "crap": "crap4javascript",

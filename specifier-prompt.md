@@ -321,14 +321,16 @@ At the end of each session, update this file:
 - Note the current `master` HEAD commit.
 - State the next feature to work on.
 
-Latest session (2026-10-09): merged **P6.1 `cli-skeleton`** into `master` at
-`cde36aef70`. The new `bch-file-hosting-cli/` component implements
-`file-upload -f <path> [--json]`; `docs/reviews/cli-skeleton-verification.json`
-reports `verify.sh cli` pass 4/4 (record `git_sha` `1ecb9f7`, docs-only behind
-the tip) and the independent post-merge acceptance check passed 11/11. Prior
-cycles (Q1, P5.1-P5.3) are recorded in the backlog.
+Latest session (2026-10-09): specified **P6.2 `file-check`** — `file-check -a
+<address> [--json]` calls `POST /files/check-payment` and prints paid links,
+unpaid amounts and quote expiry, or the expired status; spec
+`bch-file-hosting-cli/specs/file-check.feature` has six scenarios and was
+committed and handed off to the coder at `47209e7ca9`. P6.1 `cli-skeleton` is
+complete and merged; prior cycles (Q1, P5.1-P5.3) are recorded in the backlog.
 
-Current `master` HEAD: `cde36aef70` (Merge cli-skeleton into master).
+Current `master` HEAD: `47209e7ca9` (Specify file-check check-payment behavior;
+this briefing update is the following docs-only commit).
 
-Next action: ask the user which phase-6 CLI command to specify next
-(`file-pay`, `file-check`, `file-status`, `file-host`, `wallet-*`).
+Next action: when the architect's end-of-chain `git_handoff` arrives, merge
+`swarmforge-architect` into `master` and verify per §10, then mark P6.2 complete
+in `specs/feature-backlog.md`.

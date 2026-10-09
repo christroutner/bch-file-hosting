@@ -1,3 +1,7 @@
+# acceptance-mutation-manifest-begin
+# {"version":1,"tested_at":"2026-10-09T14:00:00.248369300Z","feature_name":"File Host","feature_path":"/home/trout/work/psf/code/ipfs/bch-file-hosting/.worktrees/architect/bch-file-hosting-cli/specs/file-host.feature","background_hash":"67abe0aa3c3d053d2ff672ef3ba45446bca7fd6e00d63aede1187986a208581f","implementation_hash":"unknown","scenarios":[]}
+# acceptance-mutation-manifest-end
+
 # File Host - 1, File Host - 2, File Host - 3, File Host - 4, File Host - 5, File Host - 6, File Host - 7, File Host - 8
 
 Feature: File Host
@@ -90,8 +94,10 @@ Feature: File Host
     And stdout is a single JSON object
     And the JSON output has the CID <json_cid>
     And the JSON output has the download URL <json_download_url>
+    And the wallet paid <sent_amount> satoshis to <sent_address>
+    And the JSON output has the transaction <json_txid>
 
     Examples:
-      | upload_path   | api_sats | api_address                                         | paid_cid                                                     | paid_download_url                                                                   | api_txid                                                     | json_cid                                                     | json_download_url                                                                  |
-      | ./photo.jpg   | 2000     | bitcoincash:qinvoiceaddress00000000000000000000000000 | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/download/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | 4444444444444444444444444444444444444444444444444444444444444444 | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/download/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi |
-      | ./archive.tar | 62500    | bitcoincash:qinvoiceaddress00000000000000000000000000 | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | http://localhost:5050/download/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | 5555555555555555555555555555555555555555555555555555555555555555 | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | http://localhost:5050/download/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
+      | upload_path   | api_sats | api_address                                         | paid_cid                                                     | paid_download_url                                                                   | api_txid                                                     | json_cid                                                     | json_download_url                                                                  | sent_amount | sent_address                                        | json_txid                                                     |
+      | ./photo.jpg   | 2000     | bitcoincash:qinvoiceaddress00000000000000000000000000 | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/download/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | 4444444444444444444444444444444444444444444444444444444444444444 | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/download/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | 2000        | bitcoincash:qinvoiceaddress00000000000000000000000000 | 4444444444444444444444444444444444444444444444444444444444444444 |
+      | ./archive.tar | 62500    | bitcoincash:qinvoiceaddress00000000000000000000000000 | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | http://localhost:5050/download/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | 5555555555555555555555555555555555555555555555555555555555555555 | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | http://localhost:5050/download/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | 62500       | bitcoincash:qinvoiceaddress00000000000000000000000000 | 5555555555555555555555555555555555555555555555555555555555555555 |

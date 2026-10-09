@@ -99,3 +99,7 @@ class FileHost extends FileUpload {
 
 export { UsageError }
 export default FileHost
+
+// mutate4javascript-manifest-begin
+// {"version":1,"tested_at":"2026-10-09T13:58:15.653Z","module_hash":"e9f86daae19826958e64295e91aa1058756619d1a2ec39cca7cb6ca554295fd1","functions":[{"id":"func/FileHost.constructor","name":"FileHost.constructor","line":15,"end_line":26,"hash":"93b32954a30172bacec9a99ac3dfc34ebc1338ba03be77c2d0e937ccfc1a2357"},{"id":"func/FileHost.validateFlags","name":"FileHost.validateFlags","line":28,"end_line":32,"hash":"2c9ee50ea6ade85737160c437f78e46fe5d54da2f5e6b8bfc58936b1b201c3a9"},{"id":"func/FileHost.execute","name":"FileHost.execute","line":34,"end_line":65,"hash":"73f26ab4fd3cf4d30d1ea7302cdd3d7c11d8d23306851cb9afe4bd427c084086"},{"id":"func/FileHost.pollPayment","name":"FileHost.pollPayment","line":68,"end_line":79,"hash":"4dd181097828c4a455a95487578d5c0e9dd8696a0ec9cc44c169211f20cb5649"},{"id":"func/FileHost.report","name":"FileHost.report","line":81,"end_line":97,"hash":"f9880aa55dafb723d2b6a8e2e2597a0d94fcf51cd4cae3815df4ed976ed3f3d7"}]}
+// mutate4javascript-manifest-end

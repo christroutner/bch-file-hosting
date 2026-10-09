@@ -782,6 +782,15 @@ const handlers = [
     }
   },
   {
+    pattern: /^the JSON output has the transaction <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.json.txid !== expected) {
+        throw new Error(`expected JSON transaction ${expected}, got ${world.json.txid}`)
+      }
+    }
+  },
+  {
     pattern: /^the new wallet has the address <([A-Za-z0-9_]+)>$/,
     run (match, example, world) {
       world.walletCreateResult = {

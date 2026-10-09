@@ -144,6 +144,8 @@ describe('#file-host', () => {
         toAddress: ADDRESS,
         amountSats: 2000
       })
+      // Sleeps once between the two checks, never after the confirming check.
+      sinon.assert.calledOnceWithExactly(uut.sleep, 0)
     })
 
     it('should not pay an already hosted file and print its download URL', async () => {
@@ -180,6 +182,9 @@ describe('#file-host', () => {
         amountSats: 2000
       })
       sinon.assert.callCount(hostingApi.checkPayment, 3)
+      // Three attempts sleep only between them: two delays, none after the last.
+      sinon.assert.callCount(uut.sleep, 2)
+      sinon.assert.alwaysCalledWithExactly(uut.sleep, 0)
     })
 
     it('should return 1 and not pay when the wallet does not exist', async () => {

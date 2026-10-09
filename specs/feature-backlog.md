@@ -23,25 +23,12 @@ pluggable third-party pinning services.
 The core port (roadmap phase 3) is complete and verified on mainnet. SwarmForge
 was integrated in phase 4, and the pipeline smoke test (S0) completed the first
 full four-role cycle. Q1 set the language-quality baseline and P5.1 finished
-the pinning-provider study. Next is P5.2, the Lighthouse provider adapter.
+the pinning-provider study. P5.2 added the Lighthouse provider. Next is P5.3,
+the pin-retry timer.
 
 ## In progress
 
-### P5.2. `lighthouse-provider` — first third-party pinning provider (api)
-
-Spec: `bch-file-hosting-api/specs/lighthouse-pinning.feature`. Status: spec
-committed and handed to the coder.
-
-- `LighthouseProvider extends PinningProvider` in
-  `src/adapters/pinning/lighthouse.js`, registered under `lighthouse` in
-  `PROVIDER_FACTORIES`, enabled with `PINNING_PROVIDERS=lighthouse`.
-- New config: `LIGHTHOUSE_API_KEY` (the user provides the key; never commit it).
-- `pin()` records `providerRef`; `gatewayUrl()` returns the Lighthouse gateway
-  link, which `buildLinks` already appends to `gatewayUrls`.
-- If Lighthouse returns a different CID than ours, the pin is recorded as
-  `failed` with a clear error (long-term plan Q11).
-- Unit tests stub the HTTP client; no real Lighthouse calls in tests.
-- See `dev-docs/pinning-providers.md` §3.1 for the API findings.
+- None.
 
 ## Up next (in order)
 
@@ -69,6 +56,18 @@ them until the user decides.
 
 ## Recently completed
 
+- **P5.2 `lighthouse-provider` — first third-party pinning provider
+  (2026-10-09):** `LighthouseProvider` pins by CID through an injected HTTP
+  client and is registered under `lighthouse` when `PINNING_PROVIDERS=lighthouse`;
+  new `LIGHTHOUSE_API_KEY`, `LIGHTHOUSE_API_URL`, and `LIGHTHOUSE_GATEWAY`
+  config. A CID mismatch or API error records a failed pin. Spec
+  `bch-file-hosting-api/specs/lighthouse-pinning.feature`. Pipeline commits:
+  coder `1bf2ca0`, refactorer `70b6453`, architect `912da2b` (verification
+  `git_sha`), merged to `master` at `2e2d7464`. `verify.sh api` pass 4/4 (unit
+  381, property 13, acceptance all 3 suites, lint ok); language mutation 0
+  survived; soft Gherkin 10/12 killed with 2 documented intrinsic survivors.
+  Independent acceptance check after merge: lighthouse-pinning 5/5 (all 3
+  suites). Architect summary: `docs/reviews/lighthouse-provider-summary.md`.
 - **P5.1 `pinning-provider-study` — provider research (2026-10-09):**
   `dev-docs/pinning-providers.md` documents our CID profile (CIDv1, raw leaves,
   1 MiB chunks, dag-pb directory wrap), the pin-by-CID vs upload-bytes

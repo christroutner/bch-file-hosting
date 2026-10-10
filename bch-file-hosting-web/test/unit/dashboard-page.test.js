@@ -62,7 +62,6 @@ test('loads the first page in feed order and reduces each file to its public fie
     cid: 'bafy-a',
     filename: 'photo.jpg',
     sizeBytes: 1024,
-    paymentAddress: 'bitcoincash:qfeed',
     paidAt: '2026-01-02T00:00:00.000Z',
     hostedUntil: '2027-01-02T00:00:00.000Z',
     downloadUrl: `${BASE}/download/bafy-a`

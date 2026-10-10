@@ -41,7 +41,6 @@ function randomFile (random, index) {
     cid,
     filename: `${randomString(random, 1, 12, TEXT_ALPHABET)}.bin`,
     sizeBytes: integerBetween(random, 0, 100000000),
-    paymentAddress: `bitcoincash:q${randomString(random, 10, 30)}`,
     paidAt: '2026-01-02T00:00:00.000Z',
     hostedUntil: '2027-01-02T00:00:00.000Z',
     downloadUrl: `${BASE}/download/${cid}`

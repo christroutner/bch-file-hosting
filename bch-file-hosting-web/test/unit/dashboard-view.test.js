@@ -26,7 +26,6 @@ function file (overrides = {}) {
     cid: CID,
     filename: 'photo.jpg',
     sizeBytes: 1024,
-    paymentAddress: 'bitcoincash:qfeed',
     paidAt: '2026-01-02T00:00:00.000Z',
     hostedUntil: '2027-01-02T00:00:00.000Z',
     downloadUrl: `http://localhost:5050/download/${CID}`,

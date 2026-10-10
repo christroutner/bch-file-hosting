@@ -28,7 +28,6 @@ function toDashboardFile (file, downloadBaseUrl) {
     cid: file.cid,
     filename: file.filename,
     sizeBytes: file.sizeBytes,
-    paymentAddress: file.paymentAddress,
     paidAt: file.paidAt,
     hostedUntil: file.hostedUntil,
     downloadUrl: downloadUrl(downloadBaseUrl, file.cid)

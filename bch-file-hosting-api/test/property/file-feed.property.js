@@ -7,7 +7,8 @@
   tie-break, in pages no larger than the limit; walking the cursors visits every
   paid file exactly once and ends only when the next cursor is null; and each
   published record exposes only public fields with pins reduced to provider and
-  status.
+  status and with gateway URLs composed from the public gateways plus the
+  active providers.
 
   Kept separate from the unit suite. Per the constitution, property tests do
   not contribute to unit coverage, CRAP, Gherkin acceptance, or mutation runs.
@@ -249,6 +250,40 @@ describe('#file-feed.property.js', () => {
             published.gatewayUrls,
             publicGateways.map((prefix) => `${prefix}${file.cid}/${encodeURIComponent(file.filename)}`)
           )
+        }
+      })
+    })
+
+    it('should append each provider gateway URL after the public gateways', () => {
+      forAll({
+        seed: 8,
+        runs: 300,
+        generate: (random) => {
+          const publicGateways = []
+          const prefixCount = integerBetween(random, 0, 3)
+          for (let i = 0; i < prefixCount; i++) publicGateways.push(`https://pub${i}.example/ipfs/`)
+
+          const providers = []
+          const providerCount = integerBetween(random, 0, 4)
+          for (let i = 0; i < providerCount; i++) {
+            // Half the providers offer no gateway URL and must contribute none.
+            const offers = random() < 0.5
+            providers.push({
+              gatewayUrl: (cid, filename) => (offers ? `https://pin${i}.example/ipfs/${cid}/${encodeURIComponent(filename)}` : null)
+            })
+          }
+          return { file: randomFile(random, 0), publicGateways, providers }
+        },
+        property: ({ file, publicGateways, providers }) => {
+          const published = toFeedFile(file, { publicGateways }, providers)
+
+          const expected = publicGateways.map((prefix) => `${prefix}${file.cid}/${encodeURIComponent(file.filename)}`)
+          for (const provider of providers) {
+            const url = provider.gatewayUrl(file.cid, file.filename)
+            if (url) expected.push(url)
+          }
+
+          assert.deepEqual(published.gatewayUrls, expected)
         }
       })
     })

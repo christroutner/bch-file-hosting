@@ -2,9 +2,10 @@
   Page-controller service for the hosted-files dashboard.
 
   The service owns the dashboard display state. It loads the public feed from
-  the hosting API, shows every file in feed order with its details and pins,
-  and supports two actions: Refresh (reload the first page) and Load more
-  (append the next page). It keeps no browser storage and does not poll.
+  the hosting API, shows every file in feed order with its size, times,
+  download URL, and CID, and supports two actions: Refresh (reload the first
+  page) and Load more (append the next page). It keeps no browser storage and
+  does not poll.
 
   The state is a plain view model that the presentational component and the
   acceptance run can render without a browser.
@@ -27,12 +28,10 @@ function toDashboardFile (file, downloadBaseUrl) {
     cid: file.cid,
     filename: file.filename,
     sizeBytes: file.sizeBytes,
-    status: file.status,
     paymentAddress: file.paymentAddress,
     paidAt: file.paidAt,
     hostedUntil: file.hostedUntil,
-    downloadUrl: downloadUrl(downloadBaseUrl, file.cid),
-    pins: (file.pins || []).map((pin) => ({ provider: pin.provider, status: pin.status }))
+    downloadUrl: downloadUrl(downloadBaseUrl, file.cid)
   }
 }
 

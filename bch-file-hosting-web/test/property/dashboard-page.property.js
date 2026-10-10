@@ -61,12 +61,10 @@ function publicFile (file) {
     cid: file.cid,
     filename: file.filename,
     sizeBytes: file.sizeBytes,
-    status: file.status,
     paymentAddress: file.paymentAddress,
     paidAt: file.paidAt,
     hostedUntil: file.hostedUntil,
-    downloadUrl: `${BASE}/download/${file.cid}`,
-    pins: (file.pins || []).map((pin) => ({ provider: pin.provider, status: pin.status }))
+    downloadUrl: `${BASE}/download/${file.cid}`
   }
 }
 

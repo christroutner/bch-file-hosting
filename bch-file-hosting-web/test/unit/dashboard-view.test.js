@@ -19,19 +19,17 @@ const DashboardView = require('../../src/components/app-body/dashboard/dashboard
 const { EMPTY_MESSAGE } = DashboardView
 
 const CID = 'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
-const COLUMNS = ['File Name', 'Size', 'Status', 'Pins', 'Paid', 'Hosted Until', 'CID', 'Download']
+const COLUMNS = ['File Name', 'Size', 'Paid', 'Hosted Until', 'CID', 'Download']
 
 function file (overrides = {}) {
   return {
     cid: CID,
     filename: 'photo.jpg',
     sizeBytes: 1024,
-    status: 'pinned',
     paymentAddress: 'bitcoincash:qfeed',
     paidAt: '2026-01-02T00:00:00.000Z',
     hostedUntil: '2027-01-02T00:00:00.000Z',
     downloadUrl: `http://localhost:5050/download/${CID}`,
-    pins: [{ provider: 'local-helia', status: 'pinned' }],
     ...overrides
   }
 }
@@ -88,17 +86,6 @@ test('formats the paid and hosting times as UTC minute timestamps', () => {
 
   assert.ok(html.includes('2026-02-15 13:45 UTC'))
   assert.ok(html.includes('2027-02-15 13:45 UTC'))
-})
-
-test('renders the status and each pin as provider: status', () => {
-  const html = renderFile({
-    status: 'pinFailed',
-    pins: [{ provider: 'lighthouse', status: 'failed' }]
-  })
-
-  assert.ok(html.includes('>pinFailed<'))
-  assert.ok(html.includes('lighthouse: failed'))
-  assert.ok(!html.includes('Pin: lighthouse'))
 })
 
 test('truncates the CID and offers a copy control', () => {

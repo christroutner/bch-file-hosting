@@ -62,12 +62,10 @@ test('loads the first page in feed order and reduces each file to its public fie
     cid: 'bafy-a',
     filename: 'photo.jpg',
     sizeBytes: 1024,
-    status: 'pinned',
     paymentAddress: 'bitcoincash:qfeed',
     paidAt: '2026-01-02T00:00:00.000Z',
     hostedUntil: '2027-01-02T00:00:00.000Z',
-    downloadUrl: `${BASE}/download/bafy-a`,
-    pins: [{ provider: 'local-helia', status: 'pinned' }]
+    downloadUrl: `${BASE}/download/bafy-a`
   })
   assert.deepEqual(page.getViewModel(), state)
 })

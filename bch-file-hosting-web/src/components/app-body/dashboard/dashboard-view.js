@@ -2,11 +2,10 @@
   Presentational view for the hosted-files dashboard.
 
   Renders the DashboardPage display state as a Bootstrap table: one row per
-  file with its formatted size and times, a status badge, provider:status
-  pins, a truncated CID with a copy control, and a download link; or the
-  empty-feed message, or the API error. Written in plain React.createElement
-  style so the same view can be used by the browser page and by the Node
-  acceptance rendering, without a browser.
+  file with its formatted size and times, a truncated CID with a copy control,
+  and a download link; or the empty-feed message, or the API error. Written in
+  plain React.createElement style so the same view can be used by the browser
+  page and by the Node acceptance rendering, without a browser.
 */
 
 const React = require('react')
@@ -17,8 +16,6 @@ const EMPTY_MESSAGE = 'No files are hosted yet.'
 const COLUMNS = [
   'File Name',
   'Size',
-  'Status',
-  'Pins',
   'Paid',
   'Hosted Until',
   'CID',
@@ -72,18 +69,6 @@ function copyControl (cid) {
   )
 }
 
-function statusBadge (status) {
-  return React.createElement(
-    'span',
-    { className: `badge dashboard-status dashboard-status-${status}` },
-    status
-  )
-}
-
-function pinsText (file) {
-  return (file.pins || []).map((pin) => `${pin.provider}: ${pin.status}`).join(', ')
-}
-
 function cidCell (file) {
   return React.createElement(
     'td',
@@ -108,8 +93,6 @@ function fileRow (file, index) {
     { key: `file-${index}`, className: 'dashboard-row', 'data-cid': file.cid },
     React.createElement('td', { className: 'dashboard-file-name' }, file.filename),
     React.createElement('td', { className: 'dashboard-file-size' }, formatSize(file.sizeBytes)),
-    React.createElement('td', { className: 'dashboard-file-status' }, statusBadge(file.status)),
-    React.createElement('td', { className: 'dashboard-file-pins' }, pinsText(file)),
     React.createElement('td', { className: 'dashboard-file-paid' }, formatDate(file.paidAt)),
     React.createElement('td', { className: 'dashboard-file-until' }, formatDate(file.hostedUntil)),
     cidCell(file),

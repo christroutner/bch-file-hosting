@@ -46,15 +46,6 @@ function resolveParam (value, example) {
   return String(value).trim()
 }
 
-// Read a named example value, for patterns that capture the name inside the
-// <brackets> rather than the whole placeholder.
-function exampleValue (example, name) {
-  if (!(name in example)) {
-    throw new Error(`Missing example value for "${name}"`)
-  }
-  return example[name]
-}
-
 // A world/state object is created fresh for every scenario execution.
 function createWorld () {
   return {
@@ -791,17 +782,6 @@ const handlers = [
     }
   },
   {
-    name: 'the hosting API feed lists a file with a status',
-    pattern: /^the hosting API feed lists a file (<[A-Za-z0-9_]+>) with status (<[A-Za-z0-9_]+>)$/,
-    run (m, example, world) {
-      world.feedFiles.push(feedRecord({
-        status: resolveParam(m[2], example),
-        cid: resolveParam(m[1], example),
-        filename: 'file.bin'
-      }))
-    }
-  },
-  {
     name: 'the hosting API feed has a next page',
     pattern: /^the hosting API feed has a next page$/,
     run (_m, _example, world) {
@@ -832,16 +812,6 @@ const handlers = [
       world.feedNextPageFiles = []
       world.feedNextPageCursor = null
       world.feedError = null
-    }
-  },
-  {
-    name: 'the hosting API feed lists a pin for a file',
-    pattern: /^the hosting API feed lists a <([A-Za-z0-9_]+)> pin <([A-Za-z0-9_]+)> for the file <([A-Za-z0-9_]+)>$/,
-    run (m, example, world) {
-      const cid = exampleValue(example, m[3])
-      const file = world.feedFiles.find((f) => f.cid === cid)
-      if (!file) throw new Error(`The hosting API feed does not list the file ${cid}.`)
-      file.pins.push({ provider: exampleValue(example, m[1]), status: exampleValue(example, m[2]) })
     }
   },
   {
@@ -902,20 +872,6 @@ const handlers = [
       if (JSON.stringify(headers) !== JSON.stringify(expected)) {
         throw new Error(`Expected the dashboard columns ${expected.join(', ')}, got ${headers.join(', ')}.`)
       }
-    }
-  },
-  {
-    name: 'the status cell of a dashboard row',
-    pattern: /^the status cell of row (\S+) reads (<[A-Za-z0-9_]+>)$/,
-    run (m, example, world) {
-      assertRowCell(world, resolveParam(m[1], example), 'dashboard-file-status', resolveParam(m[2], example))
-    }
-  },
-  {
-    name: 'a dashboard row lists the pins',
-    pattern: /^row (\S+) lists the pins (<[A-Za-z0-9_]+>)$/,
-    run (m, example, world) {
-      assertRowCell(world, resolveParam(m[1], example), 'dashboard-file-pins', resolveParam(m[2], example), { contains: true })
     }
   },
   {

@@ -24,8 +24,7 @@ const { EMPTY_MESSAGE } = DashboardView
 const { forAll, integerBetween, randomString } = require('./lib/harness')
 
 const TEXT_ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .-_'
-const STATUSES = ['pinning', 'pinned', 'pinFailed']
-const COLUMNS = ['File Name', 'Size', 'Status', 'Pins', 'Paid', 'Hosted Until', 'CID', 'Download']
+const COLUMNS = ['File Name', 'Size', 'Paid', 'Hosted Until', 'CID', 'Download']
 const BASE = 'http://localhost:5050'
 
 function truncateCid (cid) {
@@ -37,29 +36,19 @@ function render (state) {
 }
 
 function randomFile (random, index) {
-  const pinCount = integerBetween(random, 0, 3)
-  const pins = []
-  for (let i = 0; i < pinCount; i++) {
-    pins.push({
-      provider: randomString(random, 1, 10, TEXT_ALPHABET),
-      status: randomString(random, 1, 8, TEXT_ALPHABET)
-    })
-  }
   const cid = `bafy${String(index).padStart(4, '0')}${randomString(random, 4, 8)}`
   return {
     cid,
     filename: `${randomString(random, 1, 12, TEXT_ALPHABET)}.bin`,
     sizeBytes: integerBetween(random, 0, 100000000),
-    status: STATUSES[integerBetween(random, 0, STATUSES.length - 1)],
     paymentAddress: `bitcoincash:q${randomString(random, 10, 30)}`,
     paidAt: '2026-01-02T00:00:00.000Z',
     hostedUntil: '2027-01-02T00:00:00.000Z',
-    downloadUrl: `${BASE}/download/${cid}`,
-    pins
+    downloadUrl: `${BASE}/download/${cid}`
   }
 }
 
-test('property: a loaded feed renders one table row per file with its CID, download link, and pins', () => {
+test('property: a loaded feed renders one table row per file with its CID and download link', () => {
   forAll({
     seed: 1,
     runs: 200,
@@ -76,11 +65,12 @@ test('property: a loaded feed renders one table row per file with its CID, downl
       for (const column of COLUMNS) {
         assert.ok(html.includes(`>${column}</th>`), `missing column ${column}`)
       }
+      assert.ok(!html.includes('>Status</th>'))
+      assert.ok(!html.includes('>Pins</th>'))
       for (const file of files) {
         assert.ok(html.includes(file.filename))
         assert.ok(html.includes(truncateCid(file.cid)))
         assert.ok(html.includes(`href="${file.downloadUrl}"`))
-        assert.ok(html.includes(file.pins.map((pin) => `${pin.provider}: ${pin.status}`).join(', ') || ''))
       }
     }
   })

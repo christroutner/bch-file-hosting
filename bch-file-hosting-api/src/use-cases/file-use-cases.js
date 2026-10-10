@@ -165,7 +165,12 @@ class FileUseCases extends UseCase {
   async listFeed ({ limit, cursor } = {}) {
     const files = await this.adapters.localdb.files.list()
     try {
-      return paginateFeed(files, { limit, cursor, config: this.config })
+      return paginateFeed(files, {
+        limit,
+        cursor,
+        config: this.config,
+        providers: this.adapters.pinning.getProviders()
+      })
     } catch (err) {
       throw new ValidationError(err.message)
     }

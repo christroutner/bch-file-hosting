@@ -326,6 +326,20 @@ describe('#file-use-cases.js', () => {
       })
     })
 
+    it('should include the configured provider gateway URLs in the feed', async () => {
+      await seedFile()
+      adapters.pinning.getProviders = () => [
+        { gatewayUrl: (cid, filename) => `https://pin.example/ipfs/${cid}/${encodeURIComponent(filename)}` }
+      ]
+
+      const result = await uut.listFeed({ limit: 10 })
+
+      assert.deepEqual(result.files[0].gatewayUrls, [
+        `https://ipfs.io/ipfs/${TEST_CID}/photo.jpg`,
+        `https://pin.example/ipfs/${TEST_CID}/photo.jpg`
+      ])
+    })
+
     it('should paginate with the cursor from the previous page', async () => {
       await seedFile({ cid: 'bafy-old', paidAt: '2026-01-01T00:00:00.000Z' })
       await seedFile({ cid: 'bafy-new', paidAt: '2026-01-03T00:00:00.000Z' })

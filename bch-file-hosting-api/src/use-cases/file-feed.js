@@ -75,7 +75,7 @@ function isAfterCursor (file, cursor) {
 
 // The public fields of one hosted file. Private fields (HD index, invoice
 // amounts) are never published.
-export function toFeedFile (file, config = {}) {
+export function toFeedFile (file, config = {}, providers = []) {
   return {
     cid: file.cid,
     filename: file.filename,
@@ -85,14 +85,14 @@ export function toFeedFile (file, config = {}) {
     createdAt: file.createdAt,
     paidAt: file.paidAt,
     hostedUntil: file.hostedUntil,
-    gatewayUrls: buildGatewayUrls({ cid: file.cid, filename: file.filename, config }),
+    gatewayUrls: buildGatewayUrls({ cid: file.cid, filename: file.filename, config, providers }),
     pins: (file.pins || []).map((pin) => ({ provider: pin.provider, status: pin.status }))
   }
 }
 
 // Slice paid files into one feed page. Returns the page's public files and the
 // cursor for the next page (null when this is the last page).
-export function paginateFeed (files, { limit, cursor, config = {} } = {}) {
+export function paginateFeed (files, { limit, cursor, config = {}, providers = [] } = {}) {
   const pageLimit = parsePageLimit(limit)
   const after = parseCursor(cursor)
 
@@ -106,7 +106,7 @@ export function paginateFeed (files, { limit, cursor, config = {} } = {}) {
   const hasMore = start + page.length < paid.length
 
   return {
-    files: page.map((file) => toFeedFile(file, config)),
+    files: page.map((file) => toFeedFile(file, config, providers)),
     nextCursor: hasMore ? encodeCursor(page[page.length - 1]) : null
   }
 }

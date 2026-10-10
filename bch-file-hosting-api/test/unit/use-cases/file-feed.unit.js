@@ -130,6 +130,24 @@ describe('#file-feed.js', () => {
       ])
     })
 
+    it('should append each provider gateway URL', () => {
+      const providers = [
+        { gatewayUrl: (cid, filename) => `https://pin.example/ipfs/${cid}/${encodeURIComponent(filename)}` },
+        { gatewayUrl: () => null }
+      ]
+
+      const result = toFeedFile(
+        file({ cid: 'bafy-a', filename: 'my file.bin' }),
+        { publicGateways: ['https://ipfs.io/ipfs/'] },
+        providers
+      )
+
+      assert.deepEqual(result.gatewayUrls, [
+        'https://ipfs.io/ipfs/bafy-a/my%20file.bin',
+        'https://pin.example/ipfs/bafy-a/my%20file.bin'
+      ])
+    })
+
     it('should reduce each pin to its provider and status', () => {
       const result = toFeedFile(file({
         pins: [{ provider: 'lighthouse', status: 'failed', providerRef: 'ref', error: 'boom' }]

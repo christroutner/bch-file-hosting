@@ -305,6 +305,7 @@ async function listFileFeed (world, { limit, cursor } = {}) {
     adapters: {
       config: world.pinningConfig,
       localdb: { files },
+      pinning: buildLighthouseRegistry(world),
       logger: { info: () => {}, error: () => {} }
     }
   })

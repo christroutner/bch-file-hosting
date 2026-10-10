@@ -1,7 +1,3 @@
-# acceptance-mutation-manifest-begin
-# {"version":1,"tested_at":"2026-10-10T00:35:24.703621792Z","feature_name":"Web Dashboard","feature_path":"/home/trout/work/psf/code/ipfs/bch-file-hosting/.worktrees/architect/bch-file-hosting-web/specs/web-dashboard.feature","background_hash":"2e2c4d647fb6d89439b386c85e1e172482bda212c398974385ba02fcd2dd3879","implementation_hash":"unknown","scenarios":[{"index":0,"name":"Web Dashboard - 1 lists the hosted files in a table in feed order","scenario_hash":"71caaa18d717f94041c0530d66e643cbe1b659a36b59207a224520f7a6cc1527","mutation_count":1,"result":{"Total":1,"Killed":1,"Survived":0,"Errors":0},"tested_at":"2026-10-10T00:35:24.703621792Z"},{"index":1,"name":"Web Dashboard - 2 shows the CID and download of each hosted file in its row","scenario_hash":"e867770fe3ef57772b0c735aa29fca51e1e464f8cc05024afd105e3a23a537a9","mutation_count":9,"result":{"Total":9,"Killed":9,"Survived":0,"Errors":0},"tested_at":"2026-10-10T00:35:24.703621792Z"},{"index":4,"name":"Web Dashboard - 5 an API error shows the error","scenario_hash":"58b262c0c507f7b6789bc0d4dd238ad5333d1955849342c338a759372c8f6540","mutation_count":4,"result":{"Total":4,"Killed":4,"Survived":0,"Errors":0},"tested_at":"2026-10-10T00:35:24.703621792Z"},{"index":5,"name":"Web Dashboard - 6 loads more files from the next page","scenario_hash":"fde1ac265a340bad5d9cd5c06904e2c55d64b2c9236da024324643ca9b6de694","mutation_count":1,"result":{"Total":1,"Killed":1,"Survived":0,"Errors":0},"tested_at":"2026-10-10T00:35:24.703621792Z"},{"index":6,"name":"Web Dashboard - 7 refresh reloads the feed","scenario_hash":"8888bd0f2d3127354543b91d00a15cfbc3e97951b41672d10d285f63099e5645","mutation_count":1,"result":{"Total":1,"Killed":1,"Survived":0,"Errors":0},"tested_at":"2026-10-10T00:35:24.703621792Z"}]}
-# acceptance-mutation-manifest-end
-
 # Web Dashboard - 1, Web Dashboard - 2, Web Dashboard - 3, Web Dashboard - 4, Web Dashboard - 5, Web Dashboard - 6, Web Dashboard - 7
 
 Feature: Web Dashboard
@@ -13,25 +9,26 @@ Feature: Web Dashboard
     Given the hosting API feed lists a pinned file bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi named photo.jpg
     And the hosting API feed lists a pinned file bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa named notes.txt
     When the visitor opens the dashboard
-    Then the dashboard shows a table with the columns File Name, Size, Paid, Hosted Until, CID, Download
+    Then the dashboard shows a table with the columns File Name, Size, Paid, Hosted Until, CID, Download, View
     And the dashboard lists the file names <names>
 
     Examples:
       | names |
       | photo.jpg,notes.txt |
 
-  Scenario Outline: Web Dashboard - 2 shows the CID and download of each hosted file in its row
-    Given the hosting API feed lists a pinned file <cid> named photo.jpg
+  Scenario Outline: Web Dashboard - 2 shows the CID, download, and view of each hosted file in its row
+    Given the hosting API feed lists a pinned file <cid> named <filename> with the gateway URL <api_gateway_url>
     When the visitor opens the dashboard
     Then the CID cell of row <cid> holds <shown_cid>
     And row <cid> offers a copy control
     And the download cell of row <cid> links <shown_download>
+    And the view cell of row <cid> opens <shown_view_url> in a new tab
 
     Examples:
-      | cid                                                          | shown_cid           | shown_download                                                                          |
-      | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | bafybeig...y55fbzdi | http://localhost:5050/download/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi |
-      | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | bafybeia...aaaaaaaa | http://localhost:5050/download/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
-      | bafybeicccccccccccccccccccccccccccccccccccccccccccccccccccccccc | bafybeic...cccccccc | http://localhost:5050/download/bafybeicccccccccccccccccccccccccccccccccccccccccccccccccccccccc |
+      | cid                                                          | filename    | api_gateway_url                                                                                      | shown_cid           | shown_download                                                                          | shown_view_url                                                                                       |
+      | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | photo.jpg   | https://ipfs.io/ipfs/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/photo.jpg           | bafybeig...y55fbzdi | http://localhost:5050/download/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | https://ipfs.io/ipfs/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/photo.jpg           |
+      | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | notes.txt   | https://dweb.link/ipfs/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/notes.txt     | bafybeia...aaaaaaaa | http://localhost:5050/download/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | https://dweb.link/ipfs/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/notes.txt     |
+      | bafybeicccccccccccccccccccccccccccccccccccccccccccccccccccccccc | archive.tar | https://ipfs.io/ipfs/bafybeicccccccccccccccccccccccccccccccccccccccccccccccccccccccc/archive.tar   | bafybeic...cccccccc | http://localhost:5050/download/bafybeicccccccccccccccccccccccccccccccccccccccccccccccccccccccc | https://ipfs.io/ipfs/bafybeicccccccccccccccccccccccccccccccccccccccccccccccccccccccc/archive.tar   |
 
   Scenario Outline: Web Dashboard - 3 formats the size and dates of a hosted file
     Given the hosting API feed lists a pinned file bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi named photo.jpg of <api_size> bytes paid at <api_paid_at> until <api_hosted_until>

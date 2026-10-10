@@ -58,7 +58,16 @@ web `/dashboard` view) is complete and merged at `76ec973e1c`. The
 
 ## In progress
 
-- None.
+- **`file-view` — serve files for viewing through the API (api + web):** add
+  `GET /view/:cid` that streams images and videos inline (other types download)
+  and returns 404 unless the API server itself has the file pinned; add
+  `viewUrl` to the paid/already-hosted links and `downloadUrl`/`viewUrl` to the
+  public feed; switch the web paid/already-hosted result to a single API
+  `View:` link and point both dashboard links at the API, removing third-party
+  gateway links from the web views. Specs
+  `bch-file-hosting-api/specs/file-view.feature`, `file-feed.feature` scenario 8,
+  `web-upload.feature` scenario 2, `web-payment.feature` scenarios 3 and 8, and
+  `web-dashboard.feature` scenario 2. Awaiting user approval before handoff.
 
 ## Up next (in order)
 
@@ -108,6 +117,11 @@ web `/dashboard` view) is complete and merged at `76ec973e1c`. The
   `target="_blank"` without `rel`; every other `_blank` anchor in
   `bch-file-hosting-web` uses `rel="noreferrer"`. Add `rel="noreferrer"` (with
   a unit assertion). Flagged by the `lighthouse-file-link` architect.
+- **Hardening follow-up (`view-range-requests`):** the `GET /view/:cid`
+  endpoint streams the whole file with no HTTP `Range` support, so `<video>`
+  playback works progressively but seeking re-downloads. Add `Accept-Ranges`
+  and `206` range handling if a browser or large video needs it. Flagged while
+  specifying `file-view`.
 - **Hardening follow-up (`ipfs-service-dependencies`):** the general regression
   test is still missing. `Ipfs Public Node - 2` only inspects the `natServices`
   metadata, so it missed that `uPnPNAT()` requires the `@libp2p/autonat`

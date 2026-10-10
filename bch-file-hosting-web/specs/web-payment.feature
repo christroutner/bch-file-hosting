@@ -40,19 +40,17 @@ Feature: Web Payment
     And the wallet will broadcast the transaction <api_txid>
     And the hosting API reports the payment as unpaid
     And the hosting API reports a paid invoice with CID <paid_cid>
-    And the hosting API reports the download URL <paid_download_url>
-    And the hosting API reports the gateway URL <paid_gateway_url>
+    And the hosting API reports the view URL <paid_view_url>
     When the visitor pays the quote from the browser wallet
     And the visitor waits for the payment to be confirmed
     Then the page shows the CID <shown_cid>
-    And the page shows the download URL <shown_download_url>
-    And the page shows the gateway URL <shown_gateway_url>
+    And the page shows the view URL <shown_view_url>
     And the page shows the payment transaction <shown_txid>
 
     Examples:
-      | api_txid                                                     | paid_cid                                                     | paid_download_url                                                                   | paid_gateway_url                                                                      | shown_cid                                                    | shown_download_url                                                                  | shown_gateway_url                                                                     | shown_txid                                                   |
-      | 1111111111111111111111111111111111111111111111111111111111111111 | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/download/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | https://ipfs.io/ipfs/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/photo.jpg | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/download/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | https://ipfs.io/ipfs/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/photo.jpg  | 1111111111111111111111111111111111111111111111111111111111111111 |
-      | 2222222222222222222222222222222222222222222222222222222222222222 | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | http://localhost:5050/download/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | https://dweb.link/ipfs/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/archive.tar | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | http://localhost:5050/download/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | https://dweb.link/ipfs/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/archive.tar | 2222222222222222222222222222222222222222222222222222222222222222 |
+      | api_txid                                                     | paid_cid                                                     | paid_view_url                                                                     | shown_cid                                                    | shown_view_url                                                                    | shown_txid                                                   |
+      | 1111111111111111111111111111111111111111111111111111111111111111 | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/view/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/view/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | 1111111111111111111111111111111111111111111111111111111111111111 |
+      | 2222222222222222222222222222222222222222222222222222222222222222 | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | http://localhost:5050/view/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | http://localhost:5050/view/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | 2222222222222222222222222222222222222222222222222222222222222222 |
 
   Scenario: Web Payment - 4 an expired quote shows the expired message
     Given an open hosting quote
@@ -91,17 +89,17 @@ Feature: Web Payment
       | Hosting API unavailable | Hosting API unavailable |
       | Payment check failed    | Payment check failed    |
 
-  Scenario Outline: Web Payment - 8 an image gateway link opens in a new tab
+  Scenario Outline: Web Payment - 8 an image view link opens in a new tab
     Given an open hosting quote
     And the hosting API reports the payment as unpaid
     And the hosting API reports a paid invoice with CID <paid_cid>
     And the hosting API reports the paid file name <paid_name>
-    And the hosting API reports the gateway URL <paid_gateway_url>
+    And the hosting API reports the view URL <paid_view_url>
     When the visitor pays the quote from the browser wallet
     And the visitor waits for the payment to be confirmed
-    Then the gateway URL <shown_gateway_url> has link target <shown_target>
+    Then the view URL <shown_view_url> has link target <shown_target>
 
     Examples:
-      | paid_name   | paid_cid                                                     | paid_gateway_url                                                                                        | shown_gateway_url                                                                                       | shown_target |
-      | photo.jpg   | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | https://gateway.lighthouse.storage/ipfs/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/photo.jpg   | https://gateway.lighthouse.storage/ipfs/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/photo.jpg   | _blank       |
-      | archive.tar | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | https://gateway.lighthouse.storage/ipfs/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/archive.tar | https://gateway.lighthouse.storage/ipfs/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/archive.tar | none         |
+      | paid_name   | paid_cid                                                     | paid_view_url                                                                                       | shown_view_url                                                                                      | shown_target |
+      | photo.jpg   | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/view/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/view/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | _blank       |
+      | archive.tar | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | http://localhost:5050/view/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | http://localhost:5050/view/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | none         |

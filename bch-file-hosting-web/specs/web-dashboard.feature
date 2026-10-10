@@ -21,7 +21,7 @@ Feature: Web Dashboard
       | photo.jpg,notes.txt |
 
   Scenario Outline: Web Dashboard - 2 shows the CID, download, and view of each hosted file in its row
-    Given the hosting API feed lists a pinned file <cid> named <filename> with the gateway URL <api_gateway_url>
+    Given the hosting API feed lists a pinned file <cid> named photo.jpg with the view URL <api_view_url> and download URL <api_download_url>
     When the visitor opens the dashboard
     Then the CID cell of row <cid> holds <shown_cid>
     And row <cid> offers a copy control
@@ -29,10 +29,10 @@ Feature: Web Dashboard
     And the view cell of row <cid> opens <shown_view_url> in a new tab
 
     Examples:
-      | cid                                                          | filename    | api_gateway_url                                                                                      | shown_cid           | shown_download                                                                          | shown_view_url                                                                                       |
-      | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | photo.jpg   | https://ipfs.io/ipfs/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/photo.jpg           | bafybeig...y55fbzdi | http://localhost:5050/download/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | https://ipfs.io/ipfs/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/photo.jpg           |
-      | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | notes.txt   | https://dweb.link/ipfs/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/notes.txt     | bafybeia...aaaaaaaa | http://localhost:5050/download/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | https://dweb.link/ipfs/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/notes.txt     |
-      | bafybeicccccccccccccccccccccccccccccccccccccccccccccccccccccccc | archive.tar | https://ipfs.io/ipfs/bafybeicccccccccccccccccccccccccccccccccccccccccccccccccccccccc/archive.tar   | bafybeic...cccccccc | http://localhost:5050/download/bafybeicccccccccccccccccccccccccccccccccccccccccccccccccccccccc | https://ipfs.io/ipfs/bafybeicccccccccccccccccccccccccccccccccccccccccccccccccccccccc/archive.tar   |
+      | cid                                                          | api_view_url                                                                                      | api_download_url                                                                                  | shown_cid           | shown_download                                                                          | shown_view_url                                                                                      |
+      | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/view/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi           | http://localhost:5050/download/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi       | bafybeig...y55fbzdi | http://localhost:5050/download/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/view/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi           |
+      | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | http://localhost:5050/view/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa           | http://localhost:5050/download/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa       | bafybeia...aaaaaaaa | http://localhost:5050/download/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | http://localhost:5050/view/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa           |
+      | bafybeicccccccccccccccccccccccccccccccccccccccccccccccccccccccc | http://localhost:5050/view/bafybeicccccccccccccccccccccccccccccccccccccccccccccccccccccccc           | http://localhost:5050/download/bafybeicccccccccccccccccccccccccccccccccccccccccccccccccccccccc       | bafybeic...cccccccc | http://localhost:5050/download/bafybeicccccccccccccccccccccccccccccccccccccccccccccccccccccccc | http://localhost:5050/view/bafybeicccccccccccccccccccccccccccccccccccccccccccccccccccccccc           |
 
   Scenario Outline: Web Dashboard - 3 formats the size and dates of a hosted file
     Given the hosting API feed lists a pinned file bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi named photo.jpg of <api_size> bytes paid at <api_paid_at> until <api_hosted_until>

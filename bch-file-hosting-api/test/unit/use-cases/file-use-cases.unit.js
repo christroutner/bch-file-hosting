@@ -241,6 +241,7 @@ describe('#file-use-cases.js', () => {
       assert.isTrue(result.alreadyHosted)
       assert.equal(result.hostedUntil, '2027-10-08T12:00:00.000Z')
       assert.equal(result.downloadUrl, `http://localhost:5050/download/${TEST_CID}`)
+      assert.equal(result.viewUrl, `http://localhost:5050/view/${TEST_CID}`)
       assert.deepEqual(result.gatewayUrls, [`https://ipfs.io/ipfs/${TEST_CID}/photo.jpg`])
       assert.notProperty(result, 'paymentAddress')
       assert.isTrue(adapters.wallet.getKeyPair.notCalled)
@@ -321,6 +322,8 @@ describe('#file-use-cases.js', () => {
         createdAt: '2026-01-01T00:00:00.000Z',
         paidAt: '2026-01-02T00:00:00.000Z',
         hostedUntil: '2027-01-02T00:00:00.000Z',
+        downloadUrl: `http://localhost:5050/download/${TEST_CID}`,
+        viewUrl: `http://localhost:5050/view/${TEST_CID}`,
         gatewayUrls: [`https://ipfs.io/ipfs/${TEST_CID}/photo.jpg`],
         pins: [{ provider: 'local-helia', status: 'pinned' }]
       })
@@ -400,6 +403,79 @@ describe('#file-use-cases.js', () => {
     it('should throw a 404 error for an unknown CID', async () => {
       try {
         await uut.getDownload({ cid: 'unknown' })
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.equal(err.status, 404)
+      }
+    })
+
+    it('should not serve a paid file that the server has not pinned', async () => {
+      await adapters.localdb.files.put({ cid: TEST_CID, filename: 'photo.jpg', sizeBytes: 20000, status: FILE_STATUS.PINNED })
+      adapters.ipfs.isPinned.resolves(false)
+
+      try {
+        await uut.getDownload({ cid: TEST_CID })
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.equal(err.status, 404)
+      }
+      assert.isTrue(adapters.ipfs.cat.notCalled)
+    })
+  })
+
+  describe('#getView', () => {
+    it('should stream a pinned image inline with its content type', async () => {
+      await adapters.localdb.files.put({ cid: TEST_CID, filename: 'photo.jpg', sizeBytes: 20000, status: FILE_STATUS.PINNED })
+
+      const result = await uut.getView({ cid: TEST_CID })
+
+      assert.deepEqual(result, {
+        filename: 'photo.jpg',
+        sizeBytes: 20000,
+        contentType: 'image/jpeg',
+        disposition: 'inline',
+        content: 'content-stream'
+      })
+      assert.isTrue(adapters.ipfs.cat.calledWith({ cid: TEST_CID, filename: 'photo.jpg' }))
+    })
+
+    it('should serve other file types as a download', async () => {
+      await adapters.localdb.files.put({ cid: TEST_CID, filename: 'archive.tar', sizeBytes: 20000, status: FILE_STATUS.PINNED })
+
+      const result = await uut.getView({ cid: TEST_CID })
+
+      assert.equal(result.contentType, 'application/octet-stream')
+      assert.equal(result.disposition, 'attachment')
+    })
+
+    it('should not serve an unpaid file', async () => {
+      await uut.uploadAndQuote(upload)
+
+      try {
+        await uut.getView({ cid: TEST_CID })
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.equal(err.status, 404)
+      }
+      assert.isTrue(adapters.ipfs.cat.notCalled)
+    })
+
+    it('should not serve a paid file that the server has not pinned', async () => {
+      await adapters.localdb.files.put({ cid: TEST_CID, filename: 'photo.jpg', sizeBytes: 20000, status: FILE_STATUS.PINNED })
+      adapters.ipfs.isPinned.resolves(false)
+
+      try {
+        await uut.getView({ cid: TEST_CID })
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.equal(err.status, 404)
+      }
+      assert.isTrue(adapters.ipfs.cat.notCalled)
+    })
+
+    it('should throw a 404 error for an unknown CID', async () => {
+      try {
+        await uut.getView({ cid: 'unknown' })
         assert.fail('Unexpected result')
       } catch (err) {
         assert.equal(err.status, 404)

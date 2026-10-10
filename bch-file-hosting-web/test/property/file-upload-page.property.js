@@ -74,10 +74,10 @@ test('property: a successful upload maps to the quote or hosted state', async ()
         uploadName: randomFilename(random),
         priceSats: integerBetween(random, 1, 100000000),
         paymentAddress: randomAddress(random),
-        downloadUrl: randomDownloadUrl(random)
+        viewUrl: randomDownloadUrl(random)
       }
     },
-    property: async ({ alreadyHosted, apiFilename, uploadName, priceSats, paymentAddress, downloadUrl }) => {
+    property: async ({ alreadyHosted, apiFilename, uploadName, priceSats, paymentAddress, viewUrl }) => {
       const page = new FileUploadPage({
         hostingApi: {
           upload: async () => ({
@@ -85,7 +85,7 @@ test('property: a successful upload maps to the quote or hosted state', async ()
             filename: apiFilename,
             priceSats,
             paymentAddress,
-            downloadUrl
+            viewUrl
           })
         }
       })
@@ -96,7 +96,7 @@ test('property: a successful upload maps to the quote or hosted state', async ()
       assert.equal(state.filename, expectedName)
       if (alreadyHosted) {
         assert.equal(state.status, 'hosted')
-        assert.equal(state.downloadUrl, downloadUrl)
+        assert.equal(state.viewUrl, viewUrl)
       } else {
         assert.equal(state.status, 'quote')
         assert.equal(state.priceSats, Number(priceSats))
@@ -298,17 +298,15 @@ test('property: confirmation polls until paid and returns the hosted result', as
     generate: (random) => ({
       unpaidBeforePaid: integerBetween(random, 0, 4),
       cid: `bafy${randomString(random, 10, 40, ADDRESS_ALPHABET)}`,
-      gatewayUrls: [randomDownloadUrl(random), randomDownloadUrl(random)],
+      viewUrl: randomDownloadUrl(random),
       txid: randomString(random, 1, 64, ADDRESS_ALPHABET)
     }),
-    property: async ({ unpaidBeforePaid, cid, gatewayUrls, txid }) => {
-      const downloadUrl = `http://localhost:5050/download/${cid}`
+    property: async ({ unpaidBeforePaid, cid, viewUrl, txid }) => {
       const paid = {
         status: 'paid',
         filename: 'photo.jpg',
         cid,
-        downloadUrl,
-        gatewayUrls
+        viewUrl
       }
       const checkResults = []
       for (let i = 0; i < unpaidBeforePaid; i++) checkResults.push({ status: 'unpaid' })
@@ -330,8 +328,7 @@ test('property: confirmation polls until paid and returns the hosted result', as
         status: 'paid',
         filename: 'photo.jpg',
         cid,
-        downloadUrl,
-        gatewayUrls,
+        viewUrl,
         txid
       })
       assert.equal(page.checks.length, unpaidBeforePaid + 1)

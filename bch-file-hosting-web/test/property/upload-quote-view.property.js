@@ -50,18 +50,18 @@ test('property: a quote renders the price, address, and file name', () => {
   })
 })
 
-test('property: an already-hosted upload renders the download URL as text and href', () => {
+test('property: an already-hosted upload renders the view URL as text and href', () => {
   forAll({
     seed: 2,
     runs: 300,
     generate: (random) => ({
-      downloadUrl: `http://localhost:5050/download/${randomString(random, 5, 40, TEXT_ALPHABET)}`
+      viewUrl: `http://localhost:5050/view/${randomString(random, 5, 40, TEXT_ALPHABET)}`
     }),
-    property: ({ downloadUrl }) => {
-      const html = render({ status: 'hosted', downloadUrl })
+    property: ({ viewUrl }) => {
+      const html = render({ status: 'hosted', viewUrl })
 
-      assert.ok(html.includes(downloadUrl))
-      assert.ok(html.includes(`href="${downloadUrl}"`))
+      assert.ok(html.includes(viewUrl))
+      assert.ok(html.includes(`href="${viewUrl}"`))
     }
   })
 })
@@ -115,7 +115,7 @@ test('property: unknown or missing status renders an empty container', () => {
 
       assert.ok(html.includes('file-upload-result'))
       assert.ok(!html.includes('satoshis'))
-      assert.ok(!html.includes('file-upload-download'))
+      assert.ok(!html.includes('file-upload-view'))
     }
   })
 })
@@ -147,30 +147,21 @@ test('property: untrusted file names and messages are HTML-escaped', () => {
   })
 })
 
-test('property: a paid upload renders the CID, download, gateways, and transaction', () => {
+test('property: a paid upload renders the CID, view link, and transaction', () => {
   forAll({
     seed: 7,
     runs: 150,
-    generate: (random) => {
-      const gatewayCount = integerBetween(random, 0, 3)
-      const gatewayUrls = []
-      for (let i = 0; i < gatewayCount; i++) {
-        gatewayUrls.push(`https://gw${i}.test/ipfs/${randomString(random, 5, 30, URL_ALPHABET)}`)
-      }
-      return {
-        cid: `bafy${randomString(random, 10, 40, URL_ALPHABET)}`,
-        downloadUrl: `http://localhost:5050/download/${randomString(random, 5, 30, URL_ALPHABET)}`,
-        gatewayUrls,
-        txid: randomString(random, 1, 64, URL_ALPHABET)
-      }
-    },
-    property: ({ cid, downloadUrl, gatewayUrls, txid }) => {
-      const html = render({ status: 'paid', filename: 'photo.jpg', cid, downloadUrl, gatewayUrls, txid })
+    generate: (random) => ({
+      cid: `bafy${randomString(random, 10, 40, URL_ALPHABET)}`,
+      viewUrl: `http://localhost:5050/view/${randomString(random, 5, 30, URL_ALPHABET)}`,
+      txid: randomString(random, 1, 64, URL_ALPHABET)
+    }),
+    property: ({ cid, viewUrl, txid }) => {
+      const html = render({ status: 'paid', filename: 'photo.jpg', cid, viewUrl, txid })
 
       assert.ok(html.includes(`CID: ${cid}`))
-      assert.ok(html.includes(`href="${downloadUrl}"`))
+      assert.ok(html.includes(`href="${viewUrl}"`))
       assert.ok(html.includes(`Payment: ${txid}`))
-      for (const url of gatewayUrls) assert.ok(html.includes(url))
     }
   })
 })
@@ -233,7 +224,7 @@ test('property: a quote shows a size line only when a size is reported and a bil
   })
 })
 
-test('property: gateway links open in a new tab exactly for image file names', () => {
+test('property: a view link opens in a new tab exactly for image file names', () => {
   const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'avif']
   const otherExtensions = ['txt', 'tar', 'bin', 'pdf', 'jpg.txt', 'png.js', 'jpeg.html']
 
@@ -246,25 +237,23 @@ test('property: gateway links open in a new tab exactly for image file names', (
         ? imageExtensions[integerBetween(random, 0, imageExtensions.length - 1)]
         : otherExtensions[integerBetween(random, 0, otherExtensions.length - 1)]
       const filename = `${randomString(random, 1, 12, TEXT_ALPHABET)}.${extension}`
-      const gatewayCount = integerBetween(random, 1, 3)
-      const gatewayUrls = []
-      for (let i = 0; i < gatewayCount; i++) {
-        gatewayUrls.push(`https://gw${i}.test/ipfs/bafy/${encodeURIComponent(filename)}`)
+      return {
+        filename,
+        viewUrl: `http://localhost:5050/view/${randomString(random, 5, 30, URL_ALPHABET)}`,
+        image
       }
-      return { filename, gatewayUrls, image }
     },
-    property: ({ filename, gatewayUrls, image }) => {
+    property: ({ filename, viewUrl, image }) => {
       const html = render({
         status: 'paid',
         filename,
         cid: 'bafy',
-        downloadUrl: 'http://localhost:5050/download/bafy',
-        gatewayUrls,
+        viewUrl,
         txid: 'tx'
       })
 
       const blankTargets = (html.match(/target="_blank"/g) || []).length
-      assert.equal(blankTargets, image ? gatewayUrls.length : 0)
+      assert.equal(blankTargets, image ? 1 : 0)
     }
   })
 })

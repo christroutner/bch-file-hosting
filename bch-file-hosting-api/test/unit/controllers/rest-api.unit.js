@@ -46,7 +46,8 @@ describe('#rest-api', () => {
         uploadAndQuote: sandbox.stub().resolves({ alreadyHosted: false, cid: 'bafy', paymentAddress: ADDRESS, priceSats: 2000 }),
         listFeed: sandbox.stub().resolves({ files: [{ cid: 'bafy', status: 'pinned' }], nextCursor: 'next-cursor' }),
         getFileStatus: sandbox.stub().resolves({ cid: 'bafy', status: 'pinned' }),
-        getDownload: sandbox.stub().callsFake(async () => ({ filename: 'hello.txt', sizeBytes: 11, content: chunks('hello', ' world') }))
+        getDownload: sandbox.stub().callsFake(async () => ({ filename: 'hello.txt', sizeBytes: 11, content: chunks('hello', ' world') })),
+        getView: sandbox.stub().callsFake(async () => ({ filename: 'hello.txt', sizeBytes: 11, content: chunks('hello', ' world'), contentType: 'text/plain', disposition: 'attachment' }))
       },
       payments: {
         checkPayment: sandbox.stub().resolves({ status: 'unpaid', receivedSats: 0, requiredSats: 2000 }),
@@ -328,6 +329,57 @@ describe('#rest-api', () => {
 
       await new Promise(resolve => setTimeout(resolve, 20))
       assert.isTrue(adapters.logger.error.calledWithMatch(/Download of bafy stopped: peer went away/))
+    })
+  })
+
+  describe('GET /view/:cid', () => {
+    it('should stream an image inline with its content type', async () => {
+      useCases.files.getView.callsFake(async () => ({ filename: 'photo.jpg', sizeBytes: 11, content: chunks('hello', ' world'), contentType: 'image/jpeg', disposition: 'inline' }))
+
+      const res = await request(app).get('/view/bafy').buffer(true).parse((r, cb) => {
+        const parts = []
+        r.on('data', c => parts.push(c))
+        r.on('end', () => cb(null, Buffer.concat(parts)))
+      })
+
+      assert.equal(res.status, 200)
+      assert.equal(res.body.toString(), 'hello world')
+      assert.equal(res.headers['content-disposition'], 'inline; filename="photo.jpg"')
+      assert.include(res.headers['content-type'], 'image/jpeg')
+    })
+
+    it('should download a non-viewable file as an attachment', async () => {
+      useCases.files.getView.callsFake(async () => ({ filename: 'archive.tar', sizeBytes: 11, content: chunks('hello', ' world'), contentType: 'application/octet-stream', disposition: 'attachment' }))
+
+      const res = await request(app).get('/view/bafy')
+
+      assert.equal(res.status, 200)
+      assert.equal(res.headers['content-disposition'], 'attachment; filename="archive.tar"')
+      assert.include(res.headers['content-type'], 'application/octet-stream')
+    })
+
+    it('should return 404 for a file that is not hosted', async () => {
+      useCases.files.getView.rejects(new NotFoundError('File not found: bafy'))
+
+      const res = await request(app).get('/view/bafy')
+
+      assert.equal(res.status, 404)
+    })
+
+    it('should return a JSON 500 if the file cannot be read at all', async () => {
+      useCases.files.getView.callsFake(async () => ({
+        filename: 'a.txt',
+        sizeBytes: 5,
+        content: (async function * () { throw new Error('block missing') })(),
+        contentType: 'application/octet-stream',
+        disposition: 'attachment'
+      }))
+
+      const res = await request(app).get('/view/bafy')
+
+      assert.equal(res.status, 500)
+      assert.equal(res.body.error, 'Internal server error')
+      assert.isUndefined(res.headers['content-disposition'])
     })
   })
 

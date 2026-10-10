@@ -89,12 +89,12 @@ test('omits the sizes when the API does not report them', async () => {
   assert.equal('billedBytes' in state, false)
 })
 
-test('shows the download link for an already hosted file', async () => {
+test('shows the view link for an already hosted file', async () => {
   const page = new FileUploadPage({
     hostingApi: apiReturning({
       alreadyHosted: true,
       filename: 'archive.tar',
-      downloadUrl: 'http://localhost:5050/download/bafy'
+      viewUrl: 'http://localhost:5050/view/bafy'
     })
   })
 
@@ -103,7 +103,7 @@ test('shows the download link for an already hosted file', async () => {
   assert.deepEqual(state, {
     status: 'hosted',
     filename: 'archive.tar',
-    downloadUrl: 'http://localhost:5050/download/bafy'
+    viewUrl: 'http://localhost:5050/view/bafy'
   })
 })
 
@@ -112,7 +112,7 @@ test('prefers the API file name over the uploaded name for an already hosted fil
     hostingApi: apiReturning({
       alreadyHosted: true,
       filename: 'archive.tar',
-      downloadUrl: 'http://localhost:5050/download/bafy'
+      viewUrl: 'http://localhost:5050/view/bafy'
     })
   })
 
@@ -240,8 +240,7 @@ test('confirms a payment that becomes visible on a later poll', async () => {
     status: 'paid',
     cid: 'bafy',
     filename: 'photo.jpg',
-    downloadUrl: 'http://localhost:5050/download/bafy',
-    gatewayUrls: ['https://ipfs.io/ipfs/bafy/photo.jpg']
+    viewUrl: 'http://localhost:5050/view/bafy'
   }
   const sleeps = []
   const page = paymentPage({
@@ -260,8 +259,7 @@ test('confirms a payment that becomes visible on a later poll', async () => {
     status: 'paid',
     filename: 'photo.jpg',
     cid: 'bafy',
-    downloadUrl: 'http://localhost:5050/download/bafy',
-    gatewayUrls: ['https://ipfs.io/ipfs/bafy/photo.jpg'],
+    viewUrl: 'http://localhost:5050/view/bafy',
     txid: 'txid-9'
   })
 })

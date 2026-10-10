@@ -18,6 +18,12 @@ async function * restOf (first, iterator) {
   }
 }
 
+// A file name is echoed in a Content-Disposition header, so drop characters
+// that would end the quoted value or inject another header.
+function headerFilename (filename) {
+  return String(filename).replace(/["\\\r\n]/g, '')
+}
+
 class FilesController {
   constructor ({ useCases, logger } = {}) {
     if (!useCases) throw new Error('FilesController requires the use-cases')
@@ -29,6 +35,7 @@ class FilesController {
     this.listFiles = this.listFiles.bind(this)
     this.getFileStatus = this.getFileStatus.bind(this)
     this.downloadFile = this.downloadFile.bind(this)
+    this.viewFile = this.viewFile.bind(this)
   }
 
   /**
@@ -88,18 +95,48 @@ class FilesController {
 
     // Read the first chunk before sending headers, so a failure to read the
     // file still produces a normal JSON error response.
-    const iterator = content[Symbol.asyncIterator]()
-    const first = await iterator.next()
+    const opened = await this.openContent(content)
 
     res.attachment(filename)
+    await this.pipeContent(req, res, 'Download', sizeBytes, opened)
+  }
+
+  /**
+   * @api {get} /view/:cid View a hosted file inline
+   * @apiDescription Images and videos are served inline with their content
+   * type; every other type is downloaded.
+   */
+  async viewFile (req, res) {
+    const { filename, sizeBytes, content, contentType, disposition } = await this.useCases.files.getView({ cid: req.params.cid })
+
+    const opened = await this.openContent(content)
+
+    if (disposition === 'inline') {
+      res.set('Content-Disposition', `inline; filename="${headerFilename(filename)}"`)
+    } else {
+      res.attachment(filename)
+    }
+    res.type(contentType)
+    await this.pipeContent(req, res, 'View', sizeBytes, opened)
+  }
+
+  // Consume the first chunk of a content stream up front, so a failure to read
+  // the file still produces a normal JSON error response.
+  async openContent (content) {
+    const iterator = content[Symbol.asyncIterator]()
+    const first = await iterator.next()
+    return { first, iterator }
+  }
+
+  // Stream the rest of an opened content stream to the response. Headers are
+  // already sent, so a mid-stream failure can only be logged.
+  async pipeContent (req, res, label, sizeBytes, { first, iterator }) {
     if (Number.isInteger(sizeBytes)) res.set('Content-Length', String(sizeBytes))
 
     try {
       await pipeline(Readable.from(restOf(first, iterator)), res)
     } catch (err) {
-      // Headers are already sent, so the status can't change; pipeline() has
-      // closed the connection.
-      this.logger?.error(`Download of ${req.params.cid} stopped: ${err.message}`)
+      this.logger?.error(`${label} of ${req.params.cid} stopped: ${err.message}`)
     }
   }
 }

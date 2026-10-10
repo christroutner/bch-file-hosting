@@ -190,8 +190,8 @@ function rowCellText (rowHtml, cellClass) {
 }
 
 // Build a complete feed file record from the fields a scenario configures.
-function feedRecord ({ status, cid, filename = '', sizeBytes = 0, paidAt = '2026-01-02T00:00:00.000Z', hostedUntil = '2027-01-02T00:00:00.000Z', paymentAddress = 'bitcoincash:qfeed', gatewayUrls = [] }) {
-  return { status, cid, filename, sizeBytes: Number(sizeBytes), paidAt, hostedUntil, paymentAddress, gatewayUrls, pins: [] }
+function feedRecord ({ status, cid, filename = '', sizeBytes = 0, paidAt = '2026-01-02T00:00:00.000Z', hostedUntil = '2027-01-02T00:00:00.000Z', paymentAddress = 'bitcoincash:qfeed', downloadUrl = '', viewUrl = '', gatewayUrls = [] }) {
+  return { status, cid, filename, sizeBytes: Number(sizeBytes), paidAt, hostedUntil, paymentAddress, downloadUrl, viewUrl, gatewayUrls, pins: [] }
 }
 
 // Parse a comma-separated scenario value into trimmed, non-empty items.
@@ -324,7 +324,7 @@ const handlers = [
     run (m, example, world) {
       world.response = {
         alreadyHosted: true,
-        downloadUrl: resolveParam(m[1], example)
+        viewUrl: resolveParam(m[1], example)
       }
     }
   },
@@ -376,6 +376,13 @@ const handlers = [
     pattern: /^the hosting API reports the download URL (<[A-Za-z0-9_]+>)$/,
     run (m, example, world) {
       world.pendingPaid.downloadUrl = resolveParam(m[1], example)
+    }
+  },
+  {
+    name: 'the hosting API reports the view URL of the paid invoice',
+    pattern: /^the hosting API reports the view URL (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.pendingPaid.viewUrl = resolveParam(m[1], example)
     }
   },
   {
@@ -633,6 +640,19 @@ const handlers = [
     }
   },
   {
+    name: 'the page shows the view URL',
+    pattern: /^the page shows the view URL (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      const expected = resolveParam(m[1], example)
+      if (world.state.viewUrl !== expected) {
+        throw new Error(`Expected the page to show the view URL ${expected}, got "${world.state.viewUrl}".`)
+      }
+      if (!renderPage(world).includes(expected)) {
+        throw new Error(`Rendered page does not show the view URL ${expected}.`)
+      }
+    }
+  },
+  {
     name: 'the page shows the CID',
     pattern: /^the page shows the CID (<[A-Za-z0-9_]+>)$/,
     run (m, example, world) {
@@ -659,22 +679,22 @@ const handlers = [
     }
   },
   {
-    name: 'the gateway URL has a link target',
-    pattern: /^the gateway URL (<[A-Za-z0-9_]+>) has link target (<[A-Za-z0-9_]+>)$/,
+    name: 'the view URL has a link target',
+    pattern: /^the view URL (<[A-Za-z0-9_]+>) has link target (<[A-Za-z0-9_]+>)$/,
     run (m, example, world) {
       const url = resolveParam(m[1], example)
       const expected = resolveParam(m[2], example)
       const anchors = renderPage(world).match(/<a [^>]*>/g) || []
       const anchor = anchors.find((tag) => tag.includes(`href="${url}"`))
       if (!anchor) {
-        throw new Error(`Rendered page does not link the gateway URL ${url}.`)
+        throw new Error(`Rendered page does not link the view URL ${url}.`)
       }
       const opensInNewTab = anchor.includes('target="_blank"')
       if (expected === '_blank' && !opensInNewTab) {
-        throw new Error(`Expected the gateway link ${url} to open in a new tab.`)
+        throw new Error(`Expected the view link ${url} to open in a new tab.`)
       }
       if (expected !== '_blank' && opensInNewTab) {
-        throw new Error(`Expected the gateway link ${url} to keep the default target.`)
+        throw new Error(`Expected the view link ${url} to keep the default target.`)
       }
     }
   },
@@ -788,6 +808,19 @@ const handlers = [
         cid: resolveParam(m[2], example),
         filename: resolveParam(m[3], example),
         gatewayUrls: [resolveParam(m[4], example)]
+      }))
+    }
+  },
+  {
+    name: 'the hosting API feed lists a file with view and download URLs',
+    pattern: /^the hosting API feed lists a (\S+) file (\S+) named (\S+) with the view URL (<[A-Za-z0-9_]+>) and download URL (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.feedFiles.push(feedRecord({
+        status: resolveParam(m[1], example),
+        cid: resolveParam(m[2], example),
+        filename: resolveParam(m[3], example),
+        viewUrl: resolveParam(m[4], example),
+        downloadUrl: resolveParam(m[5], example)
       }))
     }
   },

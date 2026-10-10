@@ -27,7 +27,8 @@ function file (overrides = {}) {
     paymentAddress: 'bitcoincash:qfeed',
     paidAt: '2026-01-02T00:00:00.000Z',
     hostedUntil: '2027-01-02T00:00:00.000Z',
-    gatewayUrls: ['https://ipfs.io/ipfs/bafy-a/photo.jpg'],
+    downloadUrl: `${BASE}/download/bafy-a`,
+    viewUrl: `${BASE}/view/bafy-a`,
     pins: [{ provider: 'local-helia', status: 'pinned' }],
     ...overrides
   }
@@ -66,13 +67,13 @@ test('loads the first page in feed order and reduces each file to its public fie
     paidAt: '2026-01-02T00:00:00.000Z',
     hostedUntil: '2027-01-02T00:00:00.000Z',
     downloadUrl: `${BASE}/download/bafy-a`,
-    viewUrl: 'https://ipfs.io/ipfs/bafy-a/photo.jpg'
+    viewUrl: `${BASE}/view/bafy-a`
   })
   assert.deepEqual(page.getViewModel(), state)
 })
 
-test('builds each download URL from the configured base and trims a trailing slash', async () => {
-  const api = apiReturning([{ files: [file({ cid: 'bafy-a' })], nextCursor: null }])
+test('builds each download URL from the configured base when the feed omits it', async () => {
+  const api = apiReturning([{ files: [file({ cid: 'bafy-a', downloadUrl: undefined })], nextCursor: null }])
   const page = new DashboardPage({ hostingApi: api, downloadBaseUrl: `${BASE}/` })
 
   const state = await page.load()
@@ -80,12 +81,12 @@ test('builds each download URL from the configured base and trims a trailing sla
   assert.equal(state.files[0].downloadUrl, `${BASE}/download/bafy-a`)
 })
 
-test('uses the first gateway URL as the view URL and leaves it empty when there are none', async () => {
+test('uses the API view URL and leaves it empty when the feed has none', async () => {
   const api = apiReturning([{
     files: [
-      file({ cid: 'bafy-a', gatewayUrls: ['https://ipfs.io/ipfs/a', 'https://dweb.link/ipfs/a'] }),
-      file({ cid: 'bafy-b', gatewayUrls: [] }),
-      file({ cid: 'bafy-c', gatewayUrls: undefined })
+      file({ cid: 'bafy-a', viewUrl: `${BASE}/view/bafy-a` }),
+      file({ cid: 'bafy-b', viewUrl: '' }),
+      file({ cid: 'bafy-c', viewUrl: undefined })
     ],
     nextCursor: null
   }])
@@ -93,7 +94,7 @@ test('uses the first gateway URL as the view URL and leaves it empty when there 
 
   const state = await page.load()
 
-  assert.equal(state.files[0].viewUrl, 'https://ipfs.io/ipfs/a')
+  assert.equal(state.files[0].viewUrl, `${BASE}/view/bafy-a`)
   assert.equal(state.files[1].viewUrl, '')
   assert.equal(state.files[2].viewUrl, '')
 })

@@ -141,6 +141,7 @@ describe('#payment-use-cases.js', () => {
       assert.equal(result.cid, TEST_CID)
       assert.equal(result.receivedSats, 2000)
       assert.equal(result.downloadUrl, `http://localhost:5050/download/${TEST_CID}`)
+      assert.equal(result.viewUrl, `http://localhost:5050/view/${TEST_CID}`)
       assert.deepEqual(result.gatewayUrls, [`https://ipfs.io/ipfs/${TEST_CID}/photo.jpg`])
     })
 

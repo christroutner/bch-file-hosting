@@ -2,12 +2,12 @@
   Property tests for the dashboard page service
   (src/services/dashboard-page.js).
 
-  Invariants: load maps every feed file to the same public view model (with a
-  download URL built from the configured base) and reports hasMore exactly when
-  the API returned a next cursor; loadMore appends the next page to the files
-  already shown without dropping or duplicating one; loadMore is a no-op when
-  the current page has no cursor; and a feed failure becomes the error state
-  with the API message (or the generic fallback).
+  Invariants: load maps every feed file to the same public view model (with the
+  API download and view URLs) and reports hasMore exactly when the API returned
+  a next cursor; loadMore appends the next page to the files already shown
+  without dropping or duplicating one; loadMore is a no-op when the current page
+  has no cursor; and a feed failure becomes the error state with the API message
+  (or the generic fallback).
 
   Kept separate from the unit suite. Per the constitution, property tests do
   not contribute to unit coverage, CRAP, Gherkin acceptance, or mutation runs.
@@ -44,6 +44,8 @@ function randomFile (random, index) {
     paymentAddress: `bitcoincash:q${randomString(random, 10, 30)}`,
     paidAt: '2026-01-02T00:00:00.000Z',
     hostedUntil: '2027-01-02T00:00:00.000Z',
+    downloadUrl: `https://api.example/download/${cid}`,
+    viewUrl: `https://api.example/view/${cid}`,
     gatewayUrls: Array.from(
       { length: integerBetween(random, 0, 2) },
       (_, i) => `https://gw${i}.example/ipfs/${cid}`
@@ -67,8 +69,8 @@ function publicFile (file) {
     sizeBytes: file.sizeBytes,
     paidAt: file.paidAt,
     hostedUntil: file.hostedUntil,
-    downloadUrl: `${BASE}/download/${file.cid}`,
-    viewUrl: (file.gatewayUrls || [])[0] || ''
+    downloadUrl: file.downloadUrl,
+    viewUrl: file.viewUrl
   }
 }
 

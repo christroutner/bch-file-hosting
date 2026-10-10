@@ -112,10 +112,21 @@ describe('#file-feed.js', () => {
         createdAt: '2026-01-01T00:00:00.000Z',
         paidAt: '2026-01-02T00:00:00.000Z',
         hostedUntil: '2027-01-02T00:00:00.000Z',
+        downloadUrl: '/download/bafy-a',
+        viewUrl: '/view/bafy-a',
         gatewayUrls: [],
         pins: [{ provider: 'local-helia', status: 'pinned' }]
       })
       assert.notProperty(result, 'hdIndex')
+    })
+
+    it('should build the API download and view URLs from the public URL', () => {
+      const result = toFeedFile(file({ cid: 'bafy-a', filename: 'a.txt' }), {
+        publicUrl: 'https://host.example/'
+      })
+
+      assert.equal(result.downloadUrl, 'https://host.example/download/bafy-a')
+      assert.equal(result.viewUrl, 'https://host.example/view/bafy-a')
     })
 
     it('should build gateway URLs from the public gateways with the encoded file name', () => {

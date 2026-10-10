@@ -10,6 +10,7 @@ import Invoice, { INVOICE_STATUS } from '../entities/invoice.js'
 import UseCase from './use-case.js'
 import { calculatePrice } from './pricing.js'
 import { buildLinks } from './links.js'
+import { viewType } from './view.js'
 import { paginateFeed } from './file-feed.js'
 import { NotFoundError, ValidationError } from './errors.js'
 
@@ -29,6 +30,7 @@ class FileUseCases extends UseCase {
     this.listFeed = this.listFeed.bind(this)
     this.getFileStatus = this.getFileStatus.bind(this)
     this.getDownload = this.getDownload.bind(this)
+    this.getView = this.getView.bind(this)
   }
 
   // Add an uploaded temp file to IPFS and return a quote with a fresh payment
@@ -191,17 +193,40 @@ class FileUseCases extends UseCase {
     }
   }
 
-  // Only paid files can be downloaded from this service.
-  async getDownload ({ cid }) {
+  // A file may be served for download or viewing only when it has been paid
+  // for and this server still holds a local pin for it.
+  async paidPinnedFile (cid) {
     const file = await this.adapters.localdb.files.get(cid)
     if (!file || !isPaidFileStatus(file.status)) {
       throw new NotFoundError(`File not found: ${cid}`)
     }
+    if (!(await this.adapters.ipfs.isPinned(cid))) {
+      throw new NotFoundError(`File not found: ${cid}`)
+    }
+    return file
+  }
+
+  // Only paid, locally pinned files can be downloaded from this service.
+  async getDownload ({ cid }) {
+    const file = await this.paidPinnedFile(cid)
 
     return {
       filename: file.filename,
       sizeBytes: file.sizeBytes,
       content: this.adapters.ipfs.cat({ cid, filename: file.filename })
+    }
+  }
+
+  // Serve a paid, locally pinned file for inline viewing. Images and videos
+  // keep their content type; every other type is downloaded.
+  async getView ({ cid }) {
+    const file = await this.paidPinnedFile(cid)
+
+    return {
+      filename: file.filename,
+      sizeBytes: file.sizeBytes,
+      content: this.adapters.ipfs.cat({ cid, filename: file.filename }),
+      ...viewType(file.filename)
     }
   }
 }

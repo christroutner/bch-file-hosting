@@ -72,7 +72,8 @@ export async function makeAdapters (sandbox, configOverrides = {}) {
     ipfs: {
       addFile: sandbox.stub().resolves(TEST_CID),
       remove: sandbox.stub().resolves(2),
-      cat: sandbox.stub().returns('content-stream')
+      cat: sandbox.stub().returns('content-stream'),
+      isPinned: sandbox.stub().resolves(true)
     },
     pinning: {
       providers,

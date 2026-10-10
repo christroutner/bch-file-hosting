@@ -6,8 +6,8 @@
 
     no-file   the visitor submitted the form without choosing a file
     quote     the API returned a price and a payment address
-    hosted    the API reported the file is already hosted (download link)
-    paid      check-payment reported the quote paid (CID, links, transaction)
+    hosted    the API reported the file is already hosted (view link)
+    paid      check-payment reported the quote paid (CID, view link, transaction)
     expired   the quote expired before the payment was confirmed
     pending   the payment was never confirmed within the polling window
     error     the upload or the wallet payment was rejected
@@ -67,7 +67,7 @@ function hostedState (response, filename) {
   return {
     status: 'hosted',
     filename: response.filename || filename,
-    downloadUrl: response.downloadUrl
+    viewUrl: response.viewUrl
   }
 }
 
@@ -76,8 +76,7 @@ function paidState (response, txid) {
     status: 'paid',
     filename: response.filename,
     cid: response.cid,
-    downloadUrl: response.downloadUrl,
-    gatewayUrls: response.gatewayUrls || [],
+    viewUrl: response.viewUrl,
     txid
   }
 }

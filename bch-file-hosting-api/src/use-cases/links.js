@@ -18,11 +18,12 @@ export function buildGatewayUrls ({ cid, filename, config = {}, providers = [] }
   return gatewayUrls
 }
 
-export function buildLinks ({ cid, filename, config, providers = [] }) {
-  const base = config.publicUrl.replace(/\/+$/, '')
+export function buildLinks ({ cid, filename, config = {}, providers = [] }) {
+  const base = String(config.publicUrl || '').replace(/\/+$/, '')
 
   return {
     downloadUrl: `${base}/download/${cid}`,
+    viewUrl: `${base}/view/${cid}`,
     gatewayUrls: buildGatewayUrls({ cid, filename, config, providers })
   }
 }

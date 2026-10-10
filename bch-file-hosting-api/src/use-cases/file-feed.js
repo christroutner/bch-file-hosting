@@ -9,7 +9,7 @@
 */
 
 import { isPaidFileStatus } from '../entities/file-upload.js'
-import { buildGatewayUrls } from './links.js'
+import { buildLinks } from './links.js'
 
 export const DEFAULT_PAGE_LIMIT = 20
 export const MAX_PAGE_LIMIT = 100
@@ -76,6 +76,8 @@ function isAfterCursor (file, cursor) {
 // The public fields of one hosted file. Private fields (HD index, invoice
 // amounts) are never published.
 export function toFeedFile (file, config = {}, providers = []) {
+  const links = buildLinks({ cid: file.cid, filename: file.filename, config, providers })
+
   return {
     cid: file.cid,
     filename: file.filename,
@@ -85,7 +87,9 @@ export function toFeedFile (file, config = {}, providers = []) {
     createdAt: file.createdAt,
     paidAt: file.paidAt,
     hostedUntil: file.hostedUntil,
-    gatewayUrls: buildGatewayUrls({ cid: file.cid, filename: file.filename, config, providers }),
+    downloadUrl: links.downloadUrl,
+    viewUrl: links.viewUrl,
+    gatewayUrls: links.gatewayUrls,
     pins: (file.pins || []).map((pin) => ({ provider: pin.provider, status: pin.status }))
   }
 }

@@ -2,8 +2,8 @@
   Page-controller service for the hosted-files dashboard.
 
   The service owns the dashboard display state. It loads the public feed from
-  the hosting API, shows every file in feed order with its size, times,
-  download URL, CID, and a gateway view link, and supports two actions:
+  the hosting API, shows every file in feed order with its size, times, and
+  the API download and view URLs, and supports two actions:
   Refresh (reload the first page) and Load more (append the next page). It
   keeps no browser storage and does not poll.
 
@@ -22,7 +22,9 @@ function downloadUrl (base, cid) {
   return `${String(base).replace(/\/+$/, '')}/download/${cid}`
 }
 
-// Keep only the fields the dashboard shows.
+// Keep only the fields the dashboard shows. The feed carries the API download
+// and view URLs; the configured base is a fallback for a feed that omits the
+// download URL.
 function toDashboardFile (file, downloadBaseUrl) {
   return {
     cid: file.cid,
@@ -30,8 +32,8 @@ function toDashboardFile (file, downloadBaseUrl) {
     sizeBytes: file.sizeBytes,
     paidAt: file.paidAt,
     hostedUntil: file.hostedUntil,
-    downloadUrl: downloadUrl(downloadBaseUrl, file.cid),
-    viewUrl: (file.gatewayUrls || [])[0] || ''
+    downloadUrl: file.downloadUrl || downloadUrl(downloadBaseUrl, file.cid),
+    viewUrl: file.viewUrl || ''
   }
 }
 

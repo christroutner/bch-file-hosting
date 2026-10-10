@@ -215,6 +215,7 @@ describe('#file-feed.property.js', () => {
           assert.deepEqual(Object.keys(published).sort(), [
             'cid',
             'createdAt',
+            'downloadUrl',
             'filename',
             'gatewayUrls',
             'hostedUntil',
@@ -222,7 +223,8 @@ describe('#file-feed.property.js', () => {
             'paymentAddress',
             'pins',
             'sizeBytes',
-            'status'
+            'status',
+            'viewUrl'
           ])
           assert.deepEqual(
             published.pins,

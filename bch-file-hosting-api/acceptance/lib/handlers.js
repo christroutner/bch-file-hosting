@@ -7,6 +7,7 @@
 */
 
 import { calculatePrice } from '../../src/use-cases/pricing.js'
+import { viewType } from '../../src/use-cases/view.js'
 import FileUseCases from '../../src/use-cases/file-use-cases.js'
 import PaymentUseCases from '../../src/use-cases/payment-use-cases.js'
 import AdminUseCases from '../../src/use-cases/admin-use-cases.js'
@@ -278,6 +279,21 @@ function inMemoryFileStore (world) {
 }
 
 // Exercise the real admin listing use-case against the seeded file store.
+// A one-file store used by the view and download rejection scenarios.
+function buildContentUseCases (world) {
+  return new FileUseCases({
+    adapters: {
+      config: world.pinningConfig,
+      localdb: {
+        files: { get: async (cid) => (world.file && world.file.cid === cid ? world.file : null) }
+      },
+      ipfs: world.ipfs,
+      pinning: { getProviders: () => [] },
+      logger: { info: () => {}, error: () => {} }
+    }
+  })
+}
+
 async function listAdminFiles (world, status) {
   const files = {
     list: async ({ status: wanted } = {}) => world.files.filter(f => !wanted || f.status === wanted)
@@ -686,11 +702,11 @@ const handlers = [
     }
   },
   {
-    pattern: /^a pinned file <([A-Za-z0-9_]+)> named <([A-Za-z0-9_]+)> paid at (.+)$/,
+    pattern: /^a pinned file <([A-Za-z0-9_]+)> named (<[A-Za-z0-9_]+>|\S+) paid at (.+)$/,
     run (match, example, world) {
       world.feedFiles.push({
         cid: exampleValue(example, match[1]),
-        filename: exampleValue(example, match[2]),
+        filename: resolveValue(match[2], example),
         sizeBytes: 1024,
         status: 'pinned',
         pins: [],
@@ -1050,6 +1066,105 @@ const handlers = [
       if (!provided.includes(expected)) {
         throw new Error(`expected the node to provide ${expected}, got [${provided.join(', ')}]`)
       }
+    }
+  },
+  {
+    pattern: /^a file named <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.viewFilename = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^the view of <([A-Za-z0-9_]+)> uses content type <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const filename = exampleValue(example, match[1])
+      const expected = exampleValue(example, match[2])
+      const { contentType } = viewType(filename)
+      if (contentType !== expected) {
+        throw new Error(`expected the view of ${filename} to use content type ${expected}, got ${contentType}`)
+      }
+    }
+  },
+  {
+    pattern: /^the view of <([A-Za-z0-9_]+)> uses disposition <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const filename = exampleValue(example, match[1])
+      const expected = exampleValue(example, match[2])
+      const { disposition } = viewType(filename)
+      if (disposition !== expected) {
+        throw new Error(`expected the view of ${filename} to use disposition ${expected}, got ${disposition}`)
+      }
+    }
+  },
+  {
+    pattern: /^a paid file ([A-Za-z0-9]+) that the API server has not pinned$/,
+    run (match, _example, world) {
+      world.file = { cid: match[1], filename: 'photo.jpg', sizeBytes: 1024, status: 'pinned', pins: [] }
+      world.ipfs.isPinned = async () => false
+    }
+  },
+  {
+    pattern: /^I view the file ([A-Za-z0-9]+)$/,
+    async run (match, _example, world) {
+      try {
+        world.viewResult = await buildContentUseCases(world).getView({ cid: match[1] })
+        world.viewError = null
+      } catch (err) {
+        world.viewResult = null
+        world.viewError = { status: err.status, message: err.message }
+      }
+    }
+  },
+  {
+    pattern: /^I download the file ([A-Za-z0-9]+)$/,
+    async run (match, _example, world) {
+      try {
+        world.downloadResult = await buildContentUseCases(world).getDownload({ cid: match[1] })
+        world.downloadError = null
+      } catch (err) {
+        world.downloadResult = null
+        world.downloadError = { status: err.status, message: err.message }
+      }
+    }
+  },
+  {
+    pattern: /^the view is rejected with status (\d+)$/,
+    run (match, _example, world) {
+      const expected = Number(match[1])
+      if (!world.viewError) throw new Error('expected the view to be rejected, but it succeeded')
+      if (world.viewError.status !== expected) {
+        throw new Error(`expected view rejection status ${expected}, got ${world.viewError.status}`)
+      }
+    }
+  },
+  {
+    pattern: /^the download is rejected with status (\d+)$/,
+    run (match, _example, world) {
+      const expected = Number(match[1])
+      if (!world.downloadError) throw new Error('expected the download to be rejected, but it succeeded')
+      if (world.downloadError.status !== expected) {
+        throw new Error(`expected download rejection status ${expected}, got ${world.downloadError.status}`)
+      }
+    }
+  },
+  {
+    pattern: /^the hosting API public URL is <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.pinningConfig.publicUrl = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^the feed reports the file <([A-Za-z0-9_]+)> with download URL <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const file = findFeedFile(world, exampleValue(example, match[1]))
+      assertFeedField(file, 'downloadUrl', exampleValue(example, match[2]))
+    }
+  },
+  {
+    pattern: /^the feed reports the file <([A-Za-z0-9_]+)> with view URL <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const file = findFeedFile(world, exampleValue(example, match[1]))
+      assertFeedField(file, 'viewUrl', exampleValue(example, match[2]))
     }
   }
 ]

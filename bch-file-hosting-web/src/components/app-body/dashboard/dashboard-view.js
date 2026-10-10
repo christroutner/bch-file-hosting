@@ -92,17 +92,14 @@ function downloadCell (file) {
 // A gateway view link opens the file in a new tab. Without a gateway URL the
 // cell is empty.
 function viewCell (file) {
-  const children = []
-  if (file.viewUrl) {
-    children.push(
-      React.createElement(
-        'a',
-        { key: 'view', href: file.viewUrl, className: 'dashboard-view-link', target: '_blank', rel: 'noreferrer' },
-        'View'
-      )
+  const link = file.viewUrl
+    ? React.createElement(
+      'a',
+      { key: 'view', href: file.viewUrl, className: 'dashboard-view-link', target: '_blank', rel: 'noreferrer' },
+      'View'
     )
-  }
-  return React.createElement('td', { key: 'view', className: 'dashboard-file-view' }, ...children)
+    : null
+  return React.createElement('td', { key: 'view', className: 'dashboard-file-view' }, link)
 }
 
 function fileRow (file, index) {

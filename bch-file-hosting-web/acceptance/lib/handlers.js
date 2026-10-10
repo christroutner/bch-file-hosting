@@ -209,6 +209,18 @@ function assertRowCell (world, cid, cellClass, expected, { contains = false } = 
   }
 }
 
+// Assert a dashboard row link cell points at the expected URL, optionally in a
+// new tab.
+function assertLinkCell (world, cid, cellClass, href, { newTab = false } = {}) {
+  const cell = rowCell(dashboardRow(world, cid), cellClass)
+  if (!cell.includes(`href="${href}"`)) {
+    throw new Error(`Expected the ${cellClass} cell of row ${cid} to link ${href}, got ${cell}.`)
+  }
+  if (newTab && !/target="_blank"/.test(cell)) {
+    throw new Error(`Expected the ${cellClass} cell of row ${cid} to open in a new tab.`)
+  }
+}
+
 // Apply an async page transition and invalidate the cached render.
 async function transition (world, action) {
   world.state = await action()
@@ -907,27 +919,14 @@ const handlers = [
     name: 'the download cell of a dashboard row',
     pattern: /^the download cell of row (\S+) links (<[A-Za-z0-9_]+>)$/,
     run (m, example, world) {
-      const cid = resolveParam(m[1], example)
-      const expected = resolveParam(m[2], example)
-      const cell = rowCell(dashboardRow(world, cid), 'dashboard-file-download')
-      if (!cell.includes(`href="${expected}"`)) {
-        throw new Error(`Expected the download cell of row ${cid} to link ${expected}, got ${cell}.`)
-      }
+      assertLinkCell(world, resolveParam(m[1], example), 'dashboard-file-download', resolveParam(m[2], example))
     }
   },
   {
     name: 'the view cell of a dashboard row',
     pattern: /^the view cell of row (\S+) opens (<[A-Za-z0-9_]+>) in a new tab$/,
     run (m, example, world) {
-      const cid = resolveParam(m[1], example)
-      const expected = resolveParam(m[2], example)
-      const cell = rowCell(dashboardRow(world, cid), 'dashboard-file-view')
-      if (!cell.includes(`href="${expected}"`)) {
-        throw new Error(`Expected the view cell of row ${cid} to open ${expected}, got ${cell}.`)
-      }
-      if (!/target="_blank"/.test(cell)) {
-        throw new Error(`Expected the view cell of row ${cid} to open in a new tab.`)
-      }
+      assertLinkCell(world, resolveParam(m[1], example), 'dashboard-file-view', resolveParam(m[2], example), { newTab: true })
     }
   },
   {

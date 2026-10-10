@@ -66,8 +66,6 @@ function byPaidNewestFirst (a, b) {
   return Buffer.compare(Buffer.from(a.cid), Buffer.from(b.cid))
 }
 
-// True when `file` sorts strictly after the cursor position: an older paid
-// time, or the same paid time with a larger CID.
 // True when `file` sorts strictly after the cursor position in the same
 // newest-paid-first order as byPaidNewestFirst, so pagination can never
 // disagree with the sort.

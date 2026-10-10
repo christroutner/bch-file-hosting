@@ -1,8 +1,4 @@
-# acceptance-mutation-manifest-begin
-# {"version":1,"tested_at":"2026-10-10T00:54:13.171728305Z","feature_name":"File Feed","feature_path":"/home/trout/work/psf/code/ipfs/bch-file-hosting/.worktrees/architect/bch-file-hosting-api/specs/file-feed.feature","background_hash":"8a2fbe3706e365a62d50510d25298721a7b9c408484b7fcf50062d620ce1cc4b","implementation_hash":"unknown","scenarios":[{"index":1,"name":"File Feed - 2 paginates with a cursor","scenario_hash":"1310375978438a49dd1adc18c7ebb0e6d35db8ff1b5a7b947e22edae1814e410","mutation_count":3,"result":{"Total":3,"Killed":3,"Survived":0,"Errors":0},"tested_at":"2026-10-10T00:54:13.171728305Z"},{"index":4,"name":"File Feed - 5 reports the public fields of each file","scenario_hash":"a47c625d39806ffb634cd8b41d1d096460861c66939b146c2da4e69176669f1c","mutation_count":40,"result":{"Total":40,"Killed":40,"Survived":0,"Errors":0},"tested_at":"2026-10-10T00:54:13.171728305Z"},{"index":5,"name":"File Feed - 6 reports the gateway URLs of each file","scenario_hash":"6948f62a6dbd43f24b72b18ad8e5dfd794f2c65e19e20bc5116d3339c96cc84d","mutation_count":8,"result":{"Total":8,"Killed":8,"Survived":0,"Errors":0},"tested_at":"2026-10-10T00:54:13.171728305Z"}]}
-# acceptance-mutation-manifest-end
-
-# File Feed - 1, File Feed - 2, File Feed - 3, File Feed - 4, File Feed - 5, File Feed - 6
+# File Feed - 1, File Feed - 2, File Feed - 3, File Feed - 4, File Feed - 5, File Feed - 6, File Feed - 7
 
 Feature: File Feed
 
@@ -69,7 +65,7 @@ Feature: File Feed
       | pinned | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | photo.jpg | 1024 | 2026-02-01T00:00:00.000Z | 2026-02-02T00:00:00.000Z | 2027-02-02T00:00:00.000Z | bitcoincash:qfeedaddress000000000000000000000000000000 | local-helia | pinned | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | photo.jpg | 1024 | pinned | bitcoincash:qfeedaddress000000000000000000000000000000 | 2026-02-01T00:00:00.000Z | 2026-02-02T00:00:00.000Z | 2027-02-02T00:00:00.000Z | local-helia | pinned |
       | pinFailed | bafybeihhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh | notes.txt | 2048 | 2026-03-01T00:00:00.000Z | 2026-03-02T00:00:00.000Z | 2027-03-02T00:00:00.000Z | bitcoincash:qotherfeedaddress00000000000000000000000000 | lighthouse | failed | bafybeihhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh | notes.txt | 2048 | pinFailed | bitcoincash:qotherfeedaddress00000000000000000000000000 | 2026-03-01T00:00:00.000Z | 2026-03-02T00:00:00.000Z | 2027-03-02T00:00:00.000Z | lighthouse | failed |
 
-  Scenario Outline: File Feed - 6 reports the gateway URLs of each file
+  Scenario Outline: File Feed - 6 reports the public gateway URLs of each file
     Given the public gateway is <api_gateway>
     And a pinned file <cid> named <filename> paid at 2026-04-01T00:00:00.000Z
     When I request the file feed with limit 1
@@ -79,3 +75,15 @@ Feature: File Feed
       | api_gateway             | cid                                                          | filename     | shown_gateway_url                                                                                   |
       | https://ipfs.io/ipfs/   | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | photo.jpg    | https://ipfs.io/ipfs/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/photo.jpg             |
       | https://dweb.link/ipfs/ | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | my photo.jpg | https://dweb.link/ipfs/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/my%20photo.jpg |
+
+  Scenario Outline: File Feed - 7 reports the provider gateway URLs of each file
+    Given the hosting API is configured to pin with Lighthouse
+    And the Lighthouse gateway is https://gateway.lighthouse.storage/ipfs/
+    And a pinned file <cid> named <filename> paid at 2026-05-01T00:00:00.000Z
+    When I request the file feed with limit 1
+    Then the feed reports the file <cid> with gateway URL <shown_gateway_url>
+
+    Examples:
+      | cid                                                          | filename     | shown_gateway_url                                                                                       |
+      | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | photo.jpg    | https://gateway.lighthouse.storage/ipfs/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/photo.jpg   |
+      | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | my file.bin  | https://gateway.lighthouse.storage/ipfs/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/my%20file.bin |

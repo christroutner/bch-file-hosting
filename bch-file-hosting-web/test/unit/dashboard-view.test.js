@@ -19,7 +19,7 @@ const DashboardView = require('../../src/components/app-body/dashboard/dashboard
 const { EMPTY_MESSAGE } = DashboardView
 
 const CID = 'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
-const COLUMNS = ['File Name', 'Size', 'Paid', 'Hosted Until', 'CID', 'Download']
+const COLUMNS = ['File Name', 'Size', 'Paid', 'Hosted Until', 'CID', 'Download', 'View']
 
 function file (overrides = {}) {
   return {
@@ -29,6 +29,7 @@ function file (overrides = {}) {
     paidAt: '2026-01-02T00:00:00.000Z',
     hostedUntil: '2027-01-02T00:00:00.000Z',
     downloadUrl: `http://localhost:5050/download/${CID}`,
+    viewUrl: `https://ipfs.io/ipfs/${CID}/photo.jpg`,
     ...overrides
   }
 }
@@ -99,6 +100,20 @@ test('links the download cell to the file download URL', () => {
   const html = renderFile({ downloadUrl: 'http://localhost:5050/download/bafy-x' })
 
   assert.ok(html.includes('href="http://localhost:5050/download/bafy-x"'))
+})
+
+test('links the view cell to the gateway URL in a new tab', () => {
+  const html = renderFile({ viewUrl: 'https://ipfs.io/ipfs/bafy-x/photo.jpg' })
+
+  assert.ok(html.includes('href="https://ipfs.io/ipfs/bafy-x/photo.jpg"'))
+  assert.ok(/<a[^>]*class="[^"]*dashboard-view[^"]*"[^>]*target="_blank"/.test(html))
+  assert.ok(/<a[^>]*dashboard-view[^>]*rel="noreferrer"/.test(html))
+})
+
+test('renders an empty view cell when the file has no gateway URL', () => {
+  const html = renderFile({ viewUrl: '' })
+
+  assert.ok(!html.includes('dashboard-view-link'))
 })
 
 test('renders the empty-feed message without a table', () => {

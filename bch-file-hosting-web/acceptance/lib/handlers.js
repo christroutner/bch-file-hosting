@@ -190,8 +190,8 @@ function rowCellText (rowHtml, cellClass) {
 }
 
 // Build a complete feed file record from the fields a scenario configures.
-function feedRecord ({ status, cid, filename = '', sizeBytes = 0, paidAt = '2026-01-02T00:00:00.000Z', hostedUntil = '2027-01-02T00:00:00.000Z', paymentAddress = 'bitcoincash:qfeed' }) {
-  return { status, cid, filename, sizeBytes: Number(sizeBytes), paidAt, hostedUntil, paymentAddress, pins: [] }
+function feedRecord ({ status, cid, filename = '', sizeBytes = 0, paidAt = '2026-01-02T00:00:00.000Z', hostedUntil = '2027-01-02T00:00:00.000Z', paymentAddress = 'bitcoincash:qfeed', gatewayUrls = [] }) {
+  return { status, cid, filename, sizeBytes: Number(sizeBytes), paidAt, hostedUntil, paymentAddress, gatewayUrls, pins: [] }
 }
 
 // Parse a comma-separated scenario value into trimmed, non-empty items.
@@ -768,6 +768,18 @@ const handlers = [
     }
   },
   {
+    name: 'the hosting API feed lists a status file by name with a gateway URL',
+    pattern: /^the hosting API feed lists a (\S+) file (\S+) named (\S+) with the gateway URL (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.feedFiles.push(feedRecord({
+        status: resolveParam(m[1], example),
+        cid: resolveParam(m[2], example),
+        filename: resolveParam(m[3], example),
+        gatewayUrls: [resolveParam(m[4], example)]
+      }))
+    }
+  },
+  {
     name: 'the hosting API feed lists a status file with size and dates',
     pattern: /^the hosting API feed lists a (\S+) file (\S+) named (\S+) of (<[A-Za-z0-9_]+>) bytes paid at (<[A-Za-z0-9_]+>) until (<[A-Za-z0-9_]+>)$/,
     run (m, example, world) {
@@ -900,6 +912,21 @@ const handlers = [
       const cell = rowCell(dashboardRow(world, cid), 'dashboard-file-download')
       if (!cell.includes(`href="${expected}"`)) {
         throw new Error(`Expected the download cell of row ${cid} to link ${expected}, got ${cell}.`)
+      }
+    }
+  },
+  {
+    name: 'the view cell of a dashboard row',
+    pattern: /^the view cell of row (\S+) opens (<[A-Za-z0-9_]+>) in a new tab$/,
+    run (m, example, world) {
+      const cid = resolveParam(m[1], example)
+      const expected = resolveParam(m[2], example)
+      const cell = rowCell(dashboardRow(world, cid), 'dashboard-file-view')
+      if (!cell.includes(`href="${expected}"`)) {
+        throw new Error(`Expected the view cell of row ${cid} to open ${expected}, got ${cell}.`)
+      }
+      if (!/target="_blank"/.test(cell)) {
+        throw new Error(`Expected the view cell of row ${cid} to open in a new tab.`)
       }
     }
   },

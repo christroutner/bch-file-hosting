@@ -9,6 +9,7 @@
 */
 
 import { isPaidFileStatus } from '../entities/file-upload.js'
+import { buildGatewayUrls } from './links.js'
 
 export const DEFAULT_PAGE_LIMIT = 20
 export const MAX_PAGE_LIMIT = 100
@@ -76,7 +77,7 @@ function isAfterCursor (file, cursor) {
 
 // The public fields of one hosted file. Private fields (HD index, invoice
 // amounts) are never published.
-export function toFeedFile (file) {
+export function toFeedFile (file, config = {}) {
   return {
     cid: file.cid,
     filename: file.filename,
@@ -86,13 +87,14 @@ export function toFeedFile (file) {
     createdAt: file.createdAt,
     paidAt: file.paidAt,
     hostedUntil: file.hostedUntil,
+    gatewayUrls: buildGatewayUrls({ cid: file.cid, filename: file.filename, config }),
     pins: (file.pins || []).map((pin) => ({ provider: pin.provider, status: pin.status }))
   }
 }
 
 // Slice paid files into one feed page. Returns the page's public files and the
 // cursor for the next page (null when this is the last page).
-export function paginateFeed (files, { limit, cursor } = {}) {
+export function paginateFeed (files, { limit, cursor, config = {} } = {}) {
   const pageLimit = parsePageLimit(limit)
   const after = parseCursor(cursor)
 
@@ -106,7 +108,7 @@ export function paginateFeed (files, { limit, cursor } = {}) {
   const hasMore = start + page.length < paid.length
 
   return {
-    files: page.map(toFeedFile),
+    files: page.map((file) => toFeedFile(file, config)),
     nextCursor: hasMore ? encodeCursor(page[page.length - 1]) : null
   }
 }

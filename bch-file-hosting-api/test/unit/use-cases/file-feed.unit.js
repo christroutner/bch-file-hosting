@@ -112,9 +112,22 @@ describe('#file-feed.js', () => {
         createdAt: '2026-01-01T00:00:00.000Z',
         paidAt: '2026-01-02T00:00:00.000Z',
         hostedUntil: '2027-01-02T00:00:00.000Z',
+        gatewayUrls: [],
         pins: [{ provider: 'local-helia', status: 'pinned' }]
       })
       assert.notProperty(result, 'hdIndex')
+    })
+
+    it('should build gateway URLs from the public gateways with the encoded file name', () => {
+      const result = toFeedFile(
+        file({ cid: 'bafy-a', filename: 'my photo.jpg' }),
+        { publicGateways: ['https://ipfs.io/ipfs/', 'https://dweb.link/ipfs/'] }
+      )
+
+      assert.deepEqual(result.gatewayUrls, [
+        'https://ipfs.io/ipfs/bafy-a/my%20photo.jpg',
+        'https://dweb.link/ipfs/bafy-a/my%20photo.jpg'
+      ])
     })
 
     it('should reduce each pin to its provider and status', () => {

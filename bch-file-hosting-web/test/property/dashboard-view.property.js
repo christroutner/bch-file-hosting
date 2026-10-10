@@ -24,7 +24,7 @@ const { EMPTY_MESSAGE } = DashboardView
 const { forAll, integerBetween, randomString } = require('./lib/harness')
 
 const TEXT_ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .-_'
-const COLUMNS = ['File Name', 'Size', 'Paid', 'Hosted Until', 'CID', 'Download']
+const COLUMNS = ['File Name', 'Size', 'Paid', 'Hosted Until', 'CID', 'Download', 'View']
 const BASE = 'http://localhost:5050'
 
 function truncateCid (cid) {
@@ -43,11 +43,12 @@ function randomFile (random, index) {
     sizeBytes: integerBetween(random, 0, 100000000),
     paidAt: '2026-01-02T00:00:00.000Z',
     hostedUntil: '2027-01-02T00:00:00.000Z',
-    downloadUrl: `${BASE}/download/${cid}`
+    downloadUrl: `${BASE}/download/${cid}`,
+    viewUrl: `https://gw.example/ipfs/${cid}`
   }
 }
 
-test('property: a loaded feed renders one table row per file with its CID and download link', () => {
+test('property: a loaded feed renders one table row per file with its CID, download, and view links', () => {
   forAll({
     seed: 1,
     runs: 200,
@@ -70,7 +71,9 @@ test('property: a loaded feed renders one table row per file with its CID and do
         assert.ok(html.includes(file.filename))
         assert.ok(html.includes(truncateCid(file.cid)))
         assert.ok(html.includes(`href="${file.downloadUrl}"`))
+        assert.ok(html.includes(`href="${file.viewUrl}"`))
       }
+      assert.equal((html.match(/target="_blank"/g) || []).length, files.length)
     }
   })
 })

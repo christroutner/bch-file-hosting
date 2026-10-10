@@ -679,6 +679,27 @@ const handlers = [
     }
   },
   {
+    pattern: /^the public gateway is (.+)$/,
+    run (match, example, world) {
+      world.pinningConfig.publicGateways = [resolveValue(match[1], example)]
+    }
+  },
+  {
+    pattern: /^a pinned file <([A-Za-z0-9_]+)> named <([A-Za-z0-9_]+)> paid at (.+)$/,
+    run (match, example, world) {
+      world.feedFiles.push({
+        cid: exampleValue(example, match[1]),
+        filename: exampleValue(example, match[2]),
+        sizeBytes: 1024,
+        status: 'pinned',
+        pins: [],
+        paidAt: match[3],
+        createdAt: match[3],
+        hostedUntil: null
+      })
+    }
+  },
+  {
     pattern: /^a (pinned|pinning|pinFailed) file ([A-Za-z0-9]+) paid at (.+)$/,
     run (match, _example, world) {
       world.feedFiles.push({
@@ -860,6 +881,16 @@ const handlers = [
       const pinStatus = exampleValue(example, match[3])
       if (!(file.pins || []).some(pin => pin.provider === provider && pin.status === pinStatus)) {
         throw new Error(`expected the feed file ${file.cid} to have a ${provider} pin with status ${pinStatus}`)
+      }
+    }
+  },
+  {
+    pattern: /^the feed reports the file <([A-Za-z0-9_]+)> with gateway URL <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const file = findFeedFile(world, exampleValue(example, match[1]))
+      const expected = exampleValue(example, match[2])
+      if (!(file.gatewayUrls || []).includes(expected)) {
+        throw new Error(`expected the feed file ${file.cid} to report gateway URL ${expected}, got ${(file.gatewayUrls || []).join(', ')}`)
       }
     }
   },

@@ -3,9 +3,9 @@
 
   The service owns the dashboard display state. It loads the public feed from
   the hosting API, shows every file in feed order with its size, times,
-  download URL, and CID, and supports two actions: Refresh (reload the first
-  page) and Load more (append the next page). It keeps no browser storage and
-  does not poll.
+  download URL, CID, and a gateway view link, and supports two actions:
+  Refresh (reload the first page) and Load more (append the next page). It
+  keeps no browser storage and does not poll.
 
   The state is a plain view model that the presentational component and the
   acceptance run can render without a browser.
@@ -30,7 +30,8 @@ function toDashboardFile (file, downloadBaseUrl) {
     sizeBytes: file.sizeBytes,
     paidAt: file.paidAt,
     hostedUntil: file.hostedUntil,
-    downloadUrl: downloadUrl(downloadBaseUrl, file.cid)
+    downloadUrl: downloadUrl(downloadBaseUrl, file.cid),
+    viewUrl: (file.gatewayUrls || [])[0] || ''
   }
 }
 

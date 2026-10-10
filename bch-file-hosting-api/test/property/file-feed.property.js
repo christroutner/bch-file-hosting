@@ -215,6 +215,7 @@ describe('#file-feed.property.js', () => {
             'cid',
             'createdAt',
             'filename',
+            'gatewayUrls',
             'hostedUntil',
             'paidAt',
             'paymentAddress',
@@ -227,6 +228,27 @@ describe('#file-feed.property.js', () => {
             (file.pins || []).map((pin) => ({ provider: pin.provider, status: pin.status }))
           )
           assert.notProperty(published, 'hdIndex')
+        }
+      })
+    })
+
+    it('should build every gateway URL from the configured public gateways', () => {
+      forAll({
+        seed: 7,
+        runs: 200,
+        generate: (random) => {
+          const prefixCount = integerBetween(random, 0, 3)
+          const publicGateways = []
+          for (let i = 0; i < prefixCount; i++) publicGateways.push(`https://gw${i}.example/ipfs/`)
+          return { file: randomFile(random, 0), publicGateways }
+        },
+        property: ({ file, publicGateways }) => {
+          const published = toFeedFile(file, { publicGateways })
+
+          assert.deepEqual(
+            published.gatewayUrls,
+            publicGateways.map((prefix) => `${prefix}${file.cid}/${encodeURIComponent(file.filename)}`)
+          )
         }
       })
     })

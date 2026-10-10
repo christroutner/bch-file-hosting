@@ -44,6 +44,10 @@ function randomFile (random, index) {
     paymentAddress: `bitcoincash:q${randomString(random, 10, 30)}`,
     paidAt: '2026-01-02T00:00:00.000Z',
     hostedUntil: '2027-01-02T00:00:00.000Z',
+    gatewayUrls: Array.from(
+      { length: integerBetween(random, 0, 2) },
+      (_, i) => `https://gw${i}.example/ipfs/${cid}`
+    ),
     pins
   }
 }
@@ -63,7 +67,8 @@ function publicFile (file) {
     sizeBytes: file.sizeBytes,
     paidAt: file.paidAt,
     hostedUntil: file.hostedUntil,
-    downloadUrl: `${BASE}/download/${file.cid}`
+    downloadUrl: `${BASE}/download/${file.cid}`,
+    viewUrl: (file.gatewayUrls || [])[0] || ''
   }
 }
 

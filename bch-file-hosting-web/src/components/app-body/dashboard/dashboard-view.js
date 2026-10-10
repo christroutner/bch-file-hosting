@@ -3,9 +3,10 @@
 
   Renders the DashboardPage display state as a Bootstrap table: one row per
   file with its formatted size and times, a truncated CID with a copy control,
-  and a download link; or the empty-feed message, or the API error. Written in
-  plain React.createElement style so the same view can be used by the browser
-  page and by the Node acceptance rendering, without a browser.
+  a download link, and a gateway view link; or the empty-feed message, or the
+  API error. Written in plain React.createElement style so the same view can be
+  used by the browser page and by the Node acceptance rendering, without a
+  browser.
 */
 
 const React = require('react')
@@ -19,7 +20,8 @@ const COLUMNS = [
   'Paid',
   'Hosted Until',
   'CID',
-  'Download'
+  'Download',
+  'View'
 ]
 
 // Decimal units: 1 KB = 1,000 bytes, 1 MB = 1,000,000 bytes.
@@ -87,6 +89,22 @@ function downloadCell (file) {
   )
 }
 
+// A gateway view link opens the file in a new tab. Without a gateway URL the
+// cell is empty.
+function viewCell (file) {
+  const children = []
+  if (file.viewUrl) {
+    children.push(
+      React.createElement(
+        'a',
+        { key: 'view', href: file.viewUrl, className: 'dashboard-view-link', target: '_blank', rel: 'noreferrer' },
+        'View'
+      )
+    )
+  }
+  return React.createElement('td', { key: 'view', className: 'dashboard-file-view' }, ...children)
+}
+
 function fileRow (file, index) {
   return React.createElement(
     'tr',
@@ -96,7 +114,8 @@ function fileRow (file, index) {
     React.createElement('td', { className: 'dashboard-file-paid' }, formatDate(file.paidAt)),
     React.createElement('td', { className: 'dashboard-file-until' }, formatDate(file.hostedUntil)),
     cidCell(file),
-    downloadCell(file)
+    downloadCell(file),
+    viewCell(file)
   )
 }
 

@@ -321,6 +321,7 @@ describe('#file-use-cases.js', () => {
         createdAt: '2026-01-01T00:00:00.000Z',
         paidAt: '2026-01-02T00:00:00.000Z',
         hostedUntil: '2027-01-02T00:00:00.000Z',
+        gatewayUrls: [`https://ipfs.io/ipfs/${TEST_CID}/photo.jpg`],
         pins: [{ provider: 'local-helia', status: 'pinned' }]
       })
     })

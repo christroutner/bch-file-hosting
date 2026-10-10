@@ -27,6 +27,7 @@ function file (overrides = {}) {
     paymentAddress: 'bitcoincash:qfeed',
     paidAt: '2026-01-02T00:00:00.000Z',
     hostedUntil: '2027-01-02T00:00:00.000Z',
+    gatewayUrls: ['https://ipfs.io/ipfs/bafy-a/photo.jpg'],
     pins: [{ provider: 'local-helia', status: 'pinned' }],
     ...overrides
   }
@@ -64,7 +65,8 @@ test('loads the first page in feed order and reduces each file to its public fie
     sizeBytes: 1024,
     paidAt: '2026-01-02T00:00:00.000Z',
     hostedUntil: '2027-01-02T00:00:00.000Z',
-    downloadUrl: `${BASE}/download/bafy-a`
+    downloadUrl: `${BASE}/download/bafy-a`,
+    viewUrl: 'https://ipfs.io/ipfs/bafy-a/photo.jpg'
   })
   assert.deepEqual(page.getViewModel(), state)
 })
@@ -76,6 +78,24 @@ test('builds each download URL from the configured base and trims a trailing sla
   const state = await page.load()
 
   assert.equal(state.files[0].downloadUrl, `${BASE}/download/bafy-a`)
+})
+
+test('uses the first gateway URL as the view URL and leaves it empty when there are none', async () => {
+  const api = apiReturning([{
+    files: [
+      file({ cid: 'bafy-a', gatewayUrls: ['https://ipfs.io/ipfs/a', 'https://dweb.link/ipfs/a'] }),
+      file({ cid: 'bafy-b', gatewayUrls: [] }),
+      file({ cid: 'bafy-c', gatewayUrls: undefined })
+    ],
+    nextCursor: null
+  }])
+  const page = new DashboardPage({ hostingApi: api, downloadBaseUrl: BASE })
+
+  const state = await page.load()
+
+  assert.equal(state.files[0].viewUrl, 'https://ipfs.io/ipfs/a')
+  assert.equal(state.files[1].viewUrl, '')
+  assert.equal(state.files[2].viewUrl, '')
 })
 
 test('shows an empty feed as a loaded page with no files', async () => {

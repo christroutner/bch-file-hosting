@@ -3,19 +3,27 @@
   directories, so gateway links include the file name to open the file itself.
 */
 
-export function buildLinks ({ cid, filename, config, providers = [] }) {
-  const base = config.publicUrl.replace(/\/+$/, '')
+// Public gateway URLs for a hosted file: each configured prefix followed by
+// the CID and the URL-encoded file name, plus any provider gateway the active
+// providers offer.
+export function buildGatewayUrls ({ cid, filename, config = {}, providers = [] }) {
   const encodedName = encodeURIComponent(filename)
 
-  const gatewayUrls = config.publicGateways.map(prefix => `${prefix}${cid}/${encodedName}`)
+  const gatewayUrls = (config.publicGateways || []).map(prefix => `${prefix}${cid}/${encodedName}`)
   for (const provider of providers) {
     const url = provider.gatewayUrl(cid, filename)
     if (url) gatewayUrls.push(url)
   }
 
+  return gatewayUrls
+}
+
+export function buildLinks ({ cid, filename, config, providers = [] }) {
+  const base = config.publicUrl.replace(/\/+$/, '')
+
   return {
     downloadUrl: `${base}/download/${cid}`,
-    gatewayUrls
+    gatewayUrls: buildGatewayUrls({ cid, filename, config, providers })
   }
 }
 

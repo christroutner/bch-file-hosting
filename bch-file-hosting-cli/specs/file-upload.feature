@@ -21,17 +21,19 @@ Feature: File Upload
       | ./photo.jpg   | 2000     | bitcoincash:qquoteaddress00000000000000000000000000000 | 2000         | bitcoincash:qquoteaddress00000000000000000000000000000 |
       | ./archive.tar | 62500    | bitcoincash:qotheraddress00000000000000000000000000000 | 62500        | bitcoincash:qotheraddress00000000000000000000000000000 |
 
-  Scenario Outline: File Upload - 2 an already hosted file prints the download link and no payment address
+  Scenario Outline: File Upload - 2 an already hosted file prints the links and no payment address
     Given the hosting API reports the file is already hosted at <api_download_url>
+    And the hosting API reports the view URL <api_view_url>
     When I run file-upload for the file <upload_path>
     Then the exit code is 0
     And the command prints the download URL <printed_download_url>
+    And the command prints the view URL <printed_view_url>
     And the command prints no payment address
 
     Examples:
-      | upload_path   | api_download_url                                                                   | printed_download_url                                                               |
-      | ./photo.jpg   | http://localhost:5050/download/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/download/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi |
-      | ./archive.tar | http://localhost:5050/download/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | http://localhost:5050/download/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
+      | upload_path   | api_download_url                                                                   | api_view_url                                                                                 | printed_download_url                                                               | printed_view_url                                                                             |
+      | ./photo.jpg   | http://localhost:5050/download/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/view/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/photo.jpg | http://localhost:5050/download/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/view/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/photo.jpg |
+      | ./archive.tar | http://localhost:5050/download/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | http://localhost:5050/view/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/archive.tar | http://localhost:5050/download/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | http://localhost:5050/view/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/archive.tar |
 
   Scenario: File Upload - 3 a missing file flag is a usage error
     When I run file-upload with no file flag

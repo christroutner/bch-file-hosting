@@ -126,16 +126,8 @@ None.
 Source: `psf-memo/psf-memo-cli/dev-docs/bch-file-hosting-cli-request.md`
 (2026-10-11). These prepare the CLI/API for the phase 9 psf-memo port. Ordered
 by what the port depends on; priorities are P1 (unblocks the port), P2
-(correctness/reuse), P3 (stability/optional).
+(correctness/reuse), P3 (stability/optional). `api-contract` (P1) is complete.
 
-- **`api-contract` (api/docs, P1):** commit `dev-docs/api-contract.md` with
-  every endpoint and method, request and response fields, status values
-  (`unpaid`/`paid`/`expired`; file `staged`/`pinning`/`pinned`/`pinFailed`/
-  `deleted`), HTTP error statuses and messages, and the explicit note that
-  `GET /files/:cid` returns metadata and pins but no
-  `downloadUrl`/`viewUrl`/`gatewayUrls` (those come from `check-payment`,
-  `alreadyHosted`, and `GET /files`). Docs-only, no Gherkin. Also corrects the
-  stale paid `viewUrl`-less example in `bch-file-hosting-api/examples/README.md`.
 - **`web-hosting-api-url` (web, P1):** make the web read the shared
   `HOSTING_API_URL` name (with a documented CRA mirror) and one documented
   default (`http://localhost:5050`), matching the CLI. See the decision below.
@@ -176,6 +168,23 @@ by what the port depends on; priorities are P1 (unblocks the port), P2
   pin), and the upload+verify runs in the background.
 
 ## Recently completed
+
+- **`api-contract` — pin the REST API contract for the psf-memo-cli port
+  (docs, 2026-10-11):** new `dev-docs/api-contract.md` documents every public
+  and admin endpoint, the response envelope and error statuses/messages,
+  amount and identity rules, status vocabularies, the URL-bearing-field
+  presence matrix, and the `HostingApi` module boundary (documented, not
+  published, per the user's decision). Corrected the stale paid `check-payment`
+  example in `bch-file-hosting-api/examples/README.md` (it omitted `viewUrl`).
+  No Gherkin. Pipeline commits: specifier `ab4ed3e`, architect `baa2651`
+  (three factual corrections against the code, verification record, and
+  summary), merged to `master` at `baa2651` (fast-forward).
+  `docs/reviews/api-contract-verification.json` reports `pass` with `git_sha`
+  `ab4ed3e` (the docs-only review tip is current per gotcha #7): unit 482,
+  property 43, acceptance all 9 suites, lint ok. Independent post-merge check:
+  all 9 acceptance suites. Architect summary:
+  `docs/reviews/api-contract-summary.md`. Downstream reply points: default
+  `http://localhost:5050`; adapter documented not published.
 
 - **CLI parity with the web UI (cli, 2026-10-11):** `cli-view-link` (view URL in
   file-check/file-host/already-hosted), `cli-quote-details` (file-upload name,

@@ -156,6 +156,8 @@ function createWorld () {
     adminError: null,
     retryResult: null,
     paymentResult: null,
+    uploadResult: null,
+    hostedFile: null,
     payments: null,
     invoice: null,
     wallet: null
@@ -352,6 +354,19 @@ function findFeedFile (world, cid) {
 function assertFeedField (file, field, expected) {
   if (file[field] !== expected) {
     throw new Error(`expected feed file ${file.cid} ${field} '${expected}', got '${file[field]}'`)
+  }
+}
+
+function assertLinkField (result, field, expected) {
+  if (!result || result[field] !== expected) {
+    throw new Error(`expected ${field} '${expected}', got '${result && result[field]}'`)
+  }
+}
+
+function assertGatewayUrl (result, expected) {
+  const urls = (result && result.gatewayUrls) || []
+  if (!urls.includes(expected)) {
+    throw new Error(`expected a gateway URL '${expected}', got ${JSON.stringify(urls)}`)
   }
 }
 
@@ -609,11 +624,13 @@ const handlers = [
     }
   },
   {
-    pattern: /^a paid file with CID ([A-Za-z0-9]+) and filename ([^ ]+)$/,
-    run (match, _example, world) {
+    pattern: /^a paid file with CID (<[A-Za-z0-9_]+>|[A-Za-z0-9]+) and filename (<[A-Za-z0-9_]+>|\S+)$/,
+    run (match, example, world) {
+      const cid = resolveValue(match[1], example)
+      const filename = resolveValue(match[2], example)
       world.file = {
-        cid: match[1],
-        filename: match[2],
+        cid,
+        filename,
         sizeBytes: 1024,
         status: 'staged',
         paymentAddress: PAID_ADDRESS,
@@ -626,8 +643,8 @@ const handlers = [
         status: 'awaitingPayment',
         priceSats: 2000,
         hdIndex: 1,
-        cid: match[1],
-        filename: match[2],
+        cid,
+        filename,
         sizeBytes: 1024,
         quoteExpiresAt: '2099-01-01T00:00:00.000Z'
       }
@@ -1188,6 +1205,80 @@ const handlers = [
     run (match, example, world) {
       const file = findFeedFile(world, exampleValue(example, match[1]))
       assertFeedField(file, 'viewUrl', exampleValue(example, match[2]))
+    }
+  },
+  {
+    pattern: /^an already hosted file with CID (<[A-Za-z0-9_]+>|[A-Za-z0-9]+) and filename (<[A-Za-z0-9_]+>|\S+)$/,
+    run (match, example, world) {
+      world.hostedFile = {
+        cid: resolveValue(match[1], example),
+        filename: resolveValue(match[2], example),
+        sizeBytes: 1024,
+        status: 'pinned',
+        paymentAddress: PAID_ADDRESS,
+        pins: [],
+        paidAt: '2026-10-09T00:00:00.000Z',
+        hostedUntil: '2027-10-09T00:00:00.000Z'
+      }
+    }
+  },
+  {
+    pattern: /^I upload that hosted file$/,
+    async run (_match, _example, world) {
+      const file = world.hostedFile
+      const useCases = new FileUseCases({
+        adapters: {
+          config: { ...world.pinningConfig, maxFileSizeBytes: 100000000 },
+          wallet: { getUsdPerBch: async () => 400, getKeyPair: async () => ({ cashAddress: UPLOAD_ADDRESS, hdIndex: 1 }) },
+          ipfs: { addFile: async () => file.cid },
+          localdb: {
+            invoices: { create: async () => {}, get: async () => null },
+            files: { get: async () => file, put: async () => {} },
+            meta: { nextHdIndex: async () => 1 }
+          },
+          pinning: buildLighthouseRegistry(world),
+          logger: { info: () => {}, error: () => {} }
+        }
+      })
+      // The acceptance run never writes a temp file; keep the cleanup a no-op.
+      useCases.unlink = async () => {}
+      world.uploadResult = await useCases.uploadAndQuote({ filePath: '/ignored', filename: file.filename, sizeBytes: file.sizeBytes })
+    }
+  },
+  {
+    pattern: /^the payment result reports the download URL <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      assertLinkField(world.paymentResult, 'downloadUrl', exampleValue(example, match[1]))
+    }
+  },
+  {
+    pattern: /^the payment result reports the view URL <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      assertLinkField(world.paymentResult, 'viewUrl', exampleValue(example, match[1]))
+    }
+  },
+  {
+    pattern: /^the payment result reports the gateway URL <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      assertGatewayUrl(world.paymentResult, exampleValue(example, match[1]))
+    }
+  },
+  {
+    pattern: /^the upload result reports the download URL <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      assertLinkField(world.uploadResult, 'downloadUrl', exampleValue(example, match[1]))
+    }
+  },
+  {
+    pattern: /^the upload result reports the view URL <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      assertLinkField(world.uploadResult, 'viewUrl', exampleValue(example, match[1]))
+    }
+  },
+  {
+    pattern: /^the upload result reports the gateway URL <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      assertGatewayUrl(world.uploadResult, exampleValue(example, match[1]))
     }
   }
 ]

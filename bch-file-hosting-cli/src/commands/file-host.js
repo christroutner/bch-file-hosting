@@ -58,6 +58,7 @@ class FileHost extends FileUpload {
       status: 'paid',
       cid: paid.cid,
       downloadUrl: paid.downloadUrl,
+      viewUrl: paid.viewUrl,
       gatewayUrls: paid.gatewayUrls || [],
       txid,
       paymentAddress: quote.paymentAddress
@@ -86,11 +87,13 @@ class FileHost extends FileUpload {
 
     if (result.status === 'alreadyHosted') {
       this.output(`Download URL: ${result.downloadUrl}`)
+      this.output(`View URL: ${result.viewUrl}`)
       return
     }
 
     this.output(`CID: ${result.cid}`)
     this.output(`Download URL: ${result.downloadUrl}`)
+    this.output(`View URL: ${result.viewUrl}`)
     for (const url of result.gatewayUrls || []) {
       this.output(`Gateway URL: ${url}`)
     }

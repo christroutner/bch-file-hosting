@@ -83,18 +83,21 @@ describe('#file-upload', () => {
       assert.instanceOf(uploadArgs.buffer, Buffer)
     })
 
-    it('should print the download URL and no payment address when already hosted', async () => {
+    it('should print the download and view URLs and no payment address when already hosted', async () => {
       const downloadUrl = 'http://localhost:5050/download/bafy-already'
+      const viewUrl = 'http://localhost:5050/view/bafy-already/photo.jpg'
       uut.hostingApi.upload.resolves({
         success: true,
         alreadyHosted: true,
-        downloadUrl
+        downloadUrl,
+        viewUrl
       })
 
       const result = await uut.run({ file: fixture })
 
       assert.equal(result, 0)
       assert.include(output.join('\n'), downloadUrl)
+      assert.include(output.join('\n'), `View URL: ${viewUrl}`)
       assert.notInclude(output.join('\n'), 'Payment address')
     })
 

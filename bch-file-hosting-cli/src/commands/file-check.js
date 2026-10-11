@@ -32,6 +32,7 @@ class FileCheck extends FileCommand {
     if (result.status === 'paid') {
       this.output(`CID: ${result.cid}`)
       this.output(`Download URL: ${result.downloadUrl}`)
+      this.output(`View URL: ${result.viewUrl}`)
       for (const url of result.gatewayUrls || []) {
         this.output(`Gateway URL: ${url}`)
       }

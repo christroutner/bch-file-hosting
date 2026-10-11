@@ -393,6 +393,12 @@ const handlers = [
     }
   },
   {
+    pattern: /^the hosting API reports the view URL <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.apiResult.viewUrl = exampleValue(example, match[1])
+    }
+  },
+  {
     pattern: /^the hosting API reports the gateway URL <([A-Za-z0-9_]+)>$/,
     run (match, example, world) {
       world.apiResult.gatewayUrls = [exampleValue(example, match[1])]

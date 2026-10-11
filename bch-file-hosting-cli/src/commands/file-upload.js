@@ -55,6 +55,7 @@ class FileUpload extends FileCommand {
 
     if (result.alreadyHosted) {
       this.output(`Already hosted: ${result.downloadUrl}`)
+      this.output(`View URL: ${result.viewUrl}`)
       return
     }
 

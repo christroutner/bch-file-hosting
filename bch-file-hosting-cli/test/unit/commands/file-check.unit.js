@@ -62,6 +62,7 @@ describe('#file-check', () => {
         status: 'paid',
         cid: 'bafy-paid',
         downloadUrl: 'http://localhost:5050/download/bafy-paid',
+        viewUrl: 'http://localhost:5050/view/bafy-paid/photo.jpg',
         gatewayUrls: ['https://ipfs.io/ipfs/bafy-paid/photo.jpg']
       })
 
@@ -69,8 +70,9 @@ describe('#file-check', () => {
 
       assert.equal(result, 0)
       assert.include(output.join('\n'), 'bafy-paid')
-      assert.include(output.join('\n'), 'http://localhost:5050/download/bafy-paid')
-      assert.include(output.join('\n'), 'https://ipfs.io/ipfs/bafy-paid/photo.jpg')
+      assert.include(output.join('\n'), 'Download URL: http://localhost:5050/download/bafy-paid')
+      assert.include(output.join('\n'), 'View URL: http://localhost:5050/view/bafy-paid/photo.jpg')
+      assert.include(output.join('\n'), 'Gateway URL: https://ipfs.io/ipfs/bafy-paid/photo.jpg')
 
       sinon.assert.calledWith(uut.hostingApi.checkPayment, { paymentAddress: ADDRESS })
     })

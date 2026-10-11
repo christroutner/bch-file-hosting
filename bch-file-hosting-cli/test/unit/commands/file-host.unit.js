@@ -15,6 +15,7 @@ import WalletService from '../../../src/lib/wallet-service.js'
 const ADDRESS = 'bitcoincash:qinvoiceaddress00000000000000000000000000'
 const CID = 'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
 const DOWNLOAD_URL = `http://localhost:5050/download/${CID}`
+const VIEW_URL = `http://localhost:5050/view/${CID}/photo.jpg`
 const GATEWAY_URL = `https://ipfs.io/ipfs/${CID}/photo.jpg`
 const TXID = '1111111111111111111111111111111111111111111111111111111111111111'
 
@@ -41,6 +42,7 @@ describe('#file-host', () => {
     status: 'paid',
     cid: CID,
     downloadUrl: DOWNLOAD_URL,
+    viewUrl: VIEW_URL,
     gatewayUrls: [GATEWAY_URL]
   }
 
@@ -133,6 +135,7 @@ describe('#file-host', () => {
       const printed = output.join('\n')
       assert.include(printed, `CID: ${CID}`)
       assert.include(printed, `Download URL: ${DOWNLOAD_URL}`)
+      assert.include(printed, `View URL: ${VIEW_URL}`)
       assert.include(printed, `Gateway URL: ${GATEWAY_URL}`)
 
       sinon.assert.calledWith(hostingApi.upload, {
@@ -148,18 +151,20 @@ describe('#file-host', () => {
       sinon.assert.calledOnceWithExactly(uut.sleep, 0)
     })
 
-    it('should not pay an already hosted file and print its download URL', async () => {
+    it('should not pay an already hosted file and print its links', async () => {
       hostingApi.upload.resolves({
         success: true,
         alreadyHosted: true,
         cid: CID,
-        downloadUrl: DOWNLOAD_URL
+        downloadUrl: DOWNLOAD_URL,
+        viewUrl: VIEW_URL
       })
 
       const result = await uut.run({ file: './photo.jpg', name: 'payer' })
 
       assert.equal(result, 0)
       assert.include(output.join('\n'), `Download URL: ${DOWNLOAD_URL}`)
+      assert.include(output.join('\n'), `View URL: ${VIEW_URL}`)
       sinon.assert.notCalled(uut.walletService.sendSats)
       sinon.assert.notCalled(walletStore.read)
     })
@@ -243,6 +248,7 @@ describe('#file-host', () => {
       const parsed = JSON.parse(output[0])
       assert.equal(parsed.cid, CID)
       assert.equal(parsed.downloadUrl, DOWNLOAD_URL)
+      assert.equal(parsed.viewUrl, VIEW_URL)
       assert.equal(parsed.txid, TXID)
     })
 
@@ -263,9 +269,10 @@ describe('#file-host', () => {
 
   describe('#report', () => {
     it('should print no gateway URLs when the result has none', () => {
-      uut.report({ status: 'paid', cid: CID, downloadUrl: DOWNLOAD_URL }, {})
+      uut.report({ status: 'paid', cid: CID, downloadUrl: DOWNLOAD_URL, viewUrl: VIEW_URL }, {})
 
       assert.include(output.join('\n'), `Download URL: ${DOWNLOAD_URL}`)
+      assert.include(output.join('\n'), `View URL: ${VIEW_URL}`)
       assert.notInclude(output.join('\n'), 'Gateway URL')
     })
   })

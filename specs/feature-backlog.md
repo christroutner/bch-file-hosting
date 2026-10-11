@@ -103,7 +103,13 @@ None.
   added five intrinsic `file-feed` survivors: the invalid `limit` values
   (`10→11`, `0→-5`, `101→109`, `abc→Abc`) all map to the same 422 message, and
   `bad_cursor` is any non-cursor token; the exact invalid value is not
-  load-bearing.
+  load-bearing. The `wallet-wif-flag` architect added: `Wallet Source - 3` never
+  asserts the printed transaction, so its `api_txid` cells survive (2) — add
+  `Then the command prints the transaction <printed_txid>` and a `printed_txid`
+  column (the fix `cli-host-txid` applied to `File Host - 1`); and the
+  `hidden_wif` hygiene column is a redundant copy of the `wif` value (6
+  survivors) — assert against the `wif` value instead, or accept the documented
+  survivors.
 - **Hardening follow-up (`web-image-link-rel`):** the image gateway link sets
   `target="_blank"` without `rel`; every other `_blank` anchor in
   `bch-file-hosting-web` uses `rel="noreferrer"`. Add `rel="noreferrer"` (with
@@ -126,15 +132,10 @@ None.
 Source: `psf-memo/psf-memo-cli/dev-docs/bch-file-hosting-cli-request.md`
 (2026-10-11). These prepare the CLI/API for the phase 9 psf-memo port. Ordered
 by what the port depends on; priorities are P1 (unblocks the port), P2
-(correctness/reuse), P3 (stability/optional). `api-contract` and
-`web-hosting-api-url` (P1), `cli-hosting-api-fetch` and `hosting-api-reuse`
-(P2; the latter documented in `dev-docs/api-contract.md` §6 per the user's
-decision), and `links-contract` (P3) are complete. Only the optional
-`wallet-wif-flag` remains.
-
-- **`wallet-wif-flag` (cli, P3, optional):** accept `--wif <wif>` beside
-  `-n <name>` on the wallet commands to match `psf-memo-cli`'s wallet
-  resolution; validate mutual exclusion and never print the WIF. Optional.
+(correctness/reuse), P3 (stability/optional). All items are complete:
+`api-contract` and `web-hosting-api-url` (P1), `cli-hosting-api-fetch` and
+`hosting-api-reuse` (P2; the latter documented in `dev-docs/api-contract.md`
+§6 per the user's decision), and `links-contract` and `wallet-wif-flag` (P3).
 
 ## Needs a decision from the user
 
@@ -147,6 +148,26 @@ decision), and `links-contract` (P3) are complete. Only the optional
   pin), and the upload+verify runs in the background.
 
 ## Recently completed
+
+- **`wallet-wif-flag` — accept a WIF wallet source beside a wallet name
+  (cli, 2026-10-11):** `wallet-balance`, `file-pay`, and `file-host` now accept
+  `--wif <wif>` as an alternative to `-n <name>`, matching `psf-memo-cli`'s
+  `resolveWalletSource`: exactly one source is required (`You must specify a
+  wallet name with the -n flag or a WIF with the --wif flag.` / `Specify either
+  a wallet name (-n) or a WIF (--wif), not both.`), and the WIF is never printed.
+  `wallet-create` stays name-only. Spec `wallet-source.feature` (4 scenarios, 8
+  executions) plus the combined usage message in the three existing wallet
+  features. Pipeline commits: specifier `afcdb13`, coder `734f9aa`, refactorer
+  `54ba55a`, architect `a5dc711` (verification `git_sha`) and `4ed32c5` (review +
+  docs), merged to `master` at `4ed32c5` (fast-forward).
+  `docs/reviews/wallet-wif-flag-verification.json` reports `pass`: unit 136,
+  property 72, acceptance all 10 suites, lint ok. Independent post-merge check:
+  all 10 CLI acceptance suites (8 wallet-source executions). Soft Gherkin: 30/50
+  killed in `wallet-source`; survivors are the intrinsic stubbed-WIF, hygiene,
+  and `request_name` columns, plus two fixable `api_txid` cells and the redundant
+  `hidden_wif` column (see the spec-quality follow-ups). Architect summary:
+  `docs/reviews/wallet-wif-flag-summary.md`. This completes the psf-memo-cli
+  request.
 
 - **`links-contract` — lock the hosted link fields with acceptance assertions
   (api, 2026-10-11):** new `bch-file-hosting-api/specs/links-contract.feature`
@@ -161,8 +182,8 @@ decision), and `links-contract` (P3) are complete. Only the optional
   property 43, acceptance all 10 suites, lint ok. Independent post-merge check:
   all 10 API acceptance suites (4 links-contract executions). Soft Gherkin
   mutation 20/20 killed, 0 survived. Architect summary:
-  `docs/reviews/links-contract-summary.md`. This completes the required items
-  of the psf-memo-cli request; only the optional `wallet-wif-flag` remains.
+  `docs/reviews/links-contract-summary.md`. This completed the required items of
+  the psf-memo-cli request; the optional `wallet-wif-flag` followed.
 
 - **`cli-hosting-api-fetch` — call the CLI transport with the global receiver
   (cli, 2026-10-11):** `HostingApi`'s constructor now stores

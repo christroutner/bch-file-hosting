@@ -3,9 +3,9 @@
 
   Invariants: the command maps outcomes to exit codes (0 quote, 1 runtime
   error, 2 usage error); a quote always prints its price and payment address;
-  an already-hosted result always prints its download URL and never a payment
-  address; and --json always emits exactly one JSON object that round-trips
-  the API result.
+  an already-hosted result always prints its download URL and view URL and
+  never a payment address; and --json always emits exactly one JSON object that
+  round-trips the API result.
 
   Kept separate from the unit suite. Per the constitution, property tests do not
   contribute to unit coverage, CRAP, Gherkin acceptance, or mutation runs.
@@ -118,12 +118,16 @@ describe('#file-upload.property.js', () => {
     forAllAsync({
       seed: 3,
       runs: 200,
-      generate: (random) => ({
-        success: true,
-        alreadyHosted: true,
-        cid: `bafy${randomString(random, 12, 40)}`,
-        downloadUrl: `http://localhost:5050/download/bafy${randomString(random, 12, 40)}`
-      }),
+      generate: (random) => {
+        const cid = `bafy${randomString(random, 12, 40)}`
+        return {
+          success: true,
+          alreadyHosted: true,
+          cid,
+          downloadUrl: `http://localhost:5050/download/${cid}`,
+          viewUrl: `http://localhost:5050/view/${cid}/photo.bin`
+        }
+      },
       property: async (result) => {
         const { command, output } = build(async () => result)
 
@@ -132,6 +136,7 @@ describe('#file-upload.property.js', () => {
 
         assert.equal(code, 0)
         assert.include(text, result.downloadUrl)
+        assert.include(text, `View URL: ${result.viewUrl}`)
         assert.notInclude(text, 'Payment address')
       }
     })

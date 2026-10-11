@@ -2,10 +2,10 @@
   Property tests for the file-check command (src/commands/file-check.js).
 
   Invariants: the command maps outcomes to exit codes (0 result, 1 runtime
-  error, 2 usage error); a paid result always prints its CID, download URL, and
-  every gateway URL; an unpaid result always prints received/required satoshis
-  and the quote expiry; any other status prints its status; and --json always
-  emits exactly one JSON object that round-trips the API result.
+  error, 2 usage error); a paid result always prints its CID, download URL, view
+  URL, and every gateway URL; an unpaid result always prints received/required
+  satoshis and the quote expiry; any other status prints its status; and --json
+  always emits exactly one JSON object that round-trips the API result.
 
   Kept separate from the unit suite. Per the constitution, property tests do not
   contribute to unit coverage, CRAP, Gherkin acceptance, or mutation runs.
@@ -36,6 +36,7 @@ function randomCid (random) {
 }
 
 function randomPaid (random) {
+  const cid = randomCid(random)
   const gatewayUrls = Array.from(
     { length: integerBetween(random, 0, 3) },
     () => `https://${randomString(random, 3, 10)}.example/ipfs/${randomCid(random)}/${randomString(random, 1, 8)}.bin`
@@ -44,8 +45,9 @@ function randomPaid (random) {
   return {
     success: true,
     status: 'paid',
-    cid: randomCid(random),
-    downloadUrl: `http://localhost:5050/download/${randomCid(random)}`,
+    cid,
+    downloadUrl: `http://localhost:5050/download/${cid}`,
+    viewUrl: `http://localhost:5050/view/${cid}/${randomString(random, 1, 8)}.bin`,
     gatewayUrls
   }
 }
@@ -118,6 +120,7 @@ describe('#file-check.property.js', () => {
         assert.equal(code, 0)
         assert.include(text, `CID: ${result.cid}`)
         assert.include(text, `Download URL: ${result.downloadUrl}`)
+        assert.include(text, `View URL: ${result.viewUrl}`)
         for (const url of result.gatewayUrls) {
           assert.include(text, `Gateway URL: ${url}`)
         }

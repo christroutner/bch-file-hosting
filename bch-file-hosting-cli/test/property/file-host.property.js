@@ -3,9 +3,11 @@
 
   Invariants: the command uploads, pays exactly the quote's priceSats from the
   named wallet, and polls check-payment until the payment is visible; it sleeps
-  only between poll attempts; an already-hosted upload short-circuits without a
-  wallet read or payment; a never-confirmed payment fails after the configured
-  attempts; and --json emits exactly one JSON object that round-trips the result.
+  only between poll attempts; a paid result prints its download and view URLs;
+  an already-hosted upload short-circuits without a wallet read or payment and
+  prints its download and view URLs; a never-confirmed payment fails after the
+  configured attempts; and --json emits exactly one JSON object that round-trips
+  the result.
 
   Kept separate from the unit suite. Per the constitution, property tests do not
   contribute to unit coverage, CRAP, Gherkin acceptance, or mutation runs.
@@ -46,6 +48,7 @@ function randomPaid (random, quote) {
     status: 'paid',
     cid: quote.cid,
     downloadUrl: `http://localhost:5050/download/${quote.cid}`,
+    viewUrl: `http://localhost:5050/view/${quote.cid}/${randomString(random, 1, 8, ALPHABET)}.bin`,
     gatewayUrls: Array.from(
       { length: integerBetween(random, 0, 2) },
       () => `https://gw.example/ipfs/${quote.cid}`
@@ -121,6 +124,7 @@ describe('#file-host.property.js', () => {
           status: 'paid',
           cid: paid.cid,
           downloadUrl: paid.downloadUrl,
+          viewUrl: paid.viewUrl,
           gatewayUrls: paid.gatewayUrls || [],
           txid,
           paymentAddress: quote.paymentAddress
@@ -170,6 +174,7 @@ describe('#file-host.property.js', () => {
         const text = output.join('\n')
         assert.include(text, `CID: ${paid.cid}`)
         assert.include(text, `Download URL: ${paid.downloadUrl}`)
+        assert.include(text, `View URL: ${paid.viewUrl}`)
         for (const url of paid.gatewayUrls || []) {
           assert.include(text, `Gateway URL: ${url}`)
         }
@@ -202,17 +207,23 @@ describe('#file-host.property.js', () => {
       runs: 100,
       generate: (random) => {
         const cid = randomCid(random)
-        return { cid, downloadUrl: `http://localhost:5050/download/${cid}` }
+        return {
+          cid,
+          downloadUrl: `http://localhost:5050/download/${cid}`,
+          viewUrl: `http://localhost:5050/view/${cid}/notes.bin`
+        }
       },
-      property: async ({ cid, downloadUrl }) => {
+      property: async ({ cid, downloadUrl, viewUrl }) => {
         const { command, calls, output } = build({
-          quote: { success: true, alreadyHosted: true, cid, downloadUrl }
+          quote: { success: true, alreadyHosted: true, cid, downloadUrl, viewUrl }
         })
 
         const code = await command.run({ file: './upload.bin', name: 'payer' })
+        const text = output.join('\n')
 
         assert.equal(code, 0)
-        assert.include(output.join('\n'), `Download URL: ${downloadUrl}`)
+        assert.include(text, `Download URL: ${downloadUrl}`)
+        assert.include(text, `View URL: ${viewUrl}`)
         assert.lengthOf(calls.read, 0)
         assert.lengthOf(calls.send, 0)
         assert.lengthOf(calls.check, 0)

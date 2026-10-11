@@ -2,9 +2,12 @@
   Global configuration settings for this app.
 */
 
+import { resolveApiUrl } from '../services/api-url'
+
 const config = {
-  // Base URL of the bch-file-hosting REST API.
-  apiUrl: process.env.REACT_APP_API_URL || 'http://localhost:5050',
+  // Base URL of the bch-file-hosting REST API, resolved from the environment:
+  // HOSTING_API_URL, then REACT_APP_HOSTING_API_URL, then REACT_APP_API_URL.
+  apiUrl: resolveApiUrl(process.env),
 
   // Default IPFS CID for the app. This will be overwritten by dynamic lookup.
   ipfsCid: 'bafybeibya4cwro6rgqfaazqxckcchy6qo5sz2aqc4dx7ptcvpns5peqcz4',

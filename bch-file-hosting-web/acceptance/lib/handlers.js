@@ -23,6 +23,7 @@ const FileUploadPage = require('../../src/services/file-upload-page')
 const FileStatusPage = require('../../src/services/file-status-page')
 const DashboardPage = require('../../src/services/dashboard-page')
 const HostingApi = require('../../src/services/hosting-api')
+const { resolveApiUrl } = require('../../src/services/api-url')
 const UploadQuoteView = require('../../src/components/app-body/file-hosting/upload-quote-view')
 const FileStatusView = require('../../src/components/app-body/file-status/file-status-view')
 const DashboardView = require('../../src/components/app-body/dashboard/dashboard-view')
@@ -72,7 +73,9 @@ function createWorld () {
     checkError: null,
     checkResults: [],
     pendingPaid: null,
-    browserTransport: null
+    browserTransport: null,
+    apiEnv: {},
+    resolvedApiUrl: null
   }
 }
 
@@ -991,6 +994,52 @@ const handlers = [
       const html = renderPage(world)
       if (!visibleText(html).includes(expected)) {
         throw new Error(`Rendered page does not show "${expected}".`)
+      }
+    }
+  },
+  {
+    name: 'a clean hosting environment',
+    pattern: /^a clean hosting environment$/,
+    run (m, example, world) {
+      world.apiEnv = {}
+      world.resolvedApiUrl = null
+    }
+  },
+  {
+    name: 'the canonical HOSTING_API_URL is set',
+    pattern: /^the canonical HOSTING_API_URL is (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.apiEnv.HOSTING_API_URL = resolveParam(m[1], example)
+    }
+  },
+  {
+    name: 'the browser build mirror is set',
+    pattern: /^the browser build mirror REACT_APP_HOSTING_API_URL is (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.apiEnv.REACT_APP_HOSTING_API_URL = resolveParam(m[1], example)
+    }
+  },
+  {
+    name: 'the deprecated fallback is set',
+    pattern: /^the deprecated fallback REACT_APP_API_URL is (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      world.apiEnv.REACT_APP_API_URL = resolveParam(m[1], example)
+    }
+  },
+  {
+    name: 'the hosting web app resolves its API base URL',
+    pattern: /^the hosting web app resolves its API base URL$/,
+    run (m, example, world) {
+      world.resolvedApiUrl = resolveApiUrl(world.apiEnv)
+    }
+  },
+  {
+    name: 'the resolved API base URL is',
+    pattern: /^the resolved API base URL is (<[A-Za-z0-9_]+>)$/,
+    run (m, example, world) {
+      const expected = resolveParam(m[1], example)
+      if (world.resolvedApiUrl !== expected) {
+        throw new Error(`Expected the resolved API base URL to be ${expected}, got ${world.resolvedApiUrl}.`)
       }
     }
   }

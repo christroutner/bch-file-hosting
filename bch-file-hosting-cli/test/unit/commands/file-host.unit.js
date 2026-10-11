@@ -137,6 +137,7 @@ describe('#file-host', () => {
       assert.include(printed, `Download URL: ${DOWNLOAD_URL}`)
       assert.include(printed, `View URL: ${VIEW_URL}`)
       assert.include(printed, `Gateway URL: ${GATEWAY_URL}`)
+      assert.include(printed, `Transaction: ${TXID}`)
 
       sinon.assert.calledWith(hostingApi.upload, {
         filename: 'photo.jpg',
@@ -268,11 +269,12 @@ describe('#file-host', () => {
   })
 
   describe('#report', () => {
-    it('should print no gateway URLs when the result has none', () => {
-      uut.report({ status: 'paid', cid: CID, downloadUrl: DOWNLOAD_URL, viewUrl: VIEW_URL }, {})
+    it('should print the paid transaction and no gateway URLs when the result has none', () => {
+      uut.report({ status: 'paid', cid: CID, downloadUrl: DOWNLOAD_URL, viewUrl: VIEW_URL, txid: TXID }, {})
 
       assert.include(output.join('\n'), `Download URL: ${DOWNLOAD_URL}`)
       assert.include(output.join('\n'), `View URL: ${VIEW_URL}`)
+      assert.include(output.join('\n'), `Transaction: ${TXID}`)
       assert.notInclude(output.join('\n'), 'Gateway URL')
     })
   })

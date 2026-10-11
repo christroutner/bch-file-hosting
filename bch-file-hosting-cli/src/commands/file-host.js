@@ -97,6 +97,7 @@ class FileHost extends FileUpload {
     for (const url of result.gatewayUrls || []) {
       this.output(`Gateway URL: ${url}`)
     }
+    this.output(`Transaction: ${result.txid}`)
   }
 }
 

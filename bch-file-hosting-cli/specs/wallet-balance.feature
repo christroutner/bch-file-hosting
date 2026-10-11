@@ -23,7 +23,7 @@ Feature: Wallet Balance
   Scenario: Wallet Balance - 2 a missing name is a usage error
     When I run wallet-balance with no name
     Then the exit code is 2
-    And stderr contains "You must specify a wallet name with the -n flag."
+    And stderr contains "You must specify a wallet name with the -n flag or a WIF with the --wif flag."
 
   Scenario Outline: Wallet Balance - 3 an unknown wallet is a runtime error
     Given no wallet named <request_name> exists

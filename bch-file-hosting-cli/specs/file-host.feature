@@ -68,7 +68,7 @@ Feature: File Host
   Scenario: File Host - 5 a missing wallet name is a usage error
     When I run file-host for the file ./photo.jpg with no wallet
     Then the exit code is 2
-    And stderr contains "You must specify a wallet name with the -n flag."
+    And stderr contains "You must specify a wallet name with the -n flag or a WIF with the --wif flag."
 
   Scenario: File Host - 6 a missing local file is a runtime error
     When I try file-host for the missing file ./absent.bin with the wallet payer

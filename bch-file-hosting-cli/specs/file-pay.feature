@@ -48,7 +48,7 @@ Feature: File Pay
   Scenario: File Pay - 5 a missing wallet name is a usage error
     When I run file-pay for the address bitcoincash:qinvoiceaddress00000000000000000000000000 with no wallet
     Then the exit code is 2
-    And stderr contains "You must specify a wallet name with the -n flag."
+    And stderr contains "You must specify a wallet name with the -n flag or a WIF with the --wif flag."
 
   Scenario Outline: File Pay - 6 an unknown wallet is a runtime error
     Given the hosting API reports an unpaid invoice

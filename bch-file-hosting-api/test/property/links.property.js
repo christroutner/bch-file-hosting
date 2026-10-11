@@ -6,7 +6,8 @@
   CID and the URL-encoded file name; each provider receives the raw CID and file
   name and its URL is kept only when the provider returns one; the download URL
   points at /download/<cid> and the view URL at /view/<cid>/<encoded filename>,
-  with no doubled slash when PUBLIC_URL ends with one.
+  with no doubled slash when PUBLIC_URL ends with one; the view URL parses back
+  to the original CID and file name.
 
   Kept separate from the unit suite. Per the constitution, property tests do not
   contribute to unit coverage, CRAP, Gherkin acceptance, or mutation runs.
@@ -113,6 +114,26 @@ describe('#links.property.js', () => {
 
         assert.equal(result.viewUrl, `http://localhost:5050/view/${cid}/${encodeURIComponent(filename)}`)
         assert.equal(result.downloadUrl, `http://localhost:5050/download/${cid}`)
+      }
+    })
+  })
+
+  it('should parse the view URL back to the original CID and file name', () => {
+    forAll({
+      seed: 5,
+      runs: 200,
+      generate: (random) => ({ cid: randomCid(random), filename: randomName(random) }),
+      property: ({ cid, filename }) => {
+        const result = buildLinks({
+          cid,
+          filename,
+          config: { publicUrl: 'http://localhost:5050', publicGateways: [] }
+        })
+
+        const segments = new URL(result.viewUrl).pathname.split('/').filter(Boolean)
+        assert.equal(segments[0], 'view')
+        assert.equal(segments[1], cid)
+        assert.equal(decodeURIComponent(segments.slice(2).join('/')), filename)
       }
     })
   })

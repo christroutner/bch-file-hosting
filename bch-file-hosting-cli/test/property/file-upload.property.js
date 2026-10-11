@@ -2,10 +2,11 @@
   Property tests for the file-upload command (src/commands/file-upload.js).
 
   Invariants: the command maps outcomes to exit codes (0 quote, 1 runtime
-  error, 2 usage error); a quote always prints its price and payment address;
-  an already-hosted result always prints its download URL and view URL and
-  never a payment address; and --json always emits exactly one JSON object that
-  round-trips the API result.
+  error, 2 usage error); a quote always prints its file name, size, price,
+  payment address, and expiry, and prints a separate billed size exactly when
+  billing rounds the size up; an already-hosted result always prints its
+  download URL and view URL and never a payment address; and --json always
+  emits exactly one JSON object that round-trips the API result.
 
   Kept separate from the unit suite. Per the constitution, property tests do not
   contribute to unit coverage, CRAP, Gherkin acceptance, or mutation runs.
@@ -47,12 +48,19 @@ function randomAddress (random) {
 }
 
 function randomQuote (random) {
+  const sizeBytes = integerBetween(random, 1, 100000000)
+  // Billing never bills less than the file size: the billed size is either the
+  // same (no separate line) or rounded up to at least the minimum billed size.
+  const billedBytes = random() < 0.5
+    ? sizeBytes
+    : Math.max(sizeBytes, integerBetween(random, 100000, 100000000))
+
   return {
     success: true,
     cid: `bafy${randomString(random, 12, 40)}`,
     filename: `${randomString(random, 1, 12)}.bin`,
-    sizeBytes: integerBetween(random, 1, 100000000),
-    billedBytes: integerBetween(random, 100000, 100000000),
+    sizeBytes,
+    billedBytes,
     priceSats: integerBetween(random, 2000, 1000000000),
     paymentAddress: randomAddress(random),
     quoteExpiresAt: '2026-10-10T00:00:00.000Z'
@@ -96,7 +104,7 @@ describe('#file-upload.property.js', () => {
     })
   })
 
-  it('should print the price and payment address for a fresh quote', () => {
+  it('should print the quote details, showing a billed size exactly when it differs', () => {
     forAllAsync({
       seed: 2,
       runs: 200,
@@ -108,8 +116,17 @@ describe('#file-upload.property.js', () => {
         const text = output.join('\n')
 
         assert.equal(code, 0)
-        assert.include(text, `${quote.priceSats} satoshis`)
-        assert.include(text, quote.paymentAddress)
+        assert.include(text, `File name: ${quote.filename}`)
+        assert.include(text, `Size: ${quote.sizeBytes} bytes`)
+        assert.include(text, `Price: ${quote.priceSats} satoshis`)
+        assert.include(text, `Payment address: ${quote.paymentAddress}`)
+        assert.include(text, `Quote expires: ${quote.quoteExpiresAt}`)
+
+        if (quote.billedBytes !== quote.sizeBytes) {
+          assert.include(text, `Billed size: ${quote.billedBytes} bytes`)
+        } else {
+          assert.notInclude(text, 'Billed size:')
+        }
       }
     })
   })

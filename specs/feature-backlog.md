@@ -58,19 +58,31 @@ web `/dashboard` view) is complete and merged at `76ec973e1c`. The
 
 ## In progress
 
-- **`file-view` — serve files for viewing through the API (api + web):** add
-  `GET /view/:cid` that streams images and videos inline (other types download)
-  and returns 404 unless the API server itself has the file pinned; add
-  `viewUrl` to the paid/already-hosted links and `downloadUrl`/`viewUrl` to the
-  public feed; switch the web paid/already-hosted result to a single API
-  `View:` link and point both dashboard links at the API, removing third-party
-  gateway links from the web views. Specs
-  `bch-file-hosting-api/specs/file-view.feature`, `file-feed.feature` scenario 8,
-  `web-upload.feature` scenario 2, `web-payment.feature` scenarios 3 and 8, and
-  `web-dashboard.feature` scenario 2. Awaiting user approval before handoff.
+- **`file-list` — CLI command for the public feed (cli):** add `file-list
+  [--limit <n>] [--cursor <c>] [--json]` that calls `GET /files` and prints each
+  hosted file's CID, name, size, paid time, hosting end, download URL, and view
+  URL, plus the next cursor for paging, mirroring the web dashboard. Spec
+  `bch-file-hosting-cli/specs/file-list.feature`; needs a new
+  `HostingApi.listFiles`. Awaiting user approval before handoff.
 
 ## Up next (in order)
 
+- **CLI parity with the web UI (cli):** the core workflow (upload, pay, check,
+  status, host, wallet) is at parity; these small gaps remain, to be specified
+  one at a time.
+  - **`cli-quote-details`:** `file-upload` prints only the price and payment
+    address; the web quote also shows the file name, size, and a separate billed
+    size when it differs (`web-upload-size`). Print `File name:`, `Size: <n>
+    bytes`, and `Billed size: <n> bytes` (and optionally `Quote expires:`).
+  - **`cli-view-link`:** `file-check` (paid), `file-host` (paid), and the
+    `alreadyHosted` result of `file-upload` print the download and gateway links
+    but not the API `viewUrl`; the web shows a `View:` link. Print `View URL:
+    <url>` (already present in the API responses).
+  - **`cli-host-txid`:** `file-host` carries the paying `txid` but the text
+    output omits it; the web paid result shows the transaction. Print
+    `Transaction: <txid>` (already present in `--json`).
+  - Out of parity scope: a terminal QR code and a formatted countdown are
+    web-UI affordances, not data features.
 - **`dashboard-loadmore-error` (web, small):** `DashboardPage.loadMore` replaces
   the whole view with the error state when a later page fails, dropping the files
   already shown. Decide whether to keep the list and show the error inline.
@@ -142,6 +154,18 @@ web `/dashboard` view) is complete and merged at `76ec973e1c`. The
 
 ## Recently completed
 
+- **`view-url-filename` — file-named view URLs (api + web, 2026-10-11):** the
+  API `viewUrl` now ends with the stored, URL-encoded file name
+  (`/view/<cid>/<name>`), and `GET /view/:cid/:filename` was added beside the
+  legacy `GET /view/:cid`; the path name is decorative (the content type still
+  comes from the stored record). Specs `file-feed.feature` scenario 8,
+  `file-view.feature` scenario 5, and the web view-URL examples. Merged to
+  `master` at `48ff30f`.
+- **`file-view` — serve files for viewing through the API (api + web,
+  2026-10-10):** `GET /view/:cid` streams images and videos inline (other types
+  download) and returns 404 unless the server holds a local pin; `viewUrl` was
+  added to the feed and paid/already-hosted payloads. Merged to `master` at
+  `d7816e3`.
 - **`web-build-compile` — fix the CRA production build and verify it
   (2026-10-09):** the merged web app failed `react-scripts build` because
   `eslint-config-react-app` runs an ES2015 environment, so `globalThis` (the

@@ -58,31 +58,10 @@ web `/dashboard` view) is complete and merged at `76ec973e1c`. The
 
 ## In progress
 
-- **`file-list` — CLI command for the public feed (cli):** add `file-list
-  [--limit <n>] [--cursor <c>] [--json]` that calls `GET /files` and prints each
-  hosted file's CID, name, size, paid time, hosting end, download URL, and view
-  URL, plus the next cursor for paging, mirroring the web dashboard. Spec
-  `bch-file-hosting-cli/specs/file-list.feature`; needs a new
-  `HostingApi.listFiles`. Awaiting user approval before handoff.
+None.
 
 ## Up next (in order)
 
-- **CLI parity with the web UI (cli):** the core workflow (upload, pay, check,
-  status, host, wallet) is at parity; these small gaps remain, to be specified
-  one at a time.
-  - **`cli-quote-details`:** `file-upload` prints only the price and payment
-    address; the web quote also shows the file name, size, and a separate billed
-    size when it differs (`web-upload-size`). Print `File name:`, `Size: <n>
-    bytes`, and `Billed size: <n> bytes` (and optionally `Quote expires:`).
-  - **`cli-view-link`:** `file-check` (paid), `file-host` (paid), and the
-    `alreadyHosted` result of `file-upload` print the download and gateway links
-    but not the API `viewUrl`; the web shows a `View:` link. Print `View URL:
-    <url>` (already present in the API responses).
-  - **`cli-host-txid`:** `file-host` carries the paying `txid` but the text
-    output omits it; the web paid result shows the transaction. Print
-    `Transaction: <txid>` (already present in `--json`).
-  - Out of parity scope: a terminal QR code and a formatted countdown are
-    web-UI affordances, not data features.
 - **`dashboard-loadmore-error` (web, small):** `DashboardPage.loadMore` replaces
   the whole view with the error state when a later page fails, dropping the files
   already shown. Decide whether to keep the list and show the error inline.
@@ -154,6 +133,19 @@ web `/dashboard` view) is complete and merged at `76ec973e1c`. The
 
 ## Recently completed
 
+- **CLI parity with the web UI (cli, 2026-10-11):** `cli-view-link` (view URL in
+  file-check/file-host/already-hosted), `cli-quote-details` (file-upload name,
+  size, conditional billed size, and expiry), and `cli-host-txid` (file-host
+  transaction) are complete and merged at `dc054f2`; `verify.sh cli` passes for
+  each. The CLI now mirrors the web's upload/pay/status/feed surfaces. A
+  terminal QR code and a formatted countdown remain intentionally out of scope,
+  as do the intrinsic `upload_path` survivors and the failing-scenario
+  `File Host - 2` `api_txid` cell.
+- **`file-list` — CLI public feed command (cli, 2026-10-11):** `file-list
+  [--limit] [--cursor] [--json]` calls `GET /files` (new
+  `HostingApi.listFiles`) and prints each hosted file's details and links plus
+  the next cursor, mirroring the web dashboard. Spec
+  `bch-file-hosting-cli/specs/file-list.feature`; merged at `ab9e5aa`.
 - **`view-url-filename` — file-named view URLs (api + web, 2026-10-11):** the
   API `viewUrl` now ends with the stored, URL-encoded file name
   (`/view/<cid>/<name>`), and `GET /view/:cid/:filename` was added beside the

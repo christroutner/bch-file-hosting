@@ -32,7 +32,8 @@ curl -s -F "file=@./photo.jpg" $API/files | tee quote.json | jq
 
 Files under 100 KB are billed as 100 KB, and every invoice is at least
 `MIN_INVOICE_SATS`. If the file is already hosted, `alreadyHosted` is `true`
-and the response contains the download links instead of a payment address.
+and the response contains the download, view, and gateway links instead of a
+payment address.
 
 ## 2. Pay the invoice
 
@@ -66,6 +67,7 @@ After payment:
   "receivedSats": 2000,
   "hostedUntil": "2027-10-08T12:00:00.000Z",
   "downloadUrl": "http://localhost:5050/download/bafybei...",
+  "viewUrl": "http://localhost:5050/view/bafybei.../photo.jpg",
   "gatewayUrls": ["https://ipfs.io/ipfs/bafybei.../photo.jpg", "https://dweb.link/ipfs/bafybei.../photo.jpg"]
 }
 ```

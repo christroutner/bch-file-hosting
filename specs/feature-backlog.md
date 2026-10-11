@@ -2,7 +2,7 @@
 
 **Status**: DRAFT
 **Owner**: specifier.
-**Last updated**: 2026-10-09
+**Last updated**: 2026-10-11
 
 Roadmap phases refer to `dev-docs/long-term-plan.md` (section 13). Decisions
 referenced as `Dn` are in its Decisions Log.
@@ -121,9 +121,53 @@ None.
   service set and asserts every `serviceDependencies` capability is provided, so
   the next added service cannot break startup silently.
 
+### Downstream request: psf-memo-cli port
+
+Source: `psf-memo/psf-memo-cli/dev-docs/bch-file-hosting-cli-request.md`
+(2026-10-11). These prepare the CLI/API for the phase 9 psf-memo port. Ordered
+by what the port depends on; priorities are P1 (unblocks the port), P2
+(correctness/reuse), P3 (stability/optional).
+
+- **`api-contract` (api/docs, P1):** commit `dev-docs/api-contract.md` with
+  every endpoint and method, request and response fields, status values
+  (`unpaid`/`paid`/`expired`; file `staged`/`pinning`/`pinned`/`pinFailed`/
+  `deleted`), HTTP error statuses and messages, and the explicit note that
+  `GET /files/:cid` returns metadata and pins but no
+  `downloadUrl`/`viewUrl`/`gatewayUrls` (those come from `check-payment`,
+  `alreadyHosted`, and `GET /files`). Docs-only, no Gherkin. Also corrects the
+  stale paid `viewUrl`-less example in `bch-file-hosting-api/examples/README.md`.
+- **`web-hosting-api-url` (web, P1):** make the web read the shared
+  `HOSTING_API_URL` name (with a documented CRA mirror) and one documented
+  default (`http://localhost:5050`), matching the CLI. See the decision below.
+- **`cli-hosting-api-fetch` (cli, P2):** bind the injected `fetch` to
+  `globalThis` in `HostingApi`'s constructor so `upload`, `checkPayment`,
+  `getStatus`, and `listFiles` all use the global receiver; pin it with a
+  receiver-sensitive unit/property test (the CLI counterpart to the merged
+  `web-upload-transport`). One CLI feature file.
+- **`hosting-api-reuse` (cli/docs, P2):** publish the `HostingApi` adapter as a
+  reusable ESM module or document its stable import boundary in
+  `dev-docs/api-contract.md`, so `psf-memo-cli` depends on it instead of
+  copying. Blocked on the decision below.
+- **`links-contract` (api, P3):** lock the URL-bearing fields with acceptance
+  assertions so `downloadUrl`, `viewUrl`, and `gatewayUrls` cannot silently
+  disappear from the paid and `alreadyHosted` payloads (and
+  `downloadUrl`/`viewUrl` from the feed). No behavior change expected.
+- **`wallet-wif-flag` (cli, P3, optional):** accept `--wif <wif>` beside
+  `-n <name>` on the wallet commands to match `psf-memo-cli`'s wallet
+  resolution; validate mutual exclusion and never print the WIF. Optional.
+
 ## Needs a decision from the user
 
-- None open. Q1 (expiry), Q2 (renewals), Q3 (OP_RETURN), and Q9 (late
+- **`hosting-api-reuse` — publish vs document the `HostingApi` adapter**
+  (psf-memo-cli request §4). The requester prefers a small published ESM
+  package, but that needs an npm scope/release channel; the fallback is a
+  committed `dev-docs/api-contract.md` that pins the module boundary.
+- **`web-hosting-api-url` — canonical name and legacy fallback** (request §1).
+  Proposed: `HOSTING_API_URL` is canonical, `REACT_APP_HOSTING_API_URL` is the
+  documented CRA mirror, and the documented default is `http://localhost:5050`.
+  Decide whether to keep `REACT_APP_API_URL` as a deprecated fallback or drop it
+  immediately.
+- Q1 (expiry), Q2 (renewals), Q3 (OP_RETURN), and Q9 (late
   payments/refunds) are decided in the long-term plan's Decisions Log
   (D26–D29); none needs new Gherkin. The `ipfs-public-node` provide-failure
   question is decided and implemented: `provide` is best-effort

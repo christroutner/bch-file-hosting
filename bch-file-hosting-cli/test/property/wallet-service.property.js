@@ -229,4 +229,45 @@ describe('#wallet-service.property.js', () => {
       }
     })
   })
+
+  it('should expose a WIF source as the secret with no HD path and a mnemonic with its path', () => {
+    forAll({
+      seed: 8,
+      runs: 200,
+      generate: (random) => ({
+        wif: randomString(random, 40, 52),
+        mnemonic: randomString(random, 1, 60),
+        hdPath: `m/44'/245'/0'/0/${integerBetween(random, 0, 100000)}`
+      }),
+      property: ({ wif, mnemonic, hdPath }) => {
+        const uut = new WalletService({ config, BchWallet: class {} })
+
+        assert.deepEqual(uut.walletSecret({ wif }), { secret: wif, hdPath: undefined })
+        assert.deepEqual(uut.walletSecret({ mnemonic, hdPath }), { secret: mnemonic, hdPath })
+      }
+    })
+  })
+
+  it('should derive a WIF wallet and read the balance from its own address', () => {
+    forAllAsync({
+      seed: 9,
+      runs: 200,
+      generate: (random) => ({
+        balance: integerBetween(random, 0, 1000000000),
+        wif: randomString(random, 40, 52)
+      }),
+      property: async ({ balance, wif }) => {
+        const { FakeBchWallet, state } = makeFakeWalletClass()
+        state.balance = balance
+        const uut = new WalletService({ config, BchWallet: FakeBchWallet })
+
+        const result = await uut.balanceSats({ wif })
+
+        assert.equal(result, balance)
+        assert.equal(state.instances[0].mnemonic, wif)
+        assert.isUndefined(state.instances[0].options.hdPath)
+        assert.equal(state.instances[0].balanceArgs.bchAddress, 'bitcoincash:qfake')
+      }
+    })
+  })
 })

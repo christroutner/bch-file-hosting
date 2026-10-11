@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "task": "links-contract",
+  "component": "bch-file-hosting-api",
+  "git_sha": "fa3ac2f34822e1c35179a682b1b2549f218c10e4",
+  "branch": "swarmforge-architect",
+  "timestamp": "2026-10-11T15:35:05.373Z",
+  "commands": [
+    {
+      "name": "unit",
+      "command": "npm test",
+      "exit": 0,
+      "duration_ms": 2324,
+      "summary": "482 passing"
+    },
+    {
+      "name": "property",
+      "command": "npm run test:property",
+      "exit": 0,
+      "duration_ms": 1112,
+      "summary": "43 passing"
+    },
+    {
+      "name": "acceptance",
+      "command": "npm run test:acceptance",
+      "exit": 0,
+      "duration_ms": 8008,
+      "summary": "all 10 acceptance suites passed"
+    },
+    {
+      "name": "lint",
+      "command": "npm run lint",
+      "exit": 0,
+      "duration_ms": 818,
+      "summary": "ok"
+    }
+  ],
+  "result": "pass"
+}

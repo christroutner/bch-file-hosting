@@ -2,7 +2,7 @@
 # {"version":1,"tested_at":"2026-10-11T13:44:24.757887162Z","feature_name":"File Upload","feature_path":"/home/trout/work/psf/code/ipfs/bch-file-hosting/.worktrees/architect/bch-file-hosting-cli/specs/file-upload.feature","background_hash":"57df058ce5b2389665c0858298e14a944734918f073b7b46d636b82f405169f2","implementation_hash":"unknown","scenarios":[]}
 # acceptance-mutation-manifest-end
 
-# File Upload - 1, File Upload - 2, File Upload - 3, File Upload - 4, File Upload - 5, File Upload - 6
+# File Upload - 1, File Upload - 2, File Upload - 3, File Upload - 4, File Upload - 5, File Upload - 6, File Upload - 7
 
 Feature: File Upload
 
@@ -11,15 +11,23 @@ Feature: File Upload
 
   Scenario Outline: File Upload - 1 a successful upload prints the quote
     Given the hosting API quotes <api_sats> satoshis at <api_address>
+    And the hosting API reports the file name <api_filename>
+    And the hosting API reports the file size <api_size>
+    And the hosting API reports the billed size <api_billed>
+    And the hosting API reports the quote expiry <api_expiry>
     When I run file-upload for the file <upload_path>
     Then the exit code is 0
+    And the command prints the file name <printed_filename>
+    And the command prints the size <printed_size> bytes
+    And the command prints the billed size <printed_billed> bytes
     And the command prints the price <printed_sats> satoshis
     And the command prints the payment address <printed_address>
+    And the command prints the quote expiry <printed_expiry>
 
     Examples:
-      | upload_path   | api_sats | api_address                                            | printed_sats | printed_address                                        |
-      | ./photo.jpg   | 2000     | bitcoincash:qquoteaddress00000000000000000000000000000 | 2000         | bitcoincash:qquoteaddress00000000000000000000000000000 |
-      | ./archive.tar | 62500    | bitcoincash:qotheraddress00000000000000000000000000000 | 62500        | bitcoincash:qotheraddress00000000000000000000000000000 |
+      | upload_path   | api_sats | api_address                                            | api_filename | api_size | api_billed | api_expiry               | printed_filename | printed_size | printed_billed | printed_sats | printed_address                                        | printed_expiry           |
+      | ./photo.jpg   | 2000     | bitcoincash:qquoteaddress00000000000000000000000000000 | photo.jpg    | 20000    | 100000     | 2026-10-10T00:00:00.000Z | photo.jpg        | 20000        | 100000         | 2000         | bitcoincash:qquoteaddress00000000000000000000000000000 | 2026-10-10T00:00:00.000Z |
+      | ./archive.tar | 62500    | bitcoincash:qotheraddress00000000000000000000000000000 | archive.tar  | 500      | 100000     | 2026-11-11T12:00:00.000Z | archive.tar      | 500          | 100000         | 62500        | bitcoincash:qotheraddress00000000000000000000000000000 | 2026-11-11T12:00:00.000Z |
 
   Scenario Outline: File Upload - 2 an already hosted file prints the links and no payment address
     Given the hosting API reports the file is already hosted at <api_download_url>
@@ -69,3 +77,21 @@ Feature: File Upload
       | upload_path   | api_sats | api_address                                            | json_sats | json_address                                           |
       | ./photo.jpg   | 2000     | bitcoincash:qquoteaddress00000000000000000000000000000 | 2000      | bitcoincash:qquoteaddress00000000000000000000000000000 |
       | ./archive.tar | 62500    | bitcoincash:qotheraddress00000000000000000000000000000 | 62500     | bitcoincash:qotheraddress00000000000000000000000000000 |
+
+  Scenario Outline: File Upload - 7 a file at or above the billing minimum prints no billed size
+    Given the hosting API quotes <api_sats> satoshis at <api_address>
+    And the hosting API reports the file name <api_filename>
+    And the hosting API reports the file size <api_size>
+    And the hosting API reports the billed size <api_billed>
+    When I run file-upload for the file <upload_path>
+    Then the exit code is 0
+    And the command prints the file name <printed_filename>
+    And the command prints the size <printed_size> bytes
+    And the command prints no billed size
+    And the command prints the price <printed_sats> satoshis
+    And the command prints the payment address <printed_address>
+
+    Examples:
+      | upload_path   | api_sats | api_address                                            | api_filename | api_size | api_billed | printed_filename | printed_size | printed_sats | printed_address                                        |
+      | ./photo.jpg   | 2500     | bitcoincash:qquoteaddress00000000000000000000000000000 | photo.jpg    | 1000000  | 1000000    | photo.jpg        | 1000000      | 2500         | bitcoincash:qquoteaddress00000000000000000000000000000 |
+      | ./archive.tar | 62500    | bitcoincash:qotheraddress00000000000000000000000000000 | archive.tar  | 25000000 | 25000000   | archive.tar      | 25000000     | 62500        | bitcoincash:qotheraddress00000000000000000000000000000 |

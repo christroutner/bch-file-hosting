@@ -187,4 +187,70 @@ describe('#hosting-api', () => {
       }
     })
   })
+
+  describe('#listFiles', () => {
+    it('GETs /files with no query when no limit or cursor is given', async () => {
+      const fetch = sandbox.stub().resolves({
+        ok: true,
+        status: 200,
+        json: async () => ({ success: true, files: [], nextCursor: null })
+      })
+      const uut = new HostingApi({ config, fetch })
+
+      const result = await uut.listFiles()
+
+      assert.deepEqual(result.files, [])
+      sinon.assert.calledOnce(fetch)
+      const [url, options] = fetch.firstCall.args
+      assert.equal(url, 'http://localhost:5050/files')
+      assert.equal(options.method, 'GET')
+    })
+
+    it('GETs /files with the limit and cursor as query parameters', async () => {
+      const fetch = sandbox.stub().resolves({
+        ok: true,
+        status: 200,
+        json: async () => ({ success: true, files: [], nextCursor: 'end' })
+      })
+      const uut = new HostingApi({ config, fetch })
+
+      await uut.listFiles({ limit: '5', cursor: 'next-token' })
+
+      const [url] = fetch.firstCall.args
+      assert.equal(url, 'http://localhost:5050/files?limit=5&cursor=next-token')
+    })
+
+    it('throws the API error message when the response is not ok', async () => {
+      const fetch = sandbox.stub().resolves({
+        ok: false,
+        status: 422,
+        json: async () => ({ success: false, error: 'Page limit must be an integer between 1 and 100' })
+      })
+      const uut = new HostingApi({ config, fetch })
+
+      try {
+        await uut.listFiles({ limit: '0' })
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.instanceOf(err, HostingApiError)
+        assert.equal(err.message, 'Page limit must be an integer between 1 and 100')
+      }
+    })
+
+    it('throws a generic message when the error body is not JSON', async () => {
+      const fetch = sandbox.stub().resolves({
+        ok: false,
+        status: 500,
+        json: async () => { throw new Error('not json') }
+      })
+      const uut = new HostingApi({ config, fetch })
+
+      try {
+        await uut.listFiles()
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.include(err.message, 'HTTP 500')
+      }
+    })
+  })
 })

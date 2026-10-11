@@ -19,6 +19,7 @@ import FileCheck from '../../src/commands/file-check.js'
 import FileStatus from '../../src/commands/file-status.js'
 import FilePay from '../../src/commands/file-pay.js'
 import FileHost from '../../src/commands/file-host.js'
+import FileList from '../../src/commands/file-list.js'
 import WalletCreate from '../../src/commands/wallet-create.js'
 import WalletBalance from '../../src/commands/wallet-balance.js'
 import WalletStore from '../../src/lib/wallet-store.js'
@@ -53,6 +54,27 @@ function expectedText (example, token) {
   return token
 }
 
+// A public-feed file as the hosting API would report it. `the hosting API feed
+// lists the ...` steps fill in the detail fields on the most recently added
+// file.
+function feedFile (cid, filename) {
+  return {
+    cid,
+    filename,
+    sizeBytes: 0,
+    status: 'pinned',
+    paidAt: null,
+    hostedUntil: null,
+    downloadUrl: '',
+    viewUrl: '',
+    pins: []
+  }
+}
+
+function lastFeedFile (world) {
+  return world.feedFiles[world.feedFiles.length - 1]
+}
+
 function createWorld () {
   const tmpDir = path.join(COMPONENT_ROOT, 'tmp', 'acceptance')
   fs.mkdirSync(tmpDir, { recursive: true })
@@ -78,7 +100,13 @@ function createWorld () {
     json: null,
     command: null,
     walletCreateResult: null,
-    walletBalance: 0
+    walletBalance: 0,
+    feedFiles: [],
+    feedNextPageFiles: [],
+    feedNextCursor: null,
+    receivedLimit: null,
+    receivedCursor: null,
+    shownCursor: null
   }
 
   world.hostingApi = {
@@ -96,6 +124,13 @@ function createWorld () {
       world.receivedCid = cid
       if (world.apiError) throw new Error(world.apiError)
       return world.apiResult
+    },
+    listFiles: async ({ limit, cursor } = {}) => {
+      world.receivedLimit = limit
+      world.receivedCursor = cursor
+      if (world.apiError) throw new Error(world.apiError)
+      if (cursor) return { success: true, files: world.feedNextPageFiles, nextCursor: null }
+      return { success: true, files: world.feedFiles, nextCursor: world.feedNextCursor }
     }
   }
 
@@ -156,6 +191,12 @@ const handlers = [
     pattern: /^a file-status command$/,
     run (_match, _example, world) {
       buildCommand(world, FileStatus)
+    }
+  },
+  {
+    pattern: /^a file-list command$/,
+    run (_match, _example, world) {
+      buildCommand(world, FileList)
     }
   },
   {
@@ -530,6 +571,181 @@ const handlers = [
       const status = exampleValue(example, match[2])
       if (!world.stdout.includes(`Pin: ${provider} ${status}`)) {
         throw new Error(`stdout did not print the pin ${provider} ${status}: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the hosting API feed lists a pinned file (\S+) named (\S+)$/,
+    run (match, example, world) {
+      world.feedFiles.push(feedFile(expectedText(example, match[1]), expectedText(example, match[2])))
+    }
+  },
+  {
+    pattern: /^the hosting API feed's next page lists a pinned file (\S+) named (\S+)$/,
+    run (match, example, world) {
+      world.feedNextPageFiles.push(feedFile(expectedText(example, match[1]), expectedText(example, match[2])))
+    }
+  },
+  {
+    pattern: /^the hosting API feed's next page cursor is (\S+)$/,
+    run (match, example, world) {
+      world.feedNextCursor = expectedText(example, match[1])
+    }
+  },
+  {
+    pattern: /^the hosting API feed lists the file size <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      lastFeedFile(world).sizeBytes = asInt(exampleValue(example, match[1]), match[1])
+    }
+  },
+  {
+    pattern: /^the hosting API feed lists the paid time <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      lastFeedFile(world).paidAt = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^the hosting API feed lists the hosting end <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      lastFeedFile(world).hostedUntil = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^the hosting API feed lists the download URL <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      lastFeedFile(world).downloadUrl = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^the hosting API feed lists the view URL <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      lastFeedFile(world).viewUrl = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^the hosting API rejects the feed with error <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.apiError = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^I run file-list$/,
+    async run (_match, _example, world) {
+      world.exitCode = await world.command.run({})
+    }
+  },
+  {
+    pattern: /^I run file-list with limit <([A-Za-z0-9_]+)>$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({ limit: exampleValue(example, match[1]) })
+    }
+  },
+  {
+    pattern: /^I run file-list with JSON output$/,
+    async run (_match, _example, world) {
+      world.exitCode = await world.command.run({ json: true })
+    }
+  },
+  {
+    pattern: /^I run file-list after the next page$/,
+    async run (_match, _example, world) {
+      world.exitCode = await world.command.run({ cursor: world.shownCursor })
+    }
+  },
+  {
+    pattern: /^the hosting API received the limit <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.receivedLimit !== expected) {
+        throw new Error(`expected the hosting API to receive limit ${expected}, got ${world.receivedLimit}`)
+      }
+    }
+  },
+  {
+    pattern: /^the hosting API received the cursor <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.receivedCursor !== expected) {
+        throw new Error(`expected the hosting API to receive cursor ${expected}, got ${world.receivedCursor}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the paid time <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (!world.stdout.includes(`Paid: ${expected}`)) {
+        throw new Error(`stdout did not print the paid time ${expected}: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the hosting end <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (!world.stdout.includes(`Hosting end: ${expected}`)) {
+        throw new Error(`stdout did not print the hosting end ${expected}: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the view URL <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (!world.stdout.includes(`View URL: ${expected}`)) {
+        throw new Error(`stdout did not print the view URL ${expected}: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the next cursor <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (!world.stdout.includes(`Next cursor: ${expected}`)) {
+        throw new Error(`stdout did not print the next cursor ${expected}: ${JSON.stringify(world.stdout)}`)
+      }
+      world.shownCursor = expected
+    }
+  },
+  {
+    pattern: /^the command prints the file names <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const names = exampleValue(example, match[1]).split(',').map((name) => name.trim())
+      let from = 0
+      for (const name of names) {
+        const at = world.stdout.indexOf(`File name: ${name}`, from)
+        if (at === -1) {
+          throw new Error(`stdout did not print the file name ${name} in order: ${JSON.stringify(world.stdout)}`)
+        }
+        from = at + name.length
+      }
+    }
+  },
+  {
+    pattern: /^the command prints "(.+)"$/,
+    run (match, example, world) {
+      const expected = expectedText(example, match[1])
+      if (!world.stdout.includes(expected)) {
+        throw new Error(`stdout did not print ${JSON.stringify(expected)}: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the JSON output lists the CIDs <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1]).split(',').map((cid) => cid.trim())
+      const actual = (world.json.files || []).map((file) => file.cid)
+      if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+        throw new Error(`expected JSON CIDs ${expected.join(',')}, got ${actual.join(',')}`)
+      }
+    }
+  },
+  {
+    pattern: /^the JSON output has the next cursor <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.json.nextCursor !== expected) {
+        throw new Error(`expected JSON next cursor ${expected}, got ${world.json.nextCursor}`)
       }
     }
   },

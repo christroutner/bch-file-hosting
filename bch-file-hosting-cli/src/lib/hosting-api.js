@@ -28,6 +28,7 @@ class HostingApi {
     this.upload = this.upload.bind(this)
     this.checkPayment = this.checkPayment.bind(this)
     this.getStatus = this.getStatus.bind(this)
+    this.listFiles = this.listFiles.bind(this)
   }
 
   // Upload a file buffer to POST /files and return the parsed quote response.
@@ -69,6 +70,26 @@ class HostingApi {
   // normalized by the URL parser and change the requested endpoint.
   async getStatus ({ cid } = {}) {
     const response = await this.fetch(`${this.config.apiUrl}/files/${encodeURIComponent(cid)}`, {
+      method: 'GET'
+    })
+    const body = await readJson(response)
+
+    if (!response.ok) {
+      throw new HostingApiError(errorMessage(response, body))
+    }
+
+    return body
+  }
+
+  // List the public feed at GET /files. The limit and cursor are optional; the
+  // cursor is opaque and must be passed back exactly as the feed returned it.
+  async listFiles ({ limit, cursor } = {}) {
+    const params = new URLSearchParams()
+    if (limit !== undefined) params.set('limit', limit)
+    if (cursor !== undefined) params.set('cursor', cursor)
+    const query = params.toString()
+
+    const response = await this.fetch(`${this.config.apiUrl}/files${query ? `?${query}` : ''}`, {
       method: 'GET'
     })
     const body = await readJson(response)

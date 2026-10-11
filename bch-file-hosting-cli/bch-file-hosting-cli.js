@@ -11,6 +11,7 @@ import { Command } from 'commander'
 import FileUpload from './src/commands/file-upload.js'
 import FileCheck from './src/commands/file-check.js'
 import FileStatus from './src/commands/file-status.js'
+import FileList from './src/commands/file-list.js'
 import FilePay from './src/commands/file-pay.js'
 import FileHost from './src/commands/file-host.js'
 import WalletCreate from './src/commands/wallet-create.js'
@@ -20,6 +21,7 @@ import WalletBalance from './src/commands/wallet-balance.js'
 const fileUpload = new FileUpload()
 const fileCheck = new FileCheck()
 const fileStatus = new FileStatus()
+const fileList = new FileList()
 const filePay = new FilePay()
 const fileHost = new FileHost()
 const walletCreate = new WalletCreate()
@@ -53,6 +55,15 @@ program.command('file-status')
   .option('--json', 'print the result as a single JSON object')
   .action(async (flags) => {
     process.exitCode = await fileStatus.run(flags)
+  })
+
+program.command('file-list')
+  .description('List the hosted files from the public feed (--limit <n>, --cursor <c>, --json)')
+  .option('--limit <n>', 'maximum number of files to list')
+  .option('--cursor <cursor>', 'opaque cursor from the previous page')
+  .option('--json', 'print the result as a single JSON object')
+  .action(async (flags) => {
+    process.exitCode = await fileList.run(flags)
   })
 
 program.command('file-pay')

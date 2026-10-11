@@ -241,7 +241,7 @@ describe('#file-use-cases.js', () => {
       assert.isTrue(result.alreadyHosted)
       assert.equal(result.hostedUntil, '2027-10-08T12:00:00.000Z')
       assert.equal(result.downloadUrl, `http://localhost:5050/download/${TEST_CID}`)
-      assert.equal(result.viewUrl, `http://localhost:5050/view/${TEST_CID}`)
+      assert.equal(result.viewUrl, `http://localhost:5050/view/${TEST_CID}/photo.jpg`)
       assert.deepEqual(result.gatewayUrls, [`https://ipfs.io/ipfs/${TEST_CID}/photo.jpg`])
       assert.notProperty(result, 'paymentAddress')
       assert.isTrue(adapters.wallet.getKeyPair.notCalled)
@@ -323,7 +323,7 @@ describe('#file-use-cases.js', () => {
         paidAt: '2026-01-02T00:00:00.000Z',
         hostedUntil: '2027-01-02T00:00:00.000Z',
         downloadUrl: `http://localhost:5050/download/${TEST_CID}`,
-        viewUrl: `http://localhost:5050/view/${TEST_CID}`,
+        viewUrl: `http://localhost:5050/view/${TEST_CID}/photo.jpg`,
         gatewayUrls: [`https://ipfs.io/ipfs/${TEST_CID}/photo.jpg`],
         pins: [{ provider: 'local-helia', status: 'pinned' }]
       })

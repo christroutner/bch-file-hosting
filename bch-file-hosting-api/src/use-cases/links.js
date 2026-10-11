@@ -1,6 +1,8 @@
 /*
   Builds the download links returned for a hosted file. CIDs are wrapping
   directories, so gateway links include the file name to open the file itself.
+  The view link ends with the stored, URL-encoded file name; the legacy
+  CID-only view link still resolves for backward compatibility.
 */
 
 // Public gateway URLs for a hosted file: each configured prefix followed by
@@ -23,7 +25,7 @@ export function buildLinks ({ cid, filename, config = {}, providers = [] }) {
 
   return {
     downloadUrl: `${base}/download/${cid}`,
-    viewUrl: `${base}/view/${cid}`,
+    viewUrl: `${base}/view/${cid}/${encodeURIComponent(filename)}`,
     gatewayUrls: buildGatewayUrls({ cid, filename, config, providers })
   }
 }

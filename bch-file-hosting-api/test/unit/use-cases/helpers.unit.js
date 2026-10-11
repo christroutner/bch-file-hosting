@@ -35,7 +35,7 @@ describe('#use-case helpers', () => {
 
       assert.deepEqual(result, {
         downloadUrl: 'http://localhost:5050/download/bafy',
-        viewUrl: 'http://localhost:5050/view/bafy',
+        viewUrl: 'http://localhost:5050/view/bafy/my%20photo.jpg',
         gatewayUrls: ['https://ipfs.io/ipfs/bafy/my%20photo.jpg', 'https://dweb.link/ipfs/bafy/my%20photo.jpg']
       })
     })
@@ -46,7 +46,7 @@ describe('#use-case helpers', () => {
       const result = buildLinks({ cid: 'bafy', filename: 'a.txt', config })
 
       assert.equal(result.downloadUrl, 'https://files.example.com/download/bafy')
-      assert.equal(result.viewUrl, 'https://files.example.com/view/bafy')
+      assert.equal(result.viewUrl, 'https://files.example.com/view/bafy/a.txt')
     })
 
     it('should add provider gateway URLs and skip providers without one', () => {

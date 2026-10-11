@@ -4,9 +4,9 @@
 
   Invariants: every public gateway URL is the configured prefix followed by the
   CID and the URL-encoded file name; each provider receives the raw CID and file
-  name and its URL is kept only when the provider returns one; the download and
-  view URLs point at /download/<cid> and /view/<cid> with no doubled slash when
-  PUBLIC_URL ends with one.
+  name and its URL is kept only when the provider returns one; the download URL
+  points at /download/<cid> and the view URL at /view/<cid>/<encoded filename>,
+  with no doubled slash when PUBLIC_URL ends with one.
 
   Kept separate from the unit suite. Per the constitution, property tests do not
   contribute to unit coverage, CRAP, Gherkin acceptance, or mutation runs.
@@ -53,7 +53,7 @@ describe('#links.property.js', () => {
         })
 
         assert.equal(result.downloadUrl, `http://localhost:5050/download/${cid}`)
-        assert.equal(result.viewUrl, `http://localhost:5050/view/${cid}`)
+        assert.equal(result.viewUrl, `http://localhost:5050/view/${cid}/${encodeURIComponent(filename)}`)
         assert.deepEqual(
           result.gatewayUrls,
           publicGateways.map(prefix => `${prefix}${cid}/${encodeURIComponent(filename)}`)
@@ -98,7 +98,7 @@ describe('#links.property.js', () => {
     })
   })
 
-  it('should build the view URL from the CID alone, independent of the file name', () => {
+  it('should build the view URL from the CID and the URL-encoded file name', () => {
     forAll({
       seed: 4,
       runs: 200,
@@ -111,7 +111,7 @@ describe('#links.property.js', () => {
           providers: [{ gatewayUrl: () => 'https://pin.example/ipfs/x' }]
         })
 
-        assert.equal(result.viewUrl, `http://localhost:5050/view/${cid}`)
+        assert.equal(result.viewUrl, `http://localhost:5050/view/${cid}/${encodeURIComponent(filename)}`)
         assert.equal(result.downloadUrl, `http://localhost:5050/download/${cid}`)
       }
     })
@@ -131,7 +131,7 @@ describe('#links.property.js', () => {
         const result = buildLinks({ cid, filename: 'a.txt', config: { publicUrl, publicGateways: [] } })
 
         assert.equal(result.downloadUrl, `https://files.example.com/download/${cid}`)
-        assert.equal(result.viewUrl, `https://files.example.com/view/${cid}`)
+        assert.equal(result.viewUrl, `https://files.example.com/view/${cid}/a.txt`)
       }
     })
   })

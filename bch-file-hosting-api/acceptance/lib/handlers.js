@@ -1075,6 +1075,29 @@ const handlers = [
     }
   },
   {
+    pattern: /^the file store holds a pinned file <([A-Za-z0-9_]+)> named <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.file = {
+        cid: exampleValue(example, match[1]),
+        filename: exampleValue(example, match[2]),
+        sizeBytes: 1024,
+        status: 'pinned',
+        pins: []
+      }
+      world.ipfs.isPinned = async () => true
+    }
+  },
+  {
+    pattern: /^the served view reports content type <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      if (!world.viewResult) throw new Error('expected a served view, but none was served')
+      const expected = exampleValue(example, match[1])
+      if (world.viewResult.contentType !== expected) {
+        throw new Error(`expected the served view to report content type ${expected}, got ${world.viewResult.contentType}`)
+      }
+    }
+  },
+  {
     pattern: /^the view of <([A-Za-z0-9_]+)> uses content type <([A-Za-z0-9_]+)>$/,
     run (match, example, world) {
       const filename = exampleValue(example, match[1])
@@ -1104,10 +1127,10 @@ const handlers = [
     }
   },
   {
-    pattern: /^I view the file ([A-Za-z0-9]+)$/,
-    async run (match, _example, world) {
+    pattern: /^I view the file (<[A-Za-z0-9_]+>|[A-Za-z0-9]+)$/,
+    async run (match, example, world) {
       try {
-        world.viewResult = await buildContentUseCases(world).getView({ cid: match[1] })
+        world.viewResult = await buildContentUseCases(world).getView({ cid: resolveValue(match[1], example) })
         world.viewError = null
       } catch (err) {
         world.viewResult = null

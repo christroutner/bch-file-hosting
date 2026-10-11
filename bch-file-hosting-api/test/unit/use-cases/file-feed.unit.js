@@ -113,7 +113,7 @@ describe('#file-feed.js', () => {
         paidAt: '2026-01-02T00:00:00.000Z',
         hostedUntil: '2027-01-02T00:00:00.000Z',
         downloadUrl: '/download/bafy-a',
-        viewUrl: '/view/bafy-a',
+        viewUrl: '/view/bafy-a/a.txt',
         gatewayUrls: [],
         pins: [{ provider: 'local-helia', status: 'pinned' }]
       })
@@ -126,7 +126,7 @@ describe('#file-feed.js', () => {
       })
 
       assert.equal(result.downloadUrl, 'https://host.example/download/bafy-a')
-      assert.equal(result.viewUrl, 'https://host.example/view/bafy-a')
+      assert.equal(result.viewUrl, 'https://host.example/view/bafy-a/a.txt')
     })
 
     it('should build gateway URLs from the public gateways with the encoded file name', () => {

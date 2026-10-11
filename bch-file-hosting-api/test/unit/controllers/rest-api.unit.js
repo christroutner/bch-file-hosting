@@ -333,6 +333,30 @@ describe('#rest-api', () => {
   })
 
   describe('GET /view/:cid', () => {
+    it('should serve a file from the legacy CID-only view URL', async () => {
+      useCases.files.getView.callsFake(async () => ({ filename: 'photo.jpg', sizeBytes: 5, content: chunks('hello'), contentType: 'image/jpeg', disposition: 'inline' }))
+
+      const res = await request(app).get('/view/bafy')
+
+      assert.equal(res.status, 200)
+      assert.isTrue(useCases.files.getView.calledWith({ cid: 'bafy' }))
+    })
+
+    it('should serve a file from the file-named view URL and ignore the decorative name', async () => {
+      useCases.files.getView.callsFake(async () => ({ filename: 'photo.jpg', sizeBytes: 5, content: chunks('hello'), contentType: 'image/jpeg', disposition: 'inline' }))
+
+      const res = await request(app).get('/view/bafy/my%20photo.jpg').buffer(true).parse((r, cb) => {
+        const parts = []
+        r.on('data', c => parts.push(c))
+        r.on('end', () => cb(null, Buffer.concat(parts)))
+      })
+
+      assert.equal(res.status, 200)
+      assert.equal(res.body.toString(), 'hello')
+      assert.equal(res.headers['content-disposition'], 'inline; filename="photo.jpg"')
+      assert.isTrue(useCases.files.getView.calledWith({ cid: 'bafy' }))
+    })
+
     it('should stream an image inline with its content type', async () => {
       useCases.files.getView.callsFake(async () => ({ filename: 'photo.jpg', sizeBytes: 11, content: chunks('hello', ' world'), contentType: 'image/jpeg', disposition: 'inline' }))
 

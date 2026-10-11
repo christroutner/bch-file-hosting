@@ -26,6 +26,7 @@ class FilesRouter {
     app.get('/files/:cid', limit, this.controller.getFileStatus)
     app.get('/download/:cid', limit, this.controller.downloadFile)
     app.get('/view/:cid', limit, this.controller.viewFile)
+    app.get('/view/:cid/:filename', limit, this.controller.viewFile)
   }
 }
 

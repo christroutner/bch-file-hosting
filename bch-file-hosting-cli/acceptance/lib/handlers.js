@@ -22,6 +22,7 @@ import FileHost from '../../src/commands/file-host.js'
 import FileList from '../../src/commands/file-list.js'
 import WalletCreate from '../../src/commands/wallet-create.js'
 import WalletBalance from '../../src/commands/wallet-balance.js'
+import HostingApi from '../../src/lib/hosting-api.js'
 import WalletStore from '../../src/lib/wallet-store.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -75,6 +76,10 @@ function lastFeedFile (world) {
   return world.feedFiles[world.feedFiles.length - 1]
 }
 
+function lastTransportCall (world) {
+  return world.transportCalls[world.transportCalls.length - 1]
+}
+
 function createWorld () {
   const tmpDir = path.join(COMPONENT_ROOT, 'tmp', 'acceptance')
   fs.mkdirSync(tmpDir, { recursive: true })
@@ -106,7 +111,15 @@ function createWorld () {
     feedNextCursor: null,
     receivedLimit: null,
     receivedCursor: null,
-    shownCursor: null
+    shownCursor: null,
+    transportCalls: [],
+    transportReply: null,
+    transportClient: null,
+    transportUploadName: null,
+    transportPaymentAddress: null,
+    transportPaymentState: null,
+    transportFileState: null,
+    transportCursor: null
   }
 
   world.hostingApi = {
@@ -1139,6 +1152,141 @@ const handlers = [
       const mnemonic = exampleValue(example, match[1])
       if (world.stdout.includes(mnemonic)) {
         throw new Error(`stdout unexpectedly printed the mnemonic: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^a CLI hosting API client whose transport records its receiver$/,
+    run (_match, _example, world) {
+      world.transportCalls = []
+      world.transportReply = {}
+      // A browser-like transport: it throws unless called with the global
+      // receiver, so a bare `this.fetch(...)` by the adapter is caught.
+      function recordingFetch (url, options = {}) {
+        world.transportCalls.push({
+          receiverIsGlobal: this === globalThis,
+          method: options.method,
+          url,
+          options
+        })
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => world.transportReply
+        })
+      }
+      world.transportClient = new HostingApi({ config: world.config, fetch: recordingFetch })
+    }
+  },
+  {
+    pattern: /^the payment reply is <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.transportReply = { success: true, status: exampleValue(example, match[1]) }
+    }
+  },
+  {
+    pattern: /^the file reply is <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.transportReply = { success: true, status: exampleValue(example, match[1]) }
+    }
+  },
+  {
+    pattern: /^the feed reply carries cursor <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.transportReply = { success: true, files: [], nextCursor: exampleValue(example, match[1]) }
+    }
+  },
+  {
+    pattern: /^the CLI client uploads the file <([A-Za-z0-9_]+)>$/,
+    async run (match, example, world) {
+      const name = exampleValue(example, match[1])
+      await world.transportClient.upload({ filename: name, buffer: Buffer.from(FIXTURE_BYTES) })
+      const file = lastTransportCall(world).options.body.get('file')
+      world.transportUploadName = file && file.name
+    }
+  },
+  {
+    pattern: /^the CLI client checks the payment address <([A-Za-z0-9_]+)>$/,
+    async run (match, example, world) {
+      const address = exampleValue(example, match[1])
+      const result = await world.transportClient.checkPayment({ paymentAddress: address })
+      world.transportPaymentAddress = JSON.parse(lastTransportCall(world).options.body).paymentAddress
+      world.transportPaymentState = result.status
+    }
+  },
+  {
+    pattern: /^the CLI client looks up the CID <([A-Za-z0-9_]+)>$/,
+    async run (match, example, world) {
+      const result = await world.transportClient.getStatus({ cid: exampleValue(example, match[1]) })
+      world.transportFileState = result.status
+    }
+  },
+  {
+    pattern: /^the CLI client lists the feed with limit <([A-Za-z0-9_]+)>$/,
+    async run (match, example, world) {
+      const result = await world.transportClient.listFiles({ limit: exampleValue(example, match[1]) })
+      world.transportCursor = result.nextCursor
+    }
+  },
+  {
+    pattern: /^the transport used the global receiver for the request <([A-Za-z0-9_]+)> <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const method = exampleValue(example, match[1])
+      const url = exampleValue(example, match[2])
+      const call = lastTransportCall(world)
+      if (!call) {
+        throw new Error(`the transport was never called for ${method} ${url}`)
+      }
+      if (!call.receiverIsGlobal) {
+        throw new Error(`the transport was not called with the global receiver for ${method} ${url}`)
+      }
+      if (call.method !== method || call.url !== url) {
+        throw new Error(`expected ${method} ${url}, got ${call.method} ${call.url}`)
+      }
+    }
+  },
+  {
+    pattern: /^the uploaded file name is <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.transportUploadName !== expected) {
+        throw new Error(`expected the uploaded file name to be ${expected}, got ${world.transportUploadName}`)
+      }
+    }
+  },
+  {
+    pattern: /^the sent payment address is <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.transportPaymentAddress !== expected) {
+        throw new Error(`expected the sent payment address to be ${expected}, got ${world.transportPaymentAddress}`)
+      }
+    }
+  },
+  {
+    pattern: /^the reported payment state is <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.transportPaymentState !== expected) {
+        throw new Error(`expected the reported payment state to be ${expected}, got ${world.transportPaymentState}`)
+      }
+    }
+  },
+  {
+    pattern: /^the client's file state is <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.transportFileState !== expected) {
+        throw new Error(`expected the client's file state to be ${expected}, got ${world.transportFileState}`)
+      }
+    }
+  },
+  {
+    pattern: /^the reported cursor is <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const expected = exampleValue(example, match[1])
+      if (world.transportCursor !== expected) {
+        throw new Error(`expected the reported cursor to be ${expected}, got ${world.transportCursor}`)
       }
     }
   }

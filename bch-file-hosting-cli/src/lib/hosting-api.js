@@ -21,9 +21,12 @@ async function readJson (response) {
 }
 
 class HostingApi {
-  constructor ({ config, fetch = globalThis.fetch } = {}) {
+  // A browser's native fetch rejects any receiver other than the global
+  // object. Bind the transport before storing it so calling `this.fetch(...)`
+  // inside this adapter still invokes it with the global receiver.
+  constructor ({ config, fetch: fetchImpl } = {}) {
     this.config = config
-    this.fetch = fetch
+    this.fetch = (fetchImpl || fetch).bind(globalThis)
 
     this.upload = this.upload.bind(this)
     this.checkPayment = this.checkPayment.bind(this)

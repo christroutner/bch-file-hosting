@@ -253,4 +253,53 @@ describe('#hosting-api', () => {
       }
     })
   })
+
+  describe('#transport receiver', () => {
+    // A browser's native fetch rejects any receiver other than the global
+    // object, throwing before the request is sent. This double enforces the
+    // same contract, so a bare `this.fetch(...)` call is caught rather than
+    // masked by a receiver-agnostic Sinon stub.
+    function browserFetch (url, options = {}) {
+      if (this !== globalThis) {
+        throw new TypeError("'fetch' called on an object that does not implement interface Window.")
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ success: true, files: [], nextCursor: null })
+      })
+    }
+
+    it('calls upload with the global receiver', async () => {
+      const uut = new HostingApi({ config, fetch: browserFetch })
+
+      const result = await uut.upload({ filename: 'photo.jpg', buffer: Buffer.from('bytes') })
+
+      assert.equal(result.success, true)
+    })
+
+    it('calls checkPayment with the global receiver', async () => {
+      const uut = new HostingApi({ config, fetch: browserFetch })
+
+      const result = await uut.checkPayment({ paymentAddress: 'bitcoincash:qpaid' })
+
+      assert.equal(result.success, true)
+    })
+
+    it('calls getStatus with the global receiver', async () => {
+      const uut = new HostingApi({ config, fetch: browserFetch })
+
+      const result = await uut.getStatus({ cid: 'bafy-known' })
+
+      assert.equal(result.success, true)
+    })
+
+    it('calls listFiles with the global receiver', async () => {
+      const uut = new HostingApi({ config, fetch: browserFetch })
+
+      const result = await uut.listFiles({ limit: '5' })
+
+      assert.equal(result.success, true)
+    })
+  })
 })

@@ -4,8 +4,9 @@
 
   Invariants: an upload round-trips the filename and bytes into the multipart
   body and returns the parsed response body; every non-ok response becomes a
-  HostingApiError carrying the API error string; and a body without a usable
-  error string falls back to the HTTP status.
+  HostingApiError carrying the API error string, and a body without a usable
+  error string falls back to the HTTP status; and the list call round-trips the
+  limit and cursor into the /files query string.
 
   Kept separate from the unit suite. Per the constitution, property tests do not
   contribute to unit coverage, CRAP, Gherkin acceptance, or mutation runs.
@@ -56,6 +57,15 @@ async function statusWith (fetch, cid) {
   const uut = new HostingApi({ config, fetch })
   try {
     return { result: await uut.getStatus({ cid }), error: null }
+  } catch (err) {
+    return { result: null, error: err }
+  }
+}
+
+async function listWith (fetch, args) {
+  const uut = new HostingApi({ config, fetch })
+  try {
+    return { result: await uut.listFiles(args), error: null }
   } catch (err) {
     return { result: null, error: err }
   }
@@ -225,6 +235,73 @@ describe('#hosting-api.property.js', () => {
         const fetch = async () => ({ ok: false, status, json: async () => body })
 
         const { error: thrown } = await statusWith(fetch, 'bafy-known')
+
+        assert.instanceOf(thrown, HostingApiError)
+        assert.include(thrown.message, `HTTP ${status}`)
+      }
+    })
+  })
+
+  it('should round-trip the optional limit and cursor into the /files query', () => {
+    forAllAsync({
+      seed: 9,
+      runs: 200,
+      generate: (random) => ({
+        limit: random() < 0.5 ? String(integerBetween(random, 1, 100)) : undefined,
+        cursor: random() < 0.5 ? randomString(random, 1, 30) : undefined
+      }),
+      property: async ({ limit, cursor }) => {
+        let captured
+        const fetch = async (url, options) => {
+          captured = { url, options }
+          return { ok: true, status: 200, json: async () => ({ success: true, files: [], nextCursor: null }) }
+        }
+
+        const { result, error } = await listWith(fetch, { limit, cursor })
+
+        assert.isNull(error)
+        assert.isTrue(result.success)
+        assert.equal(captured.options.method, 'GET')
+
+        const url = new URL(captured.url)
+        assert.equal(url.pathname, '/files')
+        assert.equal(url.searchParams.get('limit'), limit ?? null)
+        assert.equal(url.searchParams.get('cursor'), cursor ?? null)
+      }
+    })
+  })
+
+  it('should surface the API error string for any non-ok list response', () => {
+    forAllAsync({
+      seed: 10,
+      runs: 200,
+      generate: (random) => ({
+        status: integerBetween(random, 400, 599),
+        error: randomString(random, 1, 40)
+      }),
+      property: async ({ status, error }) => {
+        const fetch = async () => ({ ok: false, status, json: async () => ({ success: false, error }) })
+
+        const { error: thrown } = await listWith(fetch, {})
+
+        assert.instanceOf(thrown, HostingApiError)
+        assert.equal(thrown.message, error)
+      }
+    })
+  })
+
+  it('should fall back to the HTTP status when the list error body has no usable message', () => {
+    forAllAsync({
+      seed: 11,
+      runs: 200,
+      generate: (random) => ({
+        status: integerBetween(random, 400, 599),
+        body: random() < 0.5 ? null : { success: false, error: '' }
+      }),
+      property: async ({ status, body }) => {
+        const fetch = async () => ({ ok: false, status, json: async () => body })
+
+        const { error: thrown } = await listWith(fetch, {})
 
         assert.instanceOf(thrown, HostingApiError)
         assert.include(thrown.message, `HTTP ${status}`)

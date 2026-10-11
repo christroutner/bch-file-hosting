@@ -24,9 +24,10 @@ stable boundary of the reusable `HostingApi` client adapter.
 - A client selects the API with `HOSTING_API_URL` (default
   `http://localhost:5050`). This is the one shared client name.
   - The CLI reads `HOSTING_API_URL` directly (`bch-file-hosting-cli/config`).
-  - The web reads `HOSTING_API_URL`, with `REACT_APP_HOSTING_API_URL` as the
-    documented Create React App mirror (CRA only inlines `REACT_APP_*`).
-    `REACT_APP_API_URL` is deprecated. Tracked by `web-hosting-api-url`.
+  - The web is moving to `HOSTING_API_URL`, with `REACT_APP_HOSTING_API_URL` as
+    the documented Create React App mirror (CRA only inlines `REACT_APP_*`);
+    it currently reads `REACT_APP_API_URL`, which is deprecated. Tracked by
+    `web-hosting-api-url`.
   - Production is served at `https://file-hosting-api.blippost.com`.
 - The API builds response URLs from its own `PUBLIC_URL` (default
   `http://localhost:<PORT>`), not from the client's base URL.
@@ -121,8 +122,8 @@ background.
 { "success": true, "status": "unpaid", "receivedSats": 0, "requiredSats": 2000, "quoteExpiresAt": "..." }
 ```
 
-**Paid** (also returned for an already-paid invoice, unchanged and without
-re-sweeping or re-pinning):
+**Paid** (also returned for an already-paid invoice, without re-sweeping; a
+previously failed pin is retried in the background):
 
 ```json
 {
@@ -151,7 +152,9 @@ re-sweeping or re-pinning):
   Overpayment is accepted.
 - A payment that arrives after `quoteExpiresAt` but before cleanup deletes the
   file is still honored.
-- Idempotent: repeated calls never sweep or pin twice.
+- Idempotent: repeated calls never sweep twice; a pin that previously failed is
+  retried, and a `pinning` file already being handled in the background is left
+  alone.
 - Missing/non-string `paymentAddress`: 422. Unknown address: 404.
 
 ### `GET /files`

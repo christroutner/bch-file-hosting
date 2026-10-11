@@ -127,14 +127,11 @@ Source: `psf-memo/psf-memo-cli/dev-docs/bch-file-hosting-cli-request.md`
 (2026-10-11). These prepare the CLI/API for the phase 9 psf-memo port. Ordered
 by what the port depends on; priorities are P1 (unblocks the port), P2
 (correctness/reuse), P3 (stability/optional). `api-contract` and
-`web-hosting-api-url` (P1) are complete, and the P2 pair is done:
-`cli-hosting-api-fetch` (code) and `hosting-api-reuse` (documented in
-`dev-docs/api-contract.md` §6, per the user's decision).
+`web-hosting-api-url` (P1), `cli-hosting-api-fetch` and `hosting-api-reuse`
+(P2; the latter documented in `dev-docs/api-contract.md` §6 per the user's
+decision), and `links-contract` (P3) are complete. Only the optional
+`wallet-wif-flag` remains.
 
-- **`links-contract` (api, P3):** lock the URL-bearing fields with acceptance
-  assertions so `downloadUrl`, `viewUrl`, and `gatewayUrls` cannot silently
-  disappear from the paid and `alreadyHosted` payloads (and
-  `downloadUrl`/`viewUrl` from the feed). No behavior change expected.
 - **`wallet-wif-flag` (cli, P3, optional):** accept `--wif <wif>` beside
   `-n <name>` on the wallet commands to match `psf-memo-cli`'s wallet
   resolution; validate mutual exclusion and never print the WIF. Optional.
@@ -150,6 +147,22 @@ by what the port depends on; priorities are P1 (unblocks the port), P2
   pin), and the upload+verify runs in the background.
 
 ## Recently completed
+
+- **`links-contract` — lock the hosted link fields with acceptance assertions
+  (api, 2026-10-11):** new `bch-file-hosting-api/specs/links-contract.feature`
+  asserts that `downloadUrl`, `viewUrl`, and `gatewayUrls` stay present and
+  correctly valued on the `check-payment` paid result and the `POST /files`
+  already-hosted result (the feed's link fields were already locked by
+  `file-feed.feature` scenarios 5–8). No source behavior change. Pipeline
+  commits: specifier `ef76938`, coder `98330e1`, architect `fa3ac2f`
+  (verification `git_sha`) and `b6f5e1d` (review + docs), merged to `master` at
+  `b6f5e1d` (fast-forward).
+  `docs/reviews/links-contract-verification.json` reports `pass`: unit 482,
+  property 43, acceptance all 10 suites, lint ok. Independent post-merge check:
+  all 10 API acceptance suites (4 links-contract executions). Soft Gherkin
+  mutation 20/20 killed, 0 survived. Architect summary:
+  `docs/reviews/links-contract-summary.md`. This completes the required items
+  of the psf-memo-cli request; only the optional `wallet-wif-flag` remains.
 
 - **`cli-hosting-api-fetch` — call the CLI transport with the global receiver
   (cli, 2026-10-11):** `HostingApi`'s constructor now stores

@@ -126,11 +126,9 @@ None.
 Source: `psf-memo/psf-memo-cli/dev-docs/bch-file-hosting-cli-request.md`
 (2026-10-11). These prepare the CLI/API for the phase 9 psf-memo port. Ordered
 by what the port depends on; priorities are P1 (unblocks the port), P2
-(correctness/reuse), P3 (stability/optional). `api-contract` (P1) is complete.
+(correctness/reuse), P3 (stability/optional). `api-contract` and
+`web-hosting-api-url` (P1) are complete.
 
-- **`web-hosting-api-url` (web, P1):** make the web read the shared
-  `HOSTING_API_URL` name (with a documented CRA mirror) and one documented
-  default (`http://localhost:5050`), matching the CLI. See the decision below.
 - **`cli-hosting-api-fetch` (cli, P2):** bind the injected `fetch` to
   `globalThis` in `HostingApi`'s constructor so `upload`, `checkPayment`,
   `getStatus`, and `listFiles` all use the global receiver; pin it with a
@@ -154,11 +152,6 @@ by what the port depends on; priorities are P1 (unblocks the port), P2
   (psf-memo-cli request §4). The requester prefers a small published ESM
   package, but that needs an npm scope/release channel; the fallback is a
   committed `dev-docs/api-contract.md` that pins the module boundary.
-- **`web-hosting-api-url` — canonical name and legacy fallback** (request §1).
-  Proposed: `HOSTING_API_URL` is canonical, `REACT_APP_HOSTING_API_URL` is the
-  documented CRA mirror, and the documented default is `http://localhost:5050`.
-  Decide whether to keep `REACT_APP_API_URL` as a deprecated fallback or drop it
-  immediately.
 - Q1 (expiry), Q2 (renewals), Q3 (OP_RETURN), and Q9 (late
   payments/refunds) are decided in the long-term plan's Decisions Log
   (D26–D29); none needs new Gherkin. The `ipfs-public-node` provide-failure
@@ -168,6 +161,25 @@ by what the port depends on; priorities are P1 (unblocks the port), P2
   pin), and the upload+verify runs in the background.
 
 ## Recently completed
+
+- **`web-hosting-api-url` — resolve the web API base URL from `HOSTING_API_URL`
+  (web, 2026-10-11):** the web now resolves its hosting API base URL with the
+  precedence `HOSTING_API_URL` → `REACT_APP_HOSTING_API_URL` (the Create React
+  App build mirror) → `REACT_APP_API_URL` (deprecated fallback) → the documented
+  default `http://localhost:5050`. New pure CommonJS resolver
+  `src/services/api-url.js`; `src/config/index.js` delegates to it. Spec
+  `bch-file-hosting-web/specs/web-hosting-api-url.feature` (6 scenarios, 11
+  executions). Pipeline commits: specifier `8ac2ad5`, coder `a598c19`,
+  refactorer `3a4424e`, architect `ef1d2ac` (verification `git_sha`) and
+  `74270bf` (review + docs), merged to `master` at `74270bf` (fast-forward).
+  `docs/reviews/web-hosting-api-url-verification.json` reports `pass`: unit 104,
+  property 80, build ok, acceptance all 6 suites, lint ok. Independent post-merge
+  check: all 6 web acceptance suites, including the 11 `web-hosting-api-url`
+  executions. Architect summary: `docs/reviews/web-hosting-api-url-summary.md`.
+  The four soft-mutation survivors are the intrinsic losing-input columns in
+  scenarios 5/6 (the `mirror`/`legacy` values the winner ignores); the mutator
+  omits those two scenarios from the manifest so they re-mutate next run.
+  Decision: `REACT_APP_API_URL` is kept as a deprecated fallback (non-breaking).
 
 - **`api-contract` — pin the REST API contract for the psf-memo-cli port
   (docs, 2026-10-11):** new `dev-docs/api-contract.md` documents every public

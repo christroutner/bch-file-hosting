@@ -308,4 +308,40 @@ describe('#hosting-api.property.js', () => {
       }
     })
   })
+
+  it('should invoke the injected fetch with the global receiver', () => {
+    // A browser's native fetch rejects any receiver other than the global
+    // object. Whatever fetch the caller injects, the adapter must call it with
+    // the global receiver, never with the adapter instance itself.
+    forAllAsync({
+      seed: 12,
+      runs: 200,
+      generate: (random) => ({
+        filename: randomFilename(random),
+        bytes: randomString(random, 0, 64),
+        paymentAddress: `bitcoincash:q${randomString(random, 20, 38)}`,
+        cid: randomCid(random),
+        limit: String(integerBetween(random, 1, 100)),
+        cursor: randomString(random, 1, 30)
+      }),
+      property: async ({ filename, bytes, paymentAddress, cid, limit, cursor }) => {
+        const receivers = []
+        function receiverSensitiveFetch () {
+          receivers.push(this)
+          return Promise.resolve({ ok: true, status: 200, json: async () => ({ success: true }) })
+        }
+        const uut = new HostingApi({ config, fetch: receiverSensitiveFetch })
+
+        await uut.upload({ filename, buffer: Buffer.from(bytes) })
+        await uut.checkPayment({ paymentAddress })
+        await uut.getStatus({ cid })
+        await uut.listFiles({ limit, cursor })
+
+        assert.equal(receivers.length, 4)
+        for (const receiver of receivers) {
+          assert.equal(receiver, globalThis)
+        }
+      }
+    })
+  })
 })

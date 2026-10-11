@@ -64,23 +64,54 @@ describe('#file-upload', () => {
   })
 
   describe('#run', () => {
-    it('should print the quote and return 0 on success', async () => {
+    it('should print the quote details and return 0 on success', async () => {
       uut.hostingApi.upload.resolves({
         success: true,
         cid: 'bafy-quote',
+        filename: 'photo.jpg',
+        sizeBytes: 20000,
+        billedBytes: 100000,
         priceSats: 2000,
-        paymentAddress: 'bitcoincash:qtestaddress'
+        paymentAddress: 'bitcoincash:qtestaddress',
+        quoteExpiresAt: '2026-10-10T00:00:00.000Z'
       })
 
       const result = await uut.run({ file: fixture })
 
       assert.equal(result, 0)
-      assert.include(output.join('\n'), '2000 satoshis')
-      assert.include(output.join('\n'), 'bitcoincash:qtestaddress')
+
+      const printed = output.join('\n')
+      assert.include(printed, 'File name: photo.jpg')
+      assert.include(printed, 'Size: 20000 bytes')
+      assert.include(printed, 'Billed size: 100000 bytes')
+      assert.include(printed, 'Price: 2000 satoshis')
+      assert.include(printed, 'Payment address: bitcoincash:qtestaddress')
+      assert.include(printed, 'Quote expires: 2026-10-10T00:00:00.000Z')
 
       const [uploadArgs] = uut.hostingApi.upload.firstCall.args
       assert.equal(uploadArgs.filename, 'photo.jpg')
       assert.instanceOf(uploadArgs.buffer, Buffer)
+    })
+
+    it('should omit the billed size when it equals the size', async () => {
+      uut.hostingApi.upload.resolves({
+        success: true,
+        cid: 'bafy-quote',
+        filename: 'photo.jpg',
+        sizeBytes: 1000000,
+        billedBytes: 1000000,
+        priceSats: 2500,
+        paymentAddress: 'bitcoincash:qtestaddress',
+        quoteExpiresAt: '2026-10-10T00:00:00.000Z'
+      })
+
+      const result = await uut.run({ file: fixture })
+
+      assert.equal(result, 0)
+
+      const printed = output.join('\n')
+      assert.include(printed, 'Size: 1000000 bytes')
+      assert.notInclude(printed, 'Billed size')
     })
 
     it('should print the download and view URLs and no payment address when already hosted', async () => {

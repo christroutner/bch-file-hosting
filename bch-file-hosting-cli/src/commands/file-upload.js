@@ -2,8 +2,9 @@
   file-upload command.
 
   Reads a local file, uploads it to the hosting API, and prints the quote
-  (price and payment address), the already-hosted download link, or the error.
-  Returns the process exit code: 0 success, 1 runtime error, 2 usage error.
+  (file name, size, billed size when it differs, price, payment address, and
+  expiry), the already-hosted links, or the error. Returns the process exit
+  code: 0 success, 1 runtime error, 2 usage error.
 */
 
 // Global npm libraries
@@ -59,8 +60,21 @@ class FileUpload extends FileCommand {
       return
     }
 
+    this.output(`File name: ${result.filename}`)
+    this.output(`Size: ${result.sizeBytes} bytes`)
+
+    // A separate billed line is only useful when billing rounds the size up, so
+    // a file at or above the minimum shows a single size.
+    if (result.billedBytes !== undefined && result.billedBytes !== result.sizeBytes) {
+      this.output(`Billed size: ${result.billedBytes} bytes`)
+    }
+
     this.output(`Price: ${result.priceSats} satoshis`)
     this.output(`Payment address: ${result.paymentAddress}`)
+
+    if (result.quoteExpiresAt) {
+      this.output(`Quote expires: ${result.quoteExpiresAt}`)
+    }
   }
 }
 

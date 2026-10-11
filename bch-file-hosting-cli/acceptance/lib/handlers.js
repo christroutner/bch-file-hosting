@@ -481,6 +481,12 @@ const handlers = [
     }
   },
   {
+    pattern: /^the hosting API reports the billed size <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      world.apiResult.billedBytes = asInt(exampleValue(example, match[1]), match[1])
+    }
+  },
+  {
     pattern: /^the hosting API reports the file status <([A-Za-z0-9_]+)>$/,
     run (match, example, world) {
       world.apiResult.status = exampleValue(example, match[1])
@@ -549,6 +555,23 @@ const handlers = [
       const expected = asInt(exampleValue(example, match[1]), match[1])
       if (!world.stdout.includes(`Size: ${expected} bytes`)) {
         throw new Error(`stdout did not print the size ${expected} bytes: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints the billed size <([A-Za-z0-9_]+)> bytes$/,
+    run (match, example, world) {
+      const expected = asInt(exampleValue(example, match[1]), match[1])
+      if (!world.stdout.includes(`Billed size: ${expected} bytes`)) {
+        throw new Error(`stdout did not print the billed size ${expected} bytes: ${JSON.stringify(world.stdout)}`)
+      }
+    }
+  },
+  {
+    pattern: /^the command prints no billed size$/,
+    run (_match, _example, world) {
+      if (world.stdout.includes('Billed size')) {
+        throw new Error(`stdout unexpectedly printed a billed size: ${JSON.stringify(world.stdout)}`)
       }
     }
   },

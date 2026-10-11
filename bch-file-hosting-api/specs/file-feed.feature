@@ -94,12 +94,12 @@ Feature: File Feed
 
   Scenario Outline: File Feed - 8 reports the API download and view URLs of each file
     Given the hosting API public URL is <api_public_url>
-    And a pinned file <cid> named photo paid at 2026-06-01T00:00:00.000Z
+    And a pinned file <cid> named <filename> paid at 2026-06-01T00:00:00.000Z
     When I request the file feed with limit 1
     Then the feed reports the file <cid> with download URL <shown_download_url>
     And the feed reports the file <cid> with view URL <shown_view_url>
 
     Examples:
-      | api_public_url        | cid                                                          | shown_download_url                                                                | shown_view_url                                                      |
-      | http://localhost:5050 | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/download/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/view/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi |
-      | https://host.example  | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | https://host.example/download/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | https://host.example/view/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa |
+      | api_public_url        | cid                                                          | filename     | shown_download_url                                                                | shown_view_url                                                                                |
+      | http://localhost:5050 | bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | photo.jpg    | http://localhost:5050/download/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi | http://localhost:5050/view/bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi/photo.jpg         |
+      | https://host.example  | bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | my photo.jpg | https://host.example/download/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa | https://host.example/view/bafybeiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/my%20photo.jpg |

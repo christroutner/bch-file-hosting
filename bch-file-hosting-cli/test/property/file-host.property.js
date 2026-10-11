@@ -3,9 +3,9 @@
 
   Invariants: the command uploads, pays exactly the quote's priceSats from the
   named wallet, and polls check-payment until the payment is visible; it sleeps
-  only between poll attempts; a paid result prints its download and view URLs;
-  an already-hosted upload short-circuits without a wallet read or payment and
-  prints its download and view URLs; a never-confirmed payment fails after the
+  only between poll attempts; a paid result prints its download URL, view URL,
+  and transaction id; an already-hosted upload short-circuits without a wallet
+  read or payment, prints its download and view URLs, and prints no transaction; a never-confirmed payment fails after the
   configured attempts; and --json emits exactly one JSON object that round-trips
   the result.
 
@@ -178,6 +178,7 @@ describe('#file-host.property.js', () => {
         for (const url of paid.gatewayUrls || []) {
           assert.include(text, `Gateway URL: ${url}`)
         }
+        assert.include(text, `Transaction: ${txid}`)
       }
     })
   })
@@ -224,6 +225,7 @@ describe('#file-host.property.js', () => {
         assert.equal(code, 0)
         assert.include(text, `Download URL: ${downloadUrl}`)
         assert.include(text, `View URL: ${viewUrl}`)
+        assert.notInclude(text, 'Transaction:')
         assert.lengthOf(calls.read, 0)
         assert.lengthOf(calls.send, 0)
         assert.lengthOf(calls.check, 0)

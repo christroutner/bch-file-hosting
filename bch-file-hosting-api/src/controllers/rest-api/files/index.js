@@ -33,5 +33,5 @@ class FilesRouter {
 export default FilesRouter
 
 // mutate4javascript-manifest-begin
-// {"version":1,"tested_at":"2026-10-09T20:06:01.189Z","module_hash":"b778e303407c4067047951d23a0dfd736b4c4dcab806ff1c6b3f65b093a8850d","functions":[{"id":"func/FilesRouter.constructor","name":"FilesRouter.constructor","line":11,"end_line":18,"hash":"dd97e659d270dd43e0fe8d8e2e0ea9e9b17dd0ec20a7aba8ac7adf2e69ed7e9c"},{"id":"func/FilesRouter.attach","name":"FilesRouter.attach","line":20,"end_line":28,"hash":"432899f7f65dff63b78c909a97ca5c112803e132cbe0481fec202d97e7282054"}]}
+// {"version":1,"tested_at":"2026-10-11T01:53:10.749Z","module_hash":"46ba8449111ee8a6a6fd4ca51a9ffa369e39bff8c69b65c9d545aa9e1932de9b","functions":[{"id":"func/FilesRouter.constructor","name":"FilesRouter.constructor","line":11,"end_line":18,"hash":"dd97e659d270dd43e0fe8d8e2e0ea9e9b17dd0ec20a7aba8ac7adf2e69ed7e9c"},{"id":"func/FilesRouter.attach","name":"FilesRouter.attach","line":20,"end_line":30,"hash":"38f2b08cbafac74d4aa1a0e174cc7c5b594d5ac5782ddebde62abd92b4d2691a"}]}
 // mutate4javascript-manifest-end

@@ -127,17 +127,10 @@ Source: `psf-memo/psf-memo-cli/dev-docs/bch-file-hosting-cli-request.md`
 (2026-10-11). These prepare the CLI/API for the phase 9 psf-memo port. Ordered
 by what the port depends on; priorities are P1 (unblocks the port), P2
 (correctness/reuse), P3 (stability/optional). `api-contract` and
-`web-hosting-api-url` (P1) are complete.
+`web-hosting-api-url` (P1) are complete, and the P2 pair is done:
+`cli-hosting-api-fetch` (code) and `hosting-api-reuse` (documented in
+`dev-docs/api-contract.md` §6, per the user's decision).
 
-- **`cli-hosting-api-fetch` (cli, P2):** bind the injected `fetch` to
-  `globalThis` in `HostingApi`'s constructor so `upload`, `checkPayment`,
-  `getStatus`, and `listFiles` all use the global receiver; pin it with a
-  receiver-sensitive unit/property test (the CLI counterpart to the merged
-  `web-upload-transport`). One CLI feature file.
-- **`hosting-api-reuse` (cli/docs, P2):** publish the `HostingApi` adapter as a
-  reusable ESM module or document its stable import boundary in
-  `dev-docs/api-contract.md`, so `psf-memo-cli` depends on it instead of
-  copying. Blocked on the decision below.
 - **`links-contract` (api, P3):** lock the URL-bearing fields with acceptance
   assertions so `downloadUrl`, `viewUrl`, and `gatewayUrls` cannot silently
   disappear from the paid and `alreadyHosted` payloads (and
@@ -148,10 +141,6 @@ by what the port depends on; priorities are P1 (unblocks the port), P2
 
 ## Needs a decision from the user
 
-- **`hosting-api-reuse` — publish vs document the `HostingApi` adapter**
-  (psf-memo-cli request §4). The requester prefers a small published ESM
-  package, but that needs an npm scope/release channel; the fallback is a
-  committed `dev-docs/api-contract.md` that pins the module boundary.
 - Q1 (expiry), Q2 (renewals), Q3 (OP_RETURN), and Q9 (late
   payments/refunds) are decided in the long-term plan's Decisions Log
   (D26–D29); none needs new Gherkin. The `ipfs-public-node` provide-failure
@@ -161,6 +150,23 @@ by what the port depends on; priorities are P1 (unblocks the port), P2
   pin), and the upload+verify runs in the background.
 
 ## Recently completed
+
+- **`cli-hosting-api-fetch` — call the CLI transport with the global receiver
+  (cli, 2026-10-11):** `HostingApi`'s constructor now stores
+  `(fetchImpl || fetch).bind(globalThis)`, so `upload`, `checkPayment`,
+  `getStatus`, and `listFiles` all invoke the transport with the global
+  receiver and a browser-style receiver-sensitive transport never throws. Spec
+  `bch-file-hosting-cli/specs/cli-hosting-api-transport.feature` (4 scenarios,
+  8 executions). Pipeline commits: specifier `a39cd9f`, coder `7adf1d5`,
+  refactorer `15875da`, architect `571517c` (verification `git_sha`) and
+  `fd38caa` (review + docs), merged to `master` at `fd38caa` (fast-forward).
+  `docs/reviews/cli-hosting-api-fetch-verification.json` reports `pass`: unit
+  125, property 67, acceptance all 9 suites, lint ok. Independent post-merge
+  check: all 9 CLI acceptance suites (8 transport executions). Soft Gherkin
+  mutation 40/40 killed, 0 survived. Architect summary:
+  `docs/reviews/cli-hosting-api-fetch-summary.md`. `hosting-api-reuse` (P2) is
+  satisfied by `dev-docs/api-contract.md` §6 (documented boundary, not
+  published; user decision 2026-10-11).
 
 - **`web-hosting-api-url` — resolve the web API base URL from `HOSTING_API_URL`
   (web, 2026-10-11):** the web now resolves its hosting API base URL with the

@@ -9,7 +9,7 @@
 
 // Local libraries
 import FileUpload, { UsageError } from './file-upload.js'
-import { attachWallet, validateWalletName } from '../lib/wallet-command.js'
+import { attachWallet, validateWalletSource, resolveWalletSource } from '../lib/wallet-command.js'
 
 class FileHost extends FileUpload {
   constructor (deps = {}) {
@@ -22,13 +22,18 @@ class FileHost extends FileUpload {
     this.paymentCheckDelayMs = deps.paymentCheckDelayMs ?? 3000
 
     // Bind 'this' object to all subfunctions.
+    this.resolveWallet = this.resolveWallet.bind(this)
     this.pollPayment = this.pollPayment.bind(this)
+  }
+
+  resolveWallet (flags = {}) {
+    return resolveWalletSource(this.walletStore, flags)
   }
 
   validateFlags (flags = {}) {
     super.validateFlags(flags)
 
-    return validateWalletName(flags.name)
+    return validateWalletSource(flags)
   }
 
   async execute (flags = {}) {
@@ -41,10 +46,7 @@ class FileHost extends FileUpload {
       return { status: 'alreadyHosted', ...quote }
     }
 
-    const wallet = this.walletStore.read(flags.name)
-    if (!wallet) {
-      throw new Error(`Wallet "${flags.name}" not found.`)
-    }
+    const wallet = this.resolveWallet(flags)
 
     const txid = await this.walletService.sendSats({
       wallet,

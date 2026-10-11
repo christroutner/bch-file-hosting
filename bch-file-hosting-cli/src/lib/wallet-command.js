@@ -17,6 +17,10 @@ function attachWallet (command, deps = {}) {
   command.walletService = deps.walletService || new WalletService({ config: command.config })
 }
 
+// The user-facing usage errors for a missing or conflicting wallet source.
+const WALLET_SOURCE_MESSAGE = 'You must specify a wallet name with the -n flag or a WIF with the --wif flag.'
+const BOTH_SOURCES_MESSAGE = 'Specify either a wallet name (-n) or a WIF (--wif), not both.'
+
 // Throw the shared usage error for a missing or unsafe wallet name.
 function validateWalletName (name) {
   if (!name) {
@@ -32,6 +36,34 @@ function validateWalletName (name) {
   return true
 }
 
+// A wallet source is exactly one of a stored wallet name or an inline WIF.
+function validateWalletSource (flags = {}) {
+  if (flags.name && flags.wif) {
+    throw new UsageError(BOTH_SOURCES_MESSAGE)
+  }
+
+  if (flags.wif) return true
+
+  if (!flags.name) {
+    throw new UsageError(WALLET_SOURCE_MESSAGE)
+  }
+
+  return validateWalletName(flags.name)
+}
+
+// Resolve the wallet a command should use: a stored wallet for a name, or a
+// WIF source the wallet service derives in place.
+function resolveWalletSource (walletStore, flags = {}) {
+  if (flags.wif) return { wif: flags.wif }
+
+  const wallet = walletStore.read(flags.name)
+  if (!wallet) {
+    throw new Error(`Wallet "${flags.name}" not found.`)
+  }
+
+  return wallet
+}
+
 class WalletCommand extends Command {
   constructor (deps = {}) {
     super(deps)
@@ -41,16 +73,21 @@ class WalletCommand extends Command {
 
     // Bind 'this' object to all subfunctions.
     this.validateFlags = this.validateFlags.bind(this)
+    this.resolveWallet = this.resolveWallet.bind(this)
     this.execute = this.execute.bind(this)
     this.report = this.report.bind(this)
   }
 
   validateFlags (flags = {}) {
-    return validateWalletName(flags.name)
+    return validateWalletSource(flags)
+  }
+
+  resolveWallet (flags = {}) {
+    return resolveWalletSource(this.walletStore, flags)
   }
 }
 
-export { UsageError, attachWallet, validateWalletName }
+export { UsageError, attachWallet, validateWalletName, validateWalletSource, resolveWalletSource, WALLET_SOURCE_MESSAGE, BOTH_SOURCES_MESSAGE }
 export default WalletCommand
 
 // mutate4javascript-manifest-begin

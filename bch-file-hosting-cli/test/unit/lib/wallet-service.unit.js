@@ -94,6 +94,16 @@ describe('#wallet-service', () => {
         assert.include(err.message, 'Unexpected balance')
       }
     })
+
+    it('should derive the address from a WIF source', async () => {
+      const wif = 'KwDiBf89QgGbjEhKnhXJuH7SUW1x8fVdqN3d7Z6hK9bY2cP4mRtU'
+      const uut = new WalletService({ config, BchWallet: FakeBchWallet })
+
+      const balance = await uut.balanceSats({ wif })
+
+      assert.equal(balance, 42)
+      assert.equal(FakeBchWallet.lastInstance.mnemonic, wif)
+    })
   })
 
   describe('#sendSats', () => {
@@ -125,6 +135,23 @@ describe('#wallet-service', () => {
       assert.equal(txid, 'fake-txid')
       assert.deepEqual(FakeBchWallet.lastInstance.sentOutputs, [
         { address: 'bitcoincash:qinvoice', amountSat: 1 }
+      ])
+    })
+
+    it('should send from a WIF source', async () => {
+      const wif = 'KwDiBf89QgGbjEhKnhXJuH7SUW1x8fVdqN3d7Z6hK9bY2cP4mRtU'
+      const uut = new WalletService({ config, BchWallet: FakeBchWallet })
+
+      const txid = await uut.sendSats({
+        wallet: { wif },
+        toAddress: 'bitcoincash:qinvoice',
+        amountSats: 2000
+      })
+
+      assert.equal(txid, 'fake-txid')
+      assert.equal(FakeBchWallet.lastInstance.mnemonic, wif)
+      assert.deepEqual(FakeBchWallet.lastInstance.sentOutputs, [
+        { address: 'bitcoincash:qinvoice', amountSat: 2000 }
       ])
     })
 

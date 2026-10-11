@@ -11,7 +11,8 @@ import WalletBalance, { UsageError } from '../../../src/commands/wallet-balance.
 import WalletStore from '../../../src/lib/wallet-store.js'
 import WalletService from '../../../src/lib/wallet-service.js'
 
-const USAGE_MESSAGE = 'You must specify a wallet name with the -n flag.'
+const USAGE_MESSAGE = 'You must specify a wallet name with the -n flag or a WIF with the --wif flag.'
+const WIF = 'KwDiBf89QgGbjEhKnhXJuH7SUW1x8fVdqN3d7Z6hK9bY2cP4mRtU'
 
 describe('#wallet-balance', () => {
   let sandbox
@@ -73,6 +74,14 @@ describe('#wallet-balance', () => {
       sinon.assert.calledWith(uut.walletService.balanceSats, wallet)
     })
 
+    it('should report the balance of a WIF source without reading the store', async () => {
+      const result = await uut.execute({ wif: WIF })
+
+      assert.deepEqual(result, { name: undefined, satoshis: 100000 })
+      sinon.assert.notCalled(walletStore.read)
+      sinon.assert.calledWith(uut.walletService.balanceSats, { wif: WIF })
+    })
+
     it('should throw when the wallet does not exist', async () => {
       walletStore.read.returns(null)
 
@@ -101,6 +110,15 @@ describe('#wallet-balance', () => {
 
       assert.equal(result, 2)
       assert.include(errorOutput.join('\n'), USAGE_MESSAGE)
+    })
+
+    it('should print the balance of a WIF source and return 0', async () => {
+      const result = await uut.run({ wif: WIF })
+
+      assert.equal(result, 0)
+      assert.include(output.join('\n'), 'Balance: 100000 satoshis')
+      sinon.assert.notCalled(walletStore.read)
+      assert.notInclude(output.join('\n'), WIF)
     })
 
     it('should return 2 and reject an unsafe name without reading the store', async () => {

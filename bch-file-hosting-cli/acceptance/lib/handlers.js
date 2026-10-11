@@ -106,6 +106,10 @@ function createWorld () {
     command: null,
     walletCreateResult: null,
     walletBalance: 0,
+    balanceWallet: null,
+    sentWallet: null,
+    expectedBalanceWif: null,
+    payerWif: null,
     feedFiles: [],
     feedNextPageFiles: [],
     feedNextCursor: null,
@@ -150,8 +154,12 @@ function createWorld () {
   world.walletStore = new WalletStore({ dir: walletDir })
   world.walletService = {
     create: async () => world.walletCreateResult,
-    balanceSats: async () => world.walletBalance,
-    sendSats: async ({ toAddress, amountSats } = {}) => {
+    balanceSats: async (wallet) => {
+      world.balanceWallet = wallet
+      return world.walletBalance
+    },
+    sendSats: async ({ wallet, toAddress, amountSats } = {}) => {
+      world.sentWallet = wallet
       world.sentAddress = toAddress
       world.sentAmount = amountSats
       return world.walletTxid
@@ -896,6 +904,9 @@ const handlers = [
       if (world.sentAddress !== address) {
         throw new Error(`expected the wallet to pay ${address}, paid ${world.sentAddress}`)
       }
+      if (world.payerWif && (!world.sentWallet || world.sentWallet.wif !== world.payerWif)) {
+        throw new Error(`expected the WIF payer, got ${JSON.stringify(world.sentWallet)}`)
+      }
     }
   },
   {
@@ -1144,6 +1155,9 @@ const handlers = [
       if (!world.stdout.includes(`Balance: ${expected} satoshis`)) {
         throw new Error(`stdout did not print the balance ${expected} satoshis: ${JSON.stringify(world.stdout)}`)
       }
+      if (world.expectedBalanceWif && (!world.balanceWallet || world.balanceWallet.wif !== world.expectedBalanceWif)) {
+        throw new Error(`expected the WIF balance source, got ${JSON.stringify(world.balanceWallet)}`)
+      }
     }
   },
   {
@@ -1287,6 +1301,61 @@ const handlers = [
       const expected = exampleValue(example, match[1])
       if (world.transportCursor !== expected) {
         throw new Error(`expected the reported cursor to be ${expected}, got ${world.transportCursor}`)
+      }
+    }
+  },
+  {
+    pattern: /^the WIF <([A-Za-z0-9_]+)> holds <([A-Za-z0-9_]+)> satoshis$/,
+    run (match, example, world) {
+      world.walletBalance = asInt(exampleValue(example, match[2]), match[2])
+    }
+  },
+  {
+    pattern: /^the WIF <([A-Za-z0-9_]+)> can pay$/,
+    run (match, example, world) {
+      world.payerWif = exampleValue(example, match[1])
+    }
+  },
+  {
+    pattern: /^I run wallet-balance with the WIF <([A-Za-z0-9_]+)>$/,
+    async run (match, example, world) {
+      world.expectedBalanceWif = exampleValue(example, match[1])
+      world.exitCode = await world.command.run({ wif: world.expectedBalanceWif })
+    }
+  },
+  {
+    pattern: /^I run file-pay for the address (.+) with the WIF <([A-Za-z0-9_]+)>$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({
+        address: expectedText(example, match[1]),
+        wif: exampleValue(example, match[2])
+      })
+    }
+  },
+  {
+    pattern: /^I run file-host for the file (.+) with the WIF <([A-Za-z0-9_]+)>$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({
+        file: fixturePath(world, expectedText(example, match[1])),
+        wif: exampleValue(example, match[2])
+      })
+    }
+  },
+  {
+    pattern: /^I run wallet-balance with the name (.+) and the WIF <([A-Za-z0-9_]+)>$/,
+    async run (match, example, world) {
+      world.exitCode = await world.command.run({
+        name: expectedText(example, match[1]),
+        wif: exampleValue(example, match[2])
+      })
+    }
+  },
+  {
+    pattern: /^the command does not print the WIF <([A-Za-z0-9_]+)>$/,
+    run (match, example, world) {
+      const wif = exampleValue(example, match[1])
+      if (world.stdout.includes(wif) || world.stderr.includes(wif)) {
+        throw new Error(`the command unexpectedly printed the WIF: ${JSON.stringify(world.stdout)}`)
       }
     }
   }

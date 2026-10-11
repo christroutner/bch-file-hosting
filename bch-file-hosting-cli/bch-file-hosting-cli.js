@@ -67,18 +67,20 @@ program.command('file-list')
   })
 
 program.command('file-pay')
-  .description('Pay an invoice from a local wallet (-a <address>, -n <name>, --json)')
+  .description('Pay an invoice from a local wallet (-a <address>, -n <name> | --wif <wif>, --json)')
   .option('-a, --address <address>', 'payment address of the invoice')
   .option('-n, --name <name>', 'wallet name to pay from')
+  .option('--wif <wif>', 'WIF private key to pay from (instead of -n)')
   .option('--json', 'print the result as a single JSON object')
   .action(async (flags) => {
     process.exitCode = await filePay.run(flags)
   })
 
 program.command('file-host')
-  .description('Upload, pay, and confirm hosting in one step (-f <path>, -n <name>, --json)')
+  .description('Upload, pay, and confirm hosting in one step (-f <path>, -n <name> | --wif <wif>, --json)')
   .option('-f, --file <path>', 'path of the file to host')
   .option('-n, --name <name>', 'wallet name to pay from')
+  .option('--wif <wif>', 'WIF private key to pay from (instead of -n)')
   .option('--json', 'print the result as a single JSON object')
   .action(async (flags) => {
     process.exitCode = await fileHost.run(flags)
@@ -92,8 +94,9 @@ program.command('wallet-create')
   })
 
 program.command('wallet-balance')
-  .description('Print the satoshi balance of a local wallet (-n <name>)')
+  .description('Print the satoshi balance of a local wallet (-n <name> | --wif <wif>)')
   .option('-n, --name <name>', 'wallet name')
+  .option('--wif <wif>', 'WIF private key to read the balance of (instead of -n)')
   .action(async (flags) => {
     process.exitCode = await walletBalance.run(flags)
   })

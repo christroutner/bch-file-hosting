@@ -23,7 +23,7 @@ const TXID = '1111111111111111111111111111111111111111111111111111111111111111'
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
 const STORED_WALLET = { mnemonic: 'stored mnemonic', cashAddress: 'bitcoincash:qpayer', hdPath: "m/44'/245'/0'/0/0" }
 const MISSING_ADDRESS_MESSAGE = 'You must specify a payment address with the -a flag.'
-const MISSING_WALLET_MESSAGE = 'You must specify a wallet name with the -n flag.'
+const MISSING_WALLET_MESSAGE = 'You must specify a wallet name with the -n flag or a WIF with the --wif flag.'
 
 function randomAddress (random) {
   return `bitcoincash:q${randomString(random, 20, 38, ALPHABET)}`

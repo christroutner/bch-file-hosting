@@ -11,11 +11,7 @@ import WalletCommand, { UsageError } from '../lib/wallet-command.js'
 
 class WalletBalance extends WalletCommand {
   async execute (flags = {}) {
-    const wallet = this.walletStore.read(flags.name)
-    if (!wallet) {
-      throw new Error(`Wallet "${flags.name}" not found.`)
-    }
-
+    const wallet = this.resolveWallet(flags)
     const satoshis = await this.walletService.balanceSats(wallet)
 
     return { name: flags.name, satoshis }

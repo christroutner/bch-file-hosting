@@ -14,6 +14,7 @@ import WalletService from '../../../src/lib/wallet-service.js'
 
 const ADDRESS = 'bitcoincash:qinvoiceaddress00000000000000000000000000'
 const CID = 'bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'
+const WIF = 'KwDiBf89QgGbjEhKnhXJuH7SUW1x8fVdqN3d7Z6hK9bY2cP4mRtU'
 const DOWNLOAD_URL = `http://localhost:5050/download/${CID}`
 const VIEW_URL = `http://localhost:5050/view/${CID}/photo.jpg`
 const GATEWAY_URL = `https://ipfs.io/ipfs/${CID}/photo.jpg`
@@ -99,7 +100,7 @@ describe('#file-host', () => {
         assert.fail('Unexpected result')
       } catch (err) {
         assert.instanceOf(err, UsageError)
-        assert.equal(err.message, 'You must specify a wallet name with the -n flag.')
+        assert.equal(err.message, 'You must specify a wallet name with the -n flag or a WIF with the --wif flag.')
       }
     })
 
@@ -236,8 +237,23 @@ describe('#file-host', () => {
       const result = await uut.run({ file: './photo.jpg' })
 
       assert.equal(result, 2)
-      assert.include(errorOutput.join('\n'), 'You must specify a wallet name with the -n flag.')
+      assert.include(errorOutput.join('\n'), 'You must specify a wallet name with the -n flag or a WIF with the --wif flag.')
       sinon.assert.notCalled(hostingApi.upload)
+    })
+
+    it('should pay from a WIF source without reading the store', async () => {
+      hostingApi.checkPayment.resolves(paid)
+
+      const result = await uut.run({ file: './photo.jpg', wif: WIF })
+
+      assert.equal(result, 0)
+      assert.include(output.join('\n'), `Transaction: ${TXID}`)
+      sinon.assert.notCalled(walletStore.read)
+      sinon.assert.calledWith(uut.walletService.sendSats, {
+        wallet: { wif: WIF },
+        toAddress: ADDRESS,
+        amountSats: 2000
+      })
     })
 
     it('should print a single JSON object when --json is set', async () => {

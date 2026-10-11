@@ -15,7 +15,7 @@ import WalletBalance from '../../src/commands/wallet-balance.js'
 import { forAllAsync, integerBetween, randomString, randomWallet } from './lib/harness.js'
 
 const config = { apiUrl: 'http://localhost:5050' }
-const USAGE_MESSAGE = 'You must specify a wallet name with the -n flag.'
+const USAGE_MESSAGE = 'You must specify a wallet name with the -n flag or a WIF with the --wif flag.'
 
 // Build a command with an injected store and service that record every call.
 function build ({ storedWallet = null, balance = 0, balanceError = null } = {}) {

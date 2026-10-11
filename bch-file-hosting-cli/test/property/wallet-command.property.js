@@ -23,7 +23,7 @@ const SAFE_NAME = /^[A-Za-z0-9_-]+$/
 const SAFE_CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-'
 const UNSAFE_CHARS = ' /\\..:$*?"<>|\n\t\0é☃'
 
-const MISSING_NAME_MESSAGE = 'You must specify a wallet name with the -n flag.'
+const MISSING_NAME_MESSAGE = 'You must specify a wallet name with the -n flag or a WIF with the --wif flag.'
 function invalidNameMessage (name) {
   return `Invalid wallet name "${name}". Use only letters, digits, hyphens, and underscores.`
 }

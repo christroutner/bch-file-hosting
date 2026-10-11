@@ -8,9 +8,14 @@
 */
 
 // Local libraries
-import WalletCommand, { UsageError } from '../lib/wallet-command.js'
+import WalletCommand, { UsageError, validateWalletName } from '../lib/wallet-command.js'
 
 class WalletCreate extends WalletCommand {
+  // Creating a wallet always needs a new name; a WIF source does not apply.
+  validateFlags (flags = {}) {
+    return validateWalletName(flags.name)
+  }
+
   async execute (flags = {}) {
     if (this.walletStore.has(flags.name)) {
       throw new Error(`A wallet named ${flags.name} already exists.`)

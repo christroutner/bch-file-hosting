@@ -14,6 +14,7 @@ import WalletService from '../../../src/lib/wallet-service.js'
 
 const ADDRESS = 'bitcoincash:qinvoiceaddress00000000000000000000000000'
 const WALLET = 'payer'
+const WIF = 'KwDiBf89QgGbjEhKnhXJuH7SUW1x8fVdqN3d7Z6hK9bY2cP4mRtU'
 const TXID = '1111111111111111111111111111111111111111111111111111111111111111'
 
 describe('#file-pay', () => {
@@ -69,7 +70,7 @@ describe('#file-pay', () => {
         assert.fail('Unexpected result')
       } catch (err) {
         assert.instanceOf(err, UsageError)
-        assert.equal(err.message, 'You must specify a wallet name with the -n flag.')
+        assert.equal(err.message, 'You must specify a wallet name with the -n flag or a WIF with the --wif flag.')
       }
     })
 
@@ -171,9 +172,29 @@ describe('#file-pay', () => {
       const result = await uut.run({ address: ADDRESS })
 
       assert.equal(result, 2)
-      assert.include(errorOutput.join('\n'), 'You must specify a wallet name with the -n flag.')
+      assert.include(errorOutput.join('\n'), 'You must specify a wallet name with the -n flag or a WIF with the --wif flag.')
       sinon.assert.notCalled(uut.hostingApi.checkPayment)
       sinon.assert.notCalled(uut.walletService.sendSats)
+    })
+
+    it('should pay from a WIF source without reading the store', async () => {
+      uut.hostingApi.checkPayment.resolves({
+        success: true,
+        status: 'unpaid',
+        receivedSats: 0,
+        requiredSats: 2000
+      })
+
+      const result = await uut.run({ address: ADDRESS, wif: WIF })
+
+      assert.equal(result, 0)
+      assert.include(output.join('\n'), `Transaction: ${TXID}`)
+      sinon.assert.notCalled(walletStore.read)
+      sinon.assert.calledWith(uut.walletService.sendSats, {
+        wallet: { wif: WIF },
+        toAddress: ADDRESS,
+        amountSats: 2000
+      })
     })
 
     it('should print a single JSON object when --json is set', async () => {

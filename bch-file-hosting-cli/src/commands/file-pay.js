@@ -39,10 +39,7 @@ class FilePay extends WalletCommand {
       throw new Error('Invoice expired.')
     }
 
-    const wallet = this.walletStore.read(flags.name)
-    if (!wallet) {
-      throw new Error(`Wallet "${flags.name}" not found.`)
-    }
+    const wallet = this.resolveWallet(flags)
 
     const amountSats = invoice.requiredSats - invoice.receivedSats
     const txid = await this.walletService.sendSats({

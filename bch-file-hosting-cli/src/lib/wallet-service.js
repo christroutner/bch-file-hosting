@@ -15,6 +15,7 @@ class WalletService {
     this.BchWallet = WalletClass
 
     this.walletOptions = this.walletOptions.bind(this)
+    this.walletSecret = this.walletSecret.bind(this)
     this.create = this.create.bind(this)
     this.balanceSats = this.balanceSats.bind(this)
     this.sendSats = this.sendSats.bind(this)
@@ -35,15 +36,21 @@ class WalletService {
     return wallet.walletInfo
   }
 
-  // Confirmed + unconfirmed satoshi balance for a stored wallet.
+  // The constructor secret for a wallet source: a stored mnemonic or an inline
+  // WIF. A WIF source carries no HD derivation path.
+  walletSecret (walletData = {}) {
+    if (walletData.wif) return { secret: walletData.wif, hdPath: undefined }
+    return { secret: walletData.mnemonic, hdPath: walletData.hdPath }
+  }
+
+  // Confirmed + unconfirmed satoshi balance for a stored wallet or WIF source.
   async balanceSats (walletData) {
-    const wallet = new this.BchWallet(
-      walletData.mnemonic,
-      this.walletOptions({ hdPath: walletData.hdPath })
-    )
+    const { secret, hdPath } = this.walletSecret(walletData)
+    const wallet = new this.BchWallet(secret, this.walletOptions({ hdPath }))
     await wallet.walletInfoPromise
 
-    const balance = await wallet.getBalance({ bchAddress: walletData.cashAddress })
+    const address = walletData.cashAddress || wallet.walletInfo.cashAddress
+    const balance = await wallet.getBalance({ bchAddress: address })
     if (!Number.isInteger(balance) || balance < 0) {
       throw new Error(`Unexpected balance from wallet backend: ${balance}`)
     }
@@ -62,10 +69,8 @@ class WalletService {
       throw new Error(`amountSats must be a positive integer, got: ${amountSats}`)
     }
 
-    const bchWallet = new this.BchWallet(
-      wallet.mnemonic,
-      this.walletOptions({ hdPath: wallet.hdPath })
-    )
+    const { secret, hdPath } = this.walletSecret(wallet)
+    const bchWallet = new this.BchWallet(secret, this.walletOptions({ hdPath }))
     await bchWallet.walletInfoPromise
     await bchWallet.initialize()
 

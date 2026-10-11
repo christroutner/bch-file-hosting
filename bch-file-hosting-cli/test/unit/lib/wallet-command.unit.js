@@ -9,7 +9,9 @@ import sinon from 'sinon'
 // Local libraries
 import WalletCommand, { UsageError } from '../../../src/lib/wallet-command.js'
 
-const USAGE_MESSAGE = 'You must specify a wallet name with the -n flag.'
+const USAGE_MESSAGE = 'You must specify a wallet name with the -n flag or a WIF with the --wif flag.'
+const BOTH_MESSAGE = 'Specify either a wallet name (-n) or a WIF (--wif), not both.'
+const WIF = 'KwDiBf89QgGbjEhKnhXJuH7SUW1x8fVdqN3d7Z6hK9bY2cP4mRtU'
 
 function invalidNameMessage (name) {
   return `Invalid wallet name "${name}". Use only letters, digits, hyphens, and underscores.`
@@ -88,6 +90,46 @@ describe('#wallet-command', () => {
           assert.instanceOf(err, UsageError)
           assert.equal(err.message, invalidNameMessage(name))
         }
+      }
+    })
+
+    it('should accept a WIF with no name', () => {
+      assert.equal(uut.validateFlags({ wif: WIF }), true)
+    })
+
+    it('should reject a name and a WIF together', () => {
+      try {
+        uut.validateFlags({ name: 'payer', wif: WIF })
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.instanceOf(err, UsageError)
+        assert.equal(err.message, BOTH_MESSAGE)
+      }
+    })
+  })
+
+  describe('#resolveWallet', () => {
+    it('should return the stored wallet for a name', () => {
+      const stored = { mnemonic: 'stored mnemonic', cashAddress: 'bitcoincash:qpayer' }
+      uut.walletStore.read.returns(stored)
+
+      assert.equal(uut.resolveWallet({ name: 'payer' }), stored)
+      sinon.assert.calledWith(uut.walletStore.read, 'payer')
+    })
+
+    it('should return a WIF source without reading the store', () => {
+      assert.deepEqual(uut.resolveWallet({ wif: WIF }), { wif: WIF })
+      sinon.assert.notCalled(uut.walletStore.read)
+    })
+
+    it('should throw when a named wallet does not exist', () => {
+      uut.walletStore.read.returns(null)
+
+      try {
+        uut.resolveWallet({ name: 'missing' })
+        assert.fail('Unexpected result')
+      } catch (err) {
+        assert.equal(err.message, 'Wallet "missing" not found.')
       }
     })
   })

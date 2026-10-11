@@ -34,7 +34,8 @@ class FakeBchWallet {
     this.initialized = true
   }
 
-  async getBalance () {
+  async getBalance (args = {}) {
+    FakeBchWallet.lastBalanceAddress = args.bchAddress
     return this.balance
   }
 
@@ -72,6 +73,7 @@ describe('#wallet-service', () => {
       })
 
       assert.equal(balance, 42)
+      assert.equal(FakeBchWallet.lastBalanceAddress, 'bitcoincash:qfake')
     })
 
     it('should accept a zero satoshi balance', async () => {
@@ -103,6 +105,9 @@ describe('#wallet-service', () => {
 
       assert.equal(balance, 42)
       assert.equal(FakeBchWallet.lastInstance.mnemonic, wif)
+      // A WIF source has no stored address, so the balance must be read from
+      // the address the WIF derives (not undefined).
+      assert.equal(FakeBchWallet.lastBalanceAddress, 'bitcoincash:qfake')
     })
   })
 

@@ -36,5 +36,5 @@ export { UsageError }
 export default WalletCreate
 
 // mutate4javascript-manifest-begin
-// {"version":1,"tested_at":"2026-10-09T04:08:15.635Z","module_hash":"b0a3a3e0e41e42e7e53026c13d961625b6ec522d8f863a7366f5930a137efc0d","functions":[{"id":"func/WalletCreate.execute","name":"WalletCreate.execute","line":14,"end_line":23,"hash":"0b5d4ab1fe4d99c396c84ac103bfe556257046f4fa616541062c05df04c6be21"},{"id":"func/WalletCreate.report","name":"WalletCreate.report","line":25,"end_line":27,"hash":"dc6599360c45b0ff97d548616f32a695af7547ec9982412240380f73c20334fc"}]}
+// {"version":1,"tested_at":"2026-10-11T15:44:39.105Z","module_hash":"62bfda9689ac0d2acfaaad5e8532d0e2d5b816f10c2a8eb687270273bc00e031","functions":[{"id":"func/WalletCreate.validateFlags","name":"WalletCreate.validateFlags","line":15,"end_line":17,"hash":"4b83ff89d8701e07726f947034e6c07c186b79622d2d9ac6e0930b04508d9172"},{"id":"func/WalletCreate.execute","name":"WalletCreate.execute","line":19,"end_line":28,"hash":"0b5d4ab1fe4d99c396c84ac103bfe556257046f4fa616541062c05df04c6be21"},{"id":"func/WalletCreate.report","name":"WalletCreate.report","line":30,"end_line":32,"hash":"dc6599360c45b0ff97d548616f32a695af7547ec9982412240380f73c20334fc"}]}
 // mutate4javascript-manifest-end
